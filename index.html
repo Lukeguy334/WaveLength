@@ -106,6 +106,67 @@
 
   .score-rail .cell { display: flex; flex-direction: column; gap: 2px; }
 
+  /* ---------- Online play panel ---------- */
+  .online-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+  }
+
+  .online-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .online-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  #onlineStatusText {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--paper);
+    flex: 1;
+  }
+
+  button.mini-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--brass);
+    background: transparent;
+    color: var(--brass-bright);
+    cursor: pointer;
+  }
+  button.mini-btn:hover { background: rgba(201,162,75,0.12); }
+  button.mini-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  button.mini-btn.ghostish { border-color: var(--panel-line); color: var(--muted); }
+
+  #onlineJoinForm input {
+    flex: 1;
+    min-width: 100px;
+    background: var(--ink-2);
+    border: 1px solid var(--panel-line);
+    border-radius: 7px;
+    padding: 8px 12px;
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 14px;
+  }
+  #onlineJoinForm input:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+
   /* ---------- Spectrum plaque ---------- */
   .plaque {
     position: relative;
@@ -308,6 +369,23 @@
     <div class="round-tag" id="roundTag">ROUND 01</div>
   </div>
 
+  <div class="online-panel" id="onlinePanel">
+    <div class="online-row" id="onlineOffline">
+      <span class="online-label">Play online</span>
+      <button class="mini-btn" id="hostBtn">Host a game</button>
+      <button class="mini-btn" id="joinBtn">Join a game</button>
+    </div>
+    <div class="online-row" id="onlineJoinForm" style="display:none;">
+      <input type="text" id="joinCodeInput" placeholder="Room code" autocomplete="off" maxlength="4">
+      <button class="mini-btn" id="joinConfirmBtn">Connect</button>
+      <button class="mini-btn ghostish" id="joinCancelBtn">Cancel</button>
+    </div>
+    <div class="online-row" id="onlineStatus" style="display:none;">
+      <span id="onlineStatusText"></span>
+      <button class="mini-btn ghostish" id="disconnectBtn">Disconnect</button>
+    </div>
+  </div>
+
   <div class="score-rail">
     <div class="cell">
       <span class="label">Team score</span>
@@ -396,6 +474,7 @@
   <footer>A hidden target, a one-word clue, and a needle you have to trust.</footer>
 </div>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (function(){
   // ---------------- Spectrum bank ----------------
@@ -737,6 +816,7 @@
   }
 
   function newRound(){
+    if (role === 'guest') return;
     round += 1;
     const [left, right] = nextSpectrum();
     document.getElementById('endLeft').textContent = left;
@@ -757,8 +837,12 @@
     setTargetLine(target);
     setNeedle(guess);
     instructions.textContent = "Psychic: note the target line, then hide the screen and give your one-word clue.";
+    mainBtn.style.display = 'block';
+    mainBtn.disabled = false;
     mainBtn.textContent = 'Start guessing \u2192';
     skipBtn.disabled = false;
+
+    if (role === 'host') broadcastState();
   }
 
   function beginGuessing(){
@@ -769,9 +853,19 @@
       clueEcho.innerHTML = 'Clue given: <b>' + clueInput.value.trim().replace(/[<>]/g,'') + '</b>';
       clueEcho.classList.add('show');
     }
-    updateGuessInstructions();
-    mainBtn.textContent = 'Lock guess & reveal';
-    skipBtn.disabled = true;
+
+    if (role === 'host'){
+      mainBtn.style.display = 'none';
+      instructions.textContent = "Clue sent. Waiting for your teammate to lock in a guess\u2026";
+      skipBtn.disabled = true;
+      broadcastState();
+    } else {
+      updateGuessInstructions();
+      mainBtn.style.display = 'block';
+      mainBtn.disabled = false;
+      mainBtn.textContent = 'Lock guess & reveal';
+      skipBtn.disabled = true;
+    }
   }
 
   function updateGuessInstructions(){
@@ -796,14 +890,31 @@
     ptsVal.textContent = pts;
     scoreCallout.classList.add('show');
     instructions.textContent = "Target was " + toScale(target) + ", you guessed " + toScale(guess) + ". Off by " + toScale(diff) + ".";
+    mainBtn.style.display = 'block';
+    mainBtn.disabled = false;
     mainBtn.textContent = 'Next round \u2192';
     skipBtn.disabled = true;
+
+    if (role === 'host') broadcastState();
   }
 
   function handleMain(){
-    if (phase === 'clue') beginGuessing();
-    else if (phase === 'guess') reveal();
-    else newRound();
+    if (phase === 'clue'){
+      if (role === 'guest') return;
+      beginGuessing();
+    } else if (phase === 'guess'){
+      if (role === 'guest'){
+        mainBtn.disabled = true;
+        mainBtn.textContent = 'Locked \u2014 waiting\u2026';
+        instructions.textContent = "Guess locked in. Waiting on the host to reveal\u2026";
+        send({ type: 'lockGuess', angle: guess });
+      } else {
+        reveal();
+      }
+    } else {
+      if (role === 'guest') return;
+      newRound();
+    }
   }
 
   mainBtn.addEventListener('click', handleMain);
@@ -823,14 +934,14 @@
 
   let dragging = false;
   function pointerDown(e){
-    if (phase !== 'guess') return;
+    if (phase !== 'guess' || role === 'host') return;
     dragging = true;
     guess = angleFromEvent(e);
     setNeedle(guess);
     updateGuessInstructions();
   }
   function pointerMove(e){
-    if (!dragging || phase !== 'guess') return;
+    if (!dragging || phase !== 'guess' || role === 'host') return;
     guess = angleFromEvent(e);
     setNeedle(guess);
     updateGuessInstructions();
@@ -840,6 +951,199 @@
   svg.addEventListener('pointerdown', pointerDown);
   svg.addEventListener('pointermove', pointerMove);
   window.addEventListener('pointerup', pointerUp);
+
+  // ---------------- Online play (PeerJS, peer-to-peer) ----------------
+  let peer = null;
+  let conn = null;
+  let role = 'local'; // 'local' | 'host' | 'guest'
+
+  const onlineOffline = document.getElementById('onlineOffline');
+  const onlineJoinForm = document.getElementById('onlineJoinForm');
+  const onlineStatus = document.getElementById('onlineStatus');
+  const onlineStatusText = document.getElementById('onlineStatusText');
+  const hostBtn = document.getElementById('hostBtn');
+  const joinBtn = document.getElementById('joinBtn');
+  const joinConfirmBtn = document.getElementById('joinConfirmBtn');
+  const joinCancelBtn = document.getElementById('joinCancelBtn');
+  const joinCodeInput = document.getElementById('joinCodeInput');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+
+  function showOnlinePane(which){
+    onlineOffline.style.display = which === 'offline' ? 'flex' : 'none';
+    onlineJoinForm.style.display = which === 'joinForm' ? 'flex' : 'none';
+    onlineStatus.style.display = which === 'status' ? 'flex' : 'none';
+  }
+
+  function randomRoomCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  function send(msg){
+    if (conn && conn.open) conn.send(msg);
+  }
+
+  function setupConnection(){
+    conn.on('data', handleData);
+    conn.on('close', () => {
+      onlineStatusText.textContent = 'Your teammate disconnected.';
+      role = 'local';
+      showOnlinePane('offline');
+      newRound();
+    });
+  }
+
+  function handleData(msg){
+    if (role === 'host' && msg.type === 'lockGuess'){
+      guess = msg.angle;
+      reveal();
+    } else if (role === 'guest' && msg.type === 'state'){
+      applyRemoteState(msg.state);
+    }
+  }
+
+  function broadcastState(){
+    if (role !== 'host') return;
+    send({
+      type: 'state',
+      state: {
+        left: document.getElementById('endLeft').textContent,
+        right: document.getElementById('endRight').textContent,
+        round, phase, totalScore, roundsPlayed,
+        clue: clueEcho.classList.contains('show') ? clueEcho.innerHTML : '',
+        guess,
+        target: phase === 'reveal' ? target : null
+      }
+    });
+  }
+
+  function applyRemoteState(state){
+    document.getElementById('endLeft').textContent = state.left;
+    document.getElementById('endRight').textContent = state.right;
+    document.getElementById('roundTag').textContent = 'ROUND ' + String(state.round).padStart(2,'0');
+    document.getElementById('scoreVal').textContent = state.totalScore;
+    document.getElementById('roundsVal').textContent = state.roundsPlayed;
+    document.getElementById('avgVal').textContent = state.roundsPlayed ? (state.totalScore / state.roundsPlayed).toFixed(1) : '\u2014';
+
+    phase = state.phase;
+    round = state.round;
+    totalScore = state.totalScore;
+    roundsPlayed = state.roundsPlayed;
+
+    targetMark.setAttribute('opacity', 0);
+    clueRow.classList.remove('show');
+    scoreCallout.classList.remove('show');
+    zonesG.setAttribute('opacity', 0);
+
+    if (phase === 'clue'){
+      guess = 90;
+      setNeedle(guess);
+      clueEcho.classList.remove('show');
+      instructions.textContent = "Waiting for the host to give the clue\u2026";
+      mainBtn.style.display = 'none';
+    } else if (phase === 'guess'){
+      guess = 90;
+      if (state.clue){ clueEcho.innerHTML = state.clue; clueEcho.classList.add('show'); }
+      setNeedle(guess);
+      updateGuessInstructions();
+      mainBtn.style.display = 'block';
+      mainBtn.disabled = false;
+      mainBtn.textContent = 'Lock guess & reveal';
+    } else if (phase === 'reveal'){
+      target = state.target;
+      guess = state.guess;
+      buildZones(target);
+      zonesG.setAttribute('opacity', 1);
+      setTargetLine(target);
+      targetMark.setAttribute('opacity', 1);
+      setNeedle(guess);
+      const diff = Math.abs(guess - target);
+      const pts = scoreFor(diff);
+      ptsVal.textContent = pts;
+      scoreCallout.classList.add('show');
+      instructions.textContent = "Target was " + toScale(target) + ", you guessed " + toScale(guess) + ". Off by " + toScale(diff) + ".";
+      mainBtn.style.display = 'none';
+    }
+  }
+
+  function enterGuestWaitingUI(){
+    skipBtn.style.display = 'none';
+    document.getElementById('endLeft').textContent = '\u2014';
+    document.getElementById('endRight').textContent = '\u2014';
+    document.getElementById('roundTag').textContent = 'ROUND \u2014';
+    clueRow.classList.remove('show');
+    clueEcho.classList.remove('show');
+    scoreCallout.classList.remove('show');
+    zonesG.setAttribute('opacity', 0);
+    targetMark.setAttribute('opacity', 0);
+    mainBtn.style.display = 'none';
+    instructions.textContent = "Connected! Waiting for the host to start the round\u2026";
+  }
+
+  hostBtn.addEventListener('click', () => {
+    const code = randomRoomCode();
+    onlineStatusText.textContent = 'Opening room\u2026';
+    showOnlinePane('status');
+    peer = new Peer('wl-' + code, { debug: 0 });
+    peer.on('open', () => {
+      onlineStatusText.textContent = 'Room code: ' + code + ' \u2014 share it with your teammate. Waiting for them to join\u2026';
+    });
+    peer.on('connection', (c) => {
+      conn = c;
+      setupConnection();
+      conn.on('open', () => {
+        role = 'host';
+        onlineStatusText.textContent = 'Connected as HOST \u00B7 room ' + code;
+        skipBtn.style.display = 'inline-block';
+        mainBtn.style.display = 'block';
+        broadcastState();
+      });
+    });
+    peer.on('error', () => {
+      showOnlinePane('offline');
+      alert("Couldn't open a room. Please try hosting again.");
+    });
+  });
+
+  joinBtn.addEventListener('click', () => {
+    showOnlinePane('joinForm');
+    joinCodeInput.value = '';
+    joinCodeInput.focus();
+  });
+
+  joinCancelBtn.addEventListener('click', () => showOnlinePane('offline'));
+
+  joinConfirmBtn.addEventListener('click', () => {
+    const code = joinCodeInput.value.trim().toUpperCase();
+    if (!code) return;
+    onlineStatusText.textContent = 'Connecting\u2026';
+    showOnlinePane('status');
+    peer = new Peer({ debug: 0 });
+    peer.on('open', () => {
+      conn = peer.connect('wl-' + code, { reliable: true });
+      setupConnection();
+      conn.on('open', () => {
+        role = 'guest';
+        onlineStatusText.textContent = 'Connected as GUESSER \u00B7 room ' + code;
+        enterGuestWaitingUI();
+      });
+    });
+    peer.on('error', () => {
+      showOnlinePane('offline');
+      alert("Couldn't connect. Double-check the room code and try again.");
+    });
+  });
+
+  disconnectBtn.addEventListener('click', () => {
+    if (conn) conn.close();
+    if (peer) peer.destroy();
+    conn = null; peer = null; role = 'local';
+    showOnlinePane('offline');
+    skipBtn.style.display = 'inline-block';
+    newRound();
+  });
 
   // ---------------- Boot ----------------
   reshuffle();
