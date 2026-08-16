@@ -28,7 +28,7 @@
     --ui-font: 14px;
   }
 
-  body.large * { --card-w: 84px; --card-h: 118px; --card-font: 19px; --ui-font: 17px; }
+  body.large, body.large * { --card-w: 84px; --card-h: 118px; --card-font: 19px; --ui-font: 17px; }
 
   * { box-sizing: border-box; }
 
@@ -315,6 +315,12 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--muted);
+  }
+
+  .discard-fan-scroll {
+    overflow-x: auto;
+    max-width: min(560px, 78vw);
+    padding-bottom: 6px;
   }
 
   .discard-fan {
@@ -610,7 +616,7 @@
         </div>
         <div class="pile-block">
           <div class="pile-label">Discard pile (click to take)</div>
-          <div class="discard-fan" id="discardFan"></div>
+          <div class="discard-fan-scroll"><div class="discard-fan" id="discardFan"></div></div>
           <div id="takeConfirmWrap"></div>
         </div>
       </div>
@@ -706,6 +712,23 @@
       const ci = RANKS.indexOf(card.rank);
       return ci === lo - 1 || ci === hi + 1;
     }
+  }
+
+  // Can `card` end up in SOME legal meld (new lay or play-off) given the cards
+  // the player would be holding? Used to block discard-pile deep-takes that
+  // would leave the player stuck holding an unplayable target card.
+  function canMeldCard(card, pool, tableMelds){
+    if (tableMelds.some(m => canExtendMeld(m, card))) return true;
+    const sameRankCount = pool.filter(c => c.rank === card.rank).length;
+    if (sameRankCount >= 3) return true;
+    const suitIdxSet = {};
+    pool.filter(c => c.suit === card.suit).forEach(c => { suitIdxSet[RANKS.indexOf(c.rank)] = true; });
+    const ci = RANKS.indexOf(card.rank);
+    let run = 1, i = ci - 1;
+    while (suitIdxSet[i]) { run++; i--; }
+    i = ci + 1;
+    while (suitIdxSet[i]) { run++; i++; }
+    return run >= 3;
   }
 
   function cloneState(state){ return JSON.parse(JSON.stringify(state)); }
@@ -836,10 +859,17 @@
       if (s.currentPlayerIndex !== s.players.indexOf(actor)) return { error: 'Not your turn.' };
       const idx = action.index;
       if (idx < 0 || idx >= s.discardPile.length) return { error: 'Bad discard index.' };
-      s.grabAvailable = null;
-      const taken = s.discardPile.splice(idx);
+      const taken = s.discardPile.slice(idx);
       const deepTake = taken.length > 1;
       const targetCard = taken[0];
+      if (deepTake){
+        const poolAfter = actor.hand.concat(taken);
+        if (!canMeldCard(targetCard, poolAfter, s.tableMelds)){
+          return { error: "You can't take that deep \u2014 there's no way to meld the " + targetCard.rank + SUIT_SYMBOL[targetCard.suit] + ' yet.' };
+        }
+      }
+      s.grabAvailable = null;
+      s.discardPile.length = idx;
       taken.forEach(c => actor.hand.push(c));
       actor.startOfTurnTableCount = tableCardCountOwnedBy(s, actor.id);
       s.phase = 'act';
@@ -1404,13 +1434,14 @@
 
     const fan = document.getElementById('discardFan');
     fan.innerHTML = '';
-    const cardW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 64;
+    const cardW = parseInt(getComputedStyle(document.body).getPropertyValue('--card-w')) || 64;
+    const fanStep = Math.round(cardW * 0.42);
     s.discardPile.forEach((card, i) => {
       const wrap = document.createElement('div');
       const takeHighlight = selectedDiscardIndex !== null && i >= selectedDiscardIndex;
       wrap.innerHTML = cardHTML(card, takeHighlight ? 'take-selected' : '');
       const cardEl = wrap.firstElementChild;
-      cardEl.style.left = (i * 20) + 'px';
+      cardEl.style.left = (i * fanStep) + 'px';
       cardEl.style.zIndex = String(i);
       if (isMyTurn && s.phase === 'draw'){
         cardEl.addEventListener('click', () => {
@@ -1420,22 +1451,42 @@
       }
       fan.appendChild(cardEl);
     });
-    fan.style.width = (s.discardPile.length ? (s.discardPile.length - 1) * 20 + cardW : cardW) + 'px';
+    fan.style.width = (s.discardPile.length ? (s.discardPile.length - 1) * fanStep + cardW : cardW) + 'px';
 
     const takeWrap = document.getElementById('takeConfirmWrap');
     takeWrap.innerHTML = '';
     if (isMyTurn && s.phase === 'draw' && selectedDiscardIndex !== null){
       const n = s.discardPile.length - selectedDiscardIndex;
+      const me2 = s.players[myIdx];
       const btn = document.createElement('button');
       btn.className = 'act-btn';
       btn.style.marginTop = '10px';
-      btn.textContent = n === 1 ? 'Take top card' : 'Take ' + n + ' cards (must meld the deepest one)';
-      btn.addEventListener('click', () => {
-        const idx = selectedDiscardIndex;
-        selectedDiscardIndex = null;
-        performAction({ type: 'takeDiscard', actorId: myId, index: idx });
-      });
+      let feasible = true;
+      let targetCard = null;
+      if (n === 1){
+        btn.textContent = 'Take top card';
+      } else {
+        targetCard = s.discardPile[selectedDiscardIndex];
+        const taken = s.discardPile.slice(selectedDiscardIndex);
+        const poolAfter = (me2 ? me2.hand : []).concat(taken);
+        feasible = canMeldCard(targetCard, poolAfter, s.tableMelds);
+        btn.textContent = feasible ? 'Take ' + n + ' cards (must meld the deepest one)' : "Can't take that deep yet";
+      }
+      btn.disabled = !feasible;
+      if (feasible){
+        btn.addEventListener('click', () => {
+          const idx = selectedDiscardIndex;
+          selectedDiscardIndex = null;
+          performAction({ type: 'takeDiscard', actorId: myId, index: idx });
+        });
+      }
       takeWrap.appendChild(btn);
+      if (!feasible && targetCard){
+        const note = document.createElement('div');
+        note.style.cssText = 'color:var(--muted);font-size:12px;margin-top:6px;max-width:320px;';
+        note.textContent = "There's no way to meld the " + targetCard.rank + SUIT_SYMBOL[targetCard.suit] + ' with what you\u2019d be holding \u2014 pick a shallower card, or just take the top one.';
+        takeWrap.appendChild(note);
+      }
     }
 
     const tableEl = document.getElementById('tableMelds');
