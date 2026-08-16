@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wavelength</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c;
+    --ink-2: #191f29;
+    --panel: #1c232f;
+    --panel-line: #313c4c;
+    --brass: #c9a24b;
+    --brass-bright: #e8c572;
+    --teal: #4fd1c5;
+    --rose: #e2637a;
+    --paper: #ede7d9;
+    --muted: #8791a1;
+    --shadow: rgba(0,0,0,0.45);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background:
+      radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  .rig {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  /* ---------- Nameplate ---------- */
+  .nameplate {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding: 0 4px;
+  }
+
+  .nameplate h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 6vw, 38px);
+    letter-spacing: 0.06em;
+    margin: 0;
+    background: linear-gradient(180deg, var(--brass-bright), var(--brass));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .nameplate .round-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- Score rail ---------- */
+  .score-rail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 18px;
+  }
+
+  .score-rail .label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .score-rail .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--brass-bright);
+  }
+
+  .score-rail .divider {
+    width: 1px;
+    height: 26px;
+    background: var(--panel-line);
+    margin: 0 16px;
+  }
+
+  .score-rail .cell { display: flex; flex-direction: column; gap: 2px; }
+
+  /* ---------- Online play panel ---------- */
+  .online-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+  }
+
+  .online-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .online-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  #onlineStatusText {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--paper);
+    flex: 1;
+  }
+
+  button.mini-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--brass);
+    background: transparent;
+    color: var(--brass-bright);
+    cursor: pointer;
+  }
+  button.mini-btn:hover { background: rgba(201,162,75,0.12); }
+  button.mini-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  button.mini-btn.ghostish { border-color: var(--panel-line); color: var(--muted); }
+
+  #onlineJoinForm input {
+    flex: 1;
+    min-width: 100px;
+    background: var(--ink-2);
+    border: 1px solid var(--panel-line);
+    border-radius: 7px;
+    padding: 8px 12px;
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 14px;
+  }
+  #onlineJoinForm input:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+  /* ---------- Spectrum plaque ---------- */
+  .plaque {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: -18px;
+    z-index: 2;
+    box-shadow: 0 10px 24px var(--shadow);
+  }
+
+  .plaque .ends {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .plaque .end {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: clamp(15px, 4vw, 19px);
+    line-height: 1.15;
+  }
+
+  .plaque .end.left { text-align: left; color: var(--paper); }
+  .plaque .end.right { text-align: right; color: var(--paper); }
+
+  .plaque .arrow {
+    flex: 0 0 auto;
+    color: var(--brass);
+    font-size: 18px;
+    opacity: 0.8;
+  }
+
+  .clue-row {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--panel-line);
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .clue-row.show { display: flex; }
+
+  .clue-row input {
+    flex: 1;
+    background: var(--ink-2);
+    border: 1px solid var(--panel-line);
+    border-radius: 7px;
+    padding: 9px 12px;
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+
+  .clue-row input::placeholder { color: var(--muted); }
+  .clue-row input:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+  .clue-tag {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .clue-echo {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--panel-line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .clue-echo.show { display: block; }
+  .clue-echo b { color: var(--paper); font-weight: 600; }
+
+  /* ---------- Dial housing ---------- */
+  .housing {
+    position: relative;
+    background: linear-gradient(180deg, #202836, #171d27);
+    border: 1px solid var(--panel-line);
+    border-radius: 18px;
+    padding: 46px 18px 22px;
+    box-shadow: 0 20px 40px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .rivet {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--brass-bright), var(--brass) 60%, #7a5f28 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  .rivet.tl { top: 12px; left: 14px; }
+  .rivet.tr { top: 12px; right: 14px; }
+  .rivet.bl { bottom: 12px; left: 14px; }
+  .rivet.br { bottom: 12px; right: 14px; }
+
+  svg#dial {
+    width: 100%;
+    height: auto;
+    display: block;
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  .dial-instructions {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+    min-height: 18px;
+    letter-spacing: 0.01em;
+  }
+
+  .score-callout {
+    display: none;
+    text-align: center;
+    margin-top: 6px;
+  }
+  .score-callout.show { display: block; }
+  .score-callout .pts {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 34px;
+    color: var(--teal);
+  }
+  .score-callout .pts-label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+  }
+
+  button.action {
+    flex: 1;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--brass);
+    background: linear-gradient(180deg, var(--brass-bright), var(--brass));
+    color: #1c1305;
+    cursor: pointer;
+    transition: transform 0.08s ease, filter 0.15s ease;
+  }
+
+  button.action:hover { filter: brightness(1.06); }
+  button.action:active { transform: translateY(1px) scale(0.995); }
+  button.action:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  button.ghost {
+    flex: 0 0 auto;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  button.ghost:hover { color: var(--paper); border-color: var(--brass); }
+  button.ghost:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  footer {
+    text-align: center;
+    margin-top: 22px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="rig">
+
+  <div class="nameplate">
+    <h1>WAVELENGTH</h1>
+    <div class="round-tag" id="roundTag">ROUND 01</div>
+  </div>
+
+  <div class="online-panel" id="onlinePanel">
+    <div class="online-row" id="onlineOffline">
+      <span class="online-label">Play online</span>
+      <button class="mini-btn" id="hostBtn">Host a game</button>
+      <button class="mini-btn" id="joinBtn">Join a game</button>
+    </div>
+    <div class="online-row" id="onlineJoinForm" style="display:none;">
+      <input type="text" id="joinCodeInput" placeholder="Room code" autocomplete="off" maxlength="4">
+      <button class="mini-btn" id="joinConfirmBtn">Connect</button>
+      <button class="mini-btn ghostish" id="joinCancelBtn">Cancel</button>
+    </div>
+    <div class="online-row" id="onlineStatus" style="display:none;">
+      <span id="onlineStatusText"></span>
+      <button class="mini-btn ghostish" id="disconnectBtn">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="score-rail">
+    <div class="cell">
+      <span class="label">Team score</span>
+      <span class="value" id="scoreVal">0</span>
+    </div>
+    <div class="divider"></div>
+    <div class="cell">
+      <span class="label">Rounds played</span>
+      <span class="value" id="roundsVal">0</span>
+    </div>
+    <div class="divider"></div>
+    <div class="cell">
+      <span class="label">Average</span>
+      <span class="value" id="avgVal">&mdash;</span>
+    </div>
+  </div>
+
+  <div class="plaque">
+    <div class="ends">
+      <div class="end left" id="endLeft">&mdash;</div>
+      <div class="arrow">&#8596;</div>
+      <div class="end right" id="endRight">&mdash;</div>
+    </div>
+
+    <div class="clue-row" id="clueRow">
+      <span class="clue-tag">Clue</span>
+      <input type="text" id="clueInput" placeholder="Type the clue word or phrase&hellip;" autocomplete="off">
+    </div>
+
+    <div class="clue-echo" id="clueEcho"></div>
+  </div>
+
+  <div class="housing">
+    <div class="rivet tl"></div>
+    <div class="rivet tr"></div>
+    <div class="rivet bl"></div>
+    <div class="rivet br"></div>
+
+    <svg id="dial" viewBox="0 0 600 340" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <!-- outer bezel -->
+      <path id="bezel" fill="none" stroke="#0e1116" stroke-width="14" stroke-linecap="round"/>
+      <path id="bezelInner" fill="none" stroke="#2a3242" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- score zones (revealed on reveal phase) -->
+      <g id="zones" opacity="0"></g>
+
+      <!-- tick marks -->
+      <g id="ticks"></g>
+
+      <!-- target marker -->
+      <g id="targetMark" opacity="0">
+        <line id="targetLine" stroke="var(--teal)" stroke-width="3" stroke-dasharray="2 5" stroke-linecap="round"/>
+        <text id="targetLabel" fill="var(--teal)" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1" text-anchor="middle">TARGET</text>
+      </g>
+
+      <!-- base plate -->
+      <circle id="hub" r="10" fill="#0e1116" stroke="var(--panel-line)" stroke-width="1"/>
+
+      <!-- needle -->
+      <line id="needle" stroke="var(--rose)" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+      <circle id="hubCap" r="6" fill="var(--brass-bright)" stroke="#7a5f28" stroke-width="1.5"/>
+    </svg>
+
+    <div class="dial-instructions" id="instructions">Loading the gauge&hellip;</div>
+    <div class="score-callout" id="scoreCallout">
+      <div class="pts" id="ptsVal">0</div>
+      <div class="pts-label">points this round</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ghost" id="skipBtn" title="Skip this spectrum, keep the round number">Skip</button>
+    <button class="action" id="mainBtn">Start guessing &rarr;</button>
+  </div>
+
+  <footer>A hidden target, a one-word clue, and a needle you have to trust.</footer>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  // ---------------- Spectrum bank ----------------
+  const SPECTRA = [
+    ["Overrated", "Underrated"],
+    ["Bad superpower", "Good superpower"],
+    ["Practical", "Impractical"],
+    ["Cheap", "Expensive"],
+    ["Old-fashioned", "Futuristic"],
+    ["Boring job", "Exciting job"],
+    ["Common", "Rare"],
+    ["Safe", "Dangerous"],
+    ["Quiet", "Loud"],
+    ["Simple", "Complicated"],
+    ["Casual", "Formal"],
+    ["Small talk topic", "Deep conversation topic"],
+    ["Bad first date", "Great first date"],
+    ["Underwhelming vacation", "Dream vacation"],
+    ["Low-effort costume", "High-effort costume"],
+    ["Villain move", "Hero move"],
+    ["Mild inconvenience", "Major catastrophe"],
+    ["Kid movie", "Adult movie"],
+    ["Indoor activity", "Outdoor activity"],
+    ["Guilty pleasure", "Genuinely good"],
+    ["Overhyped trend", "Underappreciated trend"],
+    ["Annoying roommate habit", "Great roommate habit"],
+    ["Slow", "Fast"],
+    ["Healthy snack", "Unhealthy snack"],
+    ["Instant gratification", "Delayed gratification"],
+    ["Niche interest", "Mainstream interest"],
+    ["Introvert activity", "Extrovert activity"],
+    ["Bad gift", "Great gift"],
+    ["Amateur", "Professional"],
+    ["Silly superstition", "Reasonable belief"],
+    ["Fictional", "Realistic"],
+    ["Timeless", "Trendy"],
+    ["High maintenance", "Low maintenance"],
+    ["Underdog", "Favorite"],
+    ["Comfort food", "Fancy food"],
+    ["Chill weekend", "Wild weekend"],
+    ["Bad excuse", "Good excuse"],
+    ["Nostalgic", "Cutting-edge"],
+    ["Minor pet peeve", "Total dealbreaker"],
+    ["Should be free", "Worth paying for"],
+    ["Overpacked schedule", "Wide-open schedule"],
+    ["Beginner-friendly", "Expert-level"],
+    ["Predictable", "Unpredictable"],
+    ["Underdressed", "Overdressed"],
+    ["Small city", "Big city"],
+    ["Sentimental gift", "Practical gift"],
+    ["Quiet superpower", "Flashy superpower"],
+    ["Bad workplace perk", "Great workplace perk"],
+    ["Rainy day activity", "Sunny day activity"],
+    ["Low risk", "High risk"],
+    ["Solo activity", "Group activity"],
+    ["Short-term fix", "Long-term solution"],
+    ["Underrated Halloween candy", "Overrated Halloween candy"],
+    ["Old technology", "New technology"],
+    ["Low-stakes decision", "High-stakes decision"],
+    ["Basic", "Extra"],
+    ["Underdog story", "Predictable win"],
+    ["Awkward conversation topic", "Easy conversation topic"],
+    ["Forgettable", "Iconic"],
+    ["Should stay a secret", "Fine to overshare"],
+    ["Bad roommate", "Great roommate"],
+    ["Waste of money", "Worth every penny"],
+    ["Too spicy", "Not spicy enough"],
+    ["Overplanned trip", "Spontaneous trip"],
+    ["Modest", "Show-off"],
+    ["Should retire early", "Should work forever"],
+    ["Bad karaoke song", "Great karaoke song"],
+    ["Weekday meal", "Special-occasion meal"],
+    ["Bad app idea", "Great app idea"],
+    ["Overused excuse", "Legit excuse"],
+    ["Bad tattoo idea", "Great tattoo idea"],
+    ["Underrated city to visit", "Overrated city to visit"],
+    ["Should be taught in school", "Not worth teaching in school"],
+    ["Bad icebreaker question", "Great icebreaker question"],
+    ["Too much information", "Just enough information"],
+    ["Bad houseguest", "Great houseguest"],
+    ["Fine to just do", "Should ask first"],
+    ["Bad band name", "Great band name"],
+    ["Small purchase", "Big purchase"],
+    ["Bad nickname", "Great nickname"],
+    ["Overrated superhero", "Underrated superhero"],
+    ["Fine to leave on read", "Should text back immediately"],
+    ["Bad party game", "Great party game"],
+    ["Rookie mistake", "Expert move"],
+    ["Cluttered space", "Minimal space"],
+    ["Bad email subject line", "Great email subject line"],
+    ["Not worth celebrating", "Should be a holiday"],
+    ["Overpriced", "Fairly priced"],
+    ["Bad pickup line", "Smooth pickup line"],
+    ["Fast food", "Fine dining"],
+    ["Leave it off a resume", "Belongs on a resume"],
+    ["Bad wedding gift", "Great wedding gift"],
+    ["Bad name for a pet", "Great name for a pet"],
+    ["Should be improvised", "Should be scripted"],
+    ["Petty argument starter", "Legitimate argument starter"],
+    ["Bad souvenir", "Great souvenir"],
+    ["Overrated vacation spot", "Underrated vacation spot"],
+    ["Small win", "Huge accomplishment"],
+    ["Bad audiobook narrator trait", "Great audiobook narrator trait"],
+    ["Should be whispered", "Fine to shout"],
+    ["Boring superpower origin", "Cool superpower origin"],
+    ["Petty theft-worthy", "Not worth the risk"],
+    ["Underrated board game", "Overrated board game"],
+    ["Bad conspiracy theory", "Almost believable conspiracy theory"],
+    ["Everyday item", "Luxury item"],
+    ["Should be a group project", "Better done solo"],
+    ["Bad flex", "Impressive flex"],
+    ["Forgivable lie", "Unforgivable lie"],
+    ["Bad New Year's resolution", "Great New Year's resolution"],
+    ["Waste of a genie wish", "Great use of a genie wish"],
+    ["Bad excuse to leave a party early", "Solid excuse to leave a party early"],
+    ["Should be handwritten", "Fine to type"],
+    ["Minor rule to break", "Rule you should never break"],
+    ["Underrated childhood snack", "Overrated childhood snack"],
+    ["Bad name for a boat", "Great name for a boat"],
+    ["Should require a license", "Anyone should be allowed to do it"],
+    ["Petty grudge", "Justified grudge"],
+    ["Bad thing to say in a job interview", "Great thing to say in a job interview"],
+    ["Should be a group chat topic", "Better as a one-on-one conversation"],
+    ["Underrated Olympic sport", "Overrated Olympic sport"],
+    ["Bad reason to quit a job", "Good reason to quit a job"],
+    ["Cheap thrill", "Bucket-list experience"],
+    ["Should come with a warning label", "Perfectly safe"],
+    ["Bad first impression", "Great first impression"],
+    ["Overrated kitchen gadget", "Underrated kitchen gadget"],
+    ["Should be free at a hotel", "Fine to charge extra for"],
+    ["Bad reason to cancel plans", "Good reason to cancel plans"],
+    ["Underrated superpower for everyday life", "Overrated superpower for everyday life"],
+    ["Fine to regift", "Never regift this"],
+    ["Bad name for a rock band", "Great name for a rock band"],
+    ["Should be seasonal only", "Fine to have year-round"],
+    ["Bad reason to start a business", "Good reason to start a business"],
+    ["Overrated tourist trap", "Underrated hidden gem"],
+    ["Should stay a hobby", "Worth turning into a career"],
+    ["Bad thing to bring to a potluck", "Great thing to bring to a potluck"],
+    ["Minor inconvenience at work", "Major dealbreaker at work"],
+    ["Should be a team sport", "Better as an individual sport"],
+    ["Bad password", "Strong password"],
+    ["Underrated dessert", "Overrated dessert"],
+    ["Should require a permit", "No permit needed"],
+    ["Bad reason to move to a new city", "Good reason to move to a new city"],
+    ["Fine to do in public", "Should be done in private"],
+    ["Bad text to send an ex", "Harmless text to send an ex"],
+    ["Underrated life skill", "Overrated life skill"],
+    ["Should be on a bucket list", "Not worth the hype"],
+    ["Bad name for a startup", "Great name for a startup"],
+    ["Minor white lie", "Serious lie"],
+    ["Should be handled over text", "Should be a phone call"],
+    ["Overrated childhood toy", "Underrated childhood toy"],
+    ["Bad reason to be late", "Good reason to be late"],
+    ["Fine to eat with your hands", "Needs utensils"],
+    ["Underrated 90s trend", "Overrated 90s trend"],
+    ["Should be a two-person job", "Fine to do alone"],
+    ["Bad thing to name your child", "Great thing to name your child"],
+    ["Petty reason to unfollow someone", "Good reason to unfollow someone"],
+    ["Should be taught by a parent", "Fine to learn from the internet"],
+    ["Overrated coffee order", "Underrated coffee order"],
+    ["Bad reason to adopt a pet", "Good reason to adopt a pet"],
+    ["Should be a surprise", "Should be planned together"],
+    ["Minor fashion risk", "Major fashion risk"],
+    ["Bad thing to say at a funeral", "Comforting thing to say at a funeral"],
+    ["Underrated road trip stop", "Overrated road trip stop"],
+    ["Should be a public holiday tradition", "Fine to skip entirely"],
+    ["Bad reason to break up", "Good reason to break up"],
+    ["Fine to do on a first date", "Save it for later"],
+    ["Overrated productivity hack", "Underrated productivity hack"],
+    ["Should be memorized", "Fine to look up"],
+    ["Bad thing to say to a new parent", "Sweet thing to say to a new parent"],
+    ["Minor safety risk", "Major safety risk"],
+    ["Underrated household chore", "Overrated household chore"],
+    ["Should be a family recipe", "Fine to buy premade"],
+    ["Bad reason to skip the gym", "Good reason to skip the gym"],
+    ["Fine to negotiate", "Non-negotiable"],
+    ["Overrated luxury car feature", "Underrated luxury car feature"],
+    ["Should be handled by a professional", "Fine to DIY"],
+    ["Bad thing to forget at home", "Minor thing to forget at home"],
+    ["Underrated comfort item", "Overrated comfort item"],
+    ["Should be a surprise party", "Should just ask what they want"],
+    ["Bad reason to ghost someone", "Understandable reason to ghost someone"],
+    ["Fine to borrow without asking", "Always ask first"],
+    ["Overrated app notification", "Underrated app feature"],
+    ["Should be a lifelong habit", "Fine to phase out"],
+    ["Bad thing to bring up at dinner", "Fine dinner conversation"],
+    ["Underrated small-town charm", "Overrated small-town charm"],
+    ["Should be a weekend trip", "Better as a day trip"],
+    ["Bad reason to change careers", "Good reason to change careers"],
+    ["Fine to wear twice in a row", "Should be washed after one wear"],
+    ["Overrated fitness trend", "Underrated fitness trend"],
+    ["Should be learned young", "Fine to pick up later in life"],
+    ["Bad thing to say on a work call", "Fine to say on a work call"],
+    ["Underrated pizza topping", "Overrated pizza topping"],
+    ["Should be a group decision", "Fine as a solo call"],
+    ["Bad reason to keep a receipt", "Good reason to keep a receipt"]
+  ];
+
+  let deck = [];
+  function reshuffle(){
+    deck = SPECTRA.slice();
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+  }
+  function nextSpectrum(){
+    if (deck.length === 0) reshuffle();
+    return deck.pop();
+  }
+
+  // ---------------- Geometry ----------------
+  const CX = 300, CY = 300, R = 230, R_BEZEL = 250;
+  const svg = document.getElementById('dial');
+
+  function polar(a, r){
+    const theta = (180 - a) * Math.PI / 180;
+    return { x: CX + r * Math.cos(theta), y: CY - r * Math.sin(theta) };
+  }
+
+  function arcPath(aStart, aEnd, r){
+    const p1 = polar(aStart, r), p2 = polar(aEnd, r);
+    const large = Math.abs(aEnd - aStart) > 180 ? 1 : 0;
+    return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`;
+  }
+
+  function bandPath(aStart, aEnd, rInner, rOuter){
+    const o1 = polar(aStart, rOuter), o2 = polar(aEnd, rOuter);
+    const i2 = polar(aEnd, rInner), i1 = polar(aStart, rInner);
+    const large = Math.abs(aEnd - aStart) > 180 ? 1 : 0;
+    return `M ${o1.x} ${o1.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${o2.x} ${o2.y} L ${i2.x} ${i2.y} A ${rInner} ${rInner} 0 ${large} 0 ${i1.x} ${i1.y} Z`;
+  }
+
+  document.getElementById('bezel').setAttribute('d', arcPath(0, 180, R_BEZEL));
+  document.getElementById('bezelInner').setAttribute('d', arcPath(0, 180, R_BEZEL - 8));
+
+  // ticks + 0-100 scale numbers
+  const ticksG = document.getElementById('ticks');
+  for (let a = 0; a <= 180; a += 9){
+    const major = (a % 18 === 0);
+    const p1 = polar(a, R - (major ? 16 : 9));
+    const p2 = polar(a, R);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+    line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+    line.setAttribute('stroke', major ? '#5a6577' : '#333e4d');
+    line.setAttribute('stroke-width', major ? 2 : 1);
+    line.setAttribute('stroke-linecap', 'round');
+    ticksG.appendChild(line);
+
+    if (major){
+      const value = Math.round(a / 180 * 100);
+      const lp = polar(a, R + 24);
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.textContent = value;
+      label.setAttribute('x', lp.x);
+      label.setAttribute('y', lp.y + 4);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('font-family', 'JetBrains Mono, monospace');
+      label.setAttribute('font-size', '12');
+      label.setAttribute('fill', '#5a6577');
+      ticksG.appendChild(label);
+    }
+  }
+
+  // ---------------- Scoring zones ----------------
+  const ZONE_STEPS = [
+    { w: 3,  color: 'var(--teal)',        alpha: 0.85, pts: 4 },
+    { w: 9,  color: 'var(--teal)',        alpha: 0.55, pts: 3 },
+    { w: 18, color: 'var(--brass-bright)',alpha: 0.4,  pts: 2 },
+    { w: 30, color: 'var(--brass)',       alpha: 0.28, pts: 1 }
+  ];
+
+  function scoreFor(diff){
+    if (diff <= 3) return 4;
+    if (diff <= 9) return 3;
+    if (diff <= 18) return 2;
+    if (diff <= 30) return 1;
+    return 0;
+  }
+
+  function buildZones(target){
+    const g = document.getElementById('zones');
+    g.innerHTML = '';
+    let prev = 0;
+    ZONE_STEPS.forEach(step => {
+      const lo = Math.max(0, target - step.w);
+      const hi = Math.min(180, target + step.w);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d', bandPath(lo, hi, R - 30, R));
+      path.setAttribute('fill', step.color);
+      path.setAttribute('opacity', step.alpha);
+      g.appendChild(path);
+    });
+  }
+
+  // ---------------- State ----------------
+  let phase = 'clue';      // 'clue' -> 'guess' -> 'reveal'
+  let target = 90;
+  let guess = 90;
+  let round = 0;
+  let totalScore = 0;
+  let roundsPlayed = 0;
+
+  const needle = document.getElementById('needle');
+  const hubCap = document.getElementById('hubCap');
+  const targetMark = document.getElementById('targetMark');
+  const targetLine = document.getElementById('targetLine');
+  const targetLabel = document.getElementById('targetLabel');
+  const zonesG = document.getElementById('zones');
+  const instructions = document.getElementById('instructions');
+  const mainBtn = document.getElementById('mainBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const clueRow = document.getElementById('clueRow');
+  const clueInput = document.getElementById('clueInput');
+  const clueEcho = document.getElementById('clueEcho');
+  const scoreCallout = document.getElementById('scoreCallout');
+  const ptsVal = document.getElementById('ptsVal');
+
+  function setNeedle(a){
+    const tip = polar(a, R - 34);
+    const base = polar(a, -14);
+    needle.setAttribute('x1', base.x); needle.setAttribute('y1', base.y);
+    needle.setAttribute('x2', tip.x);  needle.setAttribute('y2', tip.y);
+    hubCap.setAttribute('cx', CX); hubCap.setAttribute('cy', CY);
+  }
+
+  function toScale(a){ return Math.round(a / 180 * 100); }
+
+  function setTargetLine(a){
+    const p1 = polar(a, R - 30);
+    const p2 = polar(a, R + 6);
+    targetLine.setAttribute('x1', p1.x); targetLine.setAttribute('y1', p1.y);
+    targetLine.setAttribute('x2', p2.x); targetLine.setAttribute('y2', p2.y);
+    const lp = polar(a, R + 34);
+    targetLabel.setAttribute('x', lp.x); targetLabel.setAttribute('y', lp.y);
+    targetLabel.textContent = 'TARGET: ' + toScale(a);
+  }
+
+  function newRound(){
+    if (role === 'guest') return;
+    round += 1;
+    const [left, right] = nextSpectrum();
+    document.getElementById('endLeft').textContent = left;
+    document.getElementById('endRight').textContent = right;
+    document.getElementById('roundTag').textContent = 'ROUND ' + String(round).padStart(2,'0');
+
+    target = Math.round(Math.random() * 180);
+    guess = 90;
+    phase = 'clue';
+
+    clueInput.value = '';
+    clueRow.classList.add('show');
+    clueEcho.classList.remove('show');
+    scoreCallout.classList.remove('show');
+    zonesG.setAttribute('opacity', 0);
+    targetMark.setAttribute('opacity', 1);
+
+    setTargetLine(target);
+    setNeedle(guess);
+    instructions.textContent = "Psychic: note the target line, then hide the screen and give your one-word clue.";
+    mainBtn.style.display = 'block';
+    mainBtn.disabled = false;
+    mainBtn.textContent = 'Start guessing \u2192';
+    skipBtn.disabled = false;
+
+    if (role === 'host') broadcastState();
+  }
+
+  function beginGuessing(){
+    phase = 'guess';
+    targetMark.setAttribute('opacity', 0);
+    clueRow.classList.remove('show');
+    if (clueInput.value.trim()){
+      clueEcho.innerHTML = 'Clue given: <b>' + clueInput.value.trim().replace(/[<>]/g,'') + '</b>';
+      clueEcho.classList.add('show');
+    }
+
+    if (role === 'host'){
+      mainBtn.style.display = 'none';
+      instructions.textContent = "Clue sent. Waiting for your teammate to lock in a guess\u2026";
+      skipBtn.disabled = true;
+      broadcastState();
+    } else {
+      updateGuessInstructions();
+      mainBtn.style.display = 'block';
+      mainBtn.disabled = false;
+      mainBtn.textContent = 'Lock guess & reveal';
+      skipBtn.disabled = true;
+    }
+  }
+
+  function updateGuessInstructions(){
+    instructions.textContent = "Team: drag or tap the dial to set the needle (currently " + toScale(guess) + "), then lock in your guess.";
+  }
+
+  function reveal(){
+    phase = 'reveal';
+    buildZones(target);
+    zonesG.setAttribute('opacity', 1);
+    targetMark.setAttribute('opacity', 1);
+
+    const diff = Math.abs(guess - target);
+    const pts = scoreFor(diff);
+    totalScore += pts;
+    roundsPlayed += 1;
+
+    document.getElementById('scoreVal').textContent = totalScore;
+    document.getElementById('roundsVal').textContent = roundsPlayed;
+    document.getElementById('avgVal').textContent = (totalScore / roundsPlayed).toFixed(1);
+
+    ptsVal.textContent = pts;
+    scoreCallout.classList.add('show');
+    instructions.textContent = "Target was " + toScale(target) + ", you guessed " + toScale(guess) + ". Off by " + toScale(diff) + ".";
+    mainBtn.style.display = 'block';
+    mainBtn.disabled = false;
+    mainBtn.textContent = 'Next round \u2192';
+    skipBtn.disabled = true;
+
+    if (role === 'host') broadcastState();
+  }
+
+  function handleMain(){
+    if (phase === 'clue'){
+      if (role === 'guest') return;
+      beginGuessing();
+    } else if (phase === 'guess'){
+      if (role === 'guest'){
+        mainBtn.disabled = true;
+        mainBtn.textContent = 'Locked \u2014 waiting\u2026';
+        instructions.textContent = "Guess locked in. Waiting on the host to reveal\u2026";
+        send({ type: 'lockGuess', angle: guess });
+      } else {
+        reveal();
+      }
+    } else {
+      if (role === 'guest') return;
+      newRound();
+    }
+  }
+
+  mainBtn.addEventListener('click', handleMain);
+  skipBtn.addEventListener('click', () => { round -= 1; newRound(); });
+
+  // ---------------- Pointer interaction on dial ----------------
+  function angleFromEvent(evt){
+    const rect = svg.getBoundingClientRect();
+    const scale = 600 / rect.width; // viewBox width / rendered width
+    const px = (evt.clientX - rect.left) * scale;
+    const py = (evt.clientY - rect.top) * scale;
+    let theta = Math.atan2(CY - py, px - CX);
+    if (theta < 0) theta = (px - CX) < 0 ? Math.PI : 0;
+    let a = 180 - theta * 180 / Math.PI;
+    return Math.max(0, Math.min(180, a));
+  }
+
+  let dragging = false;
+  function pointerDown(e){
+    if (phase !== 'guess' || role === 'host') return;
+    dragging = true;
+    guess = angleFromEvent(e);
+    setNeedle(guess);
+    updateGuessInstructions();
+  }
+  function pointerMove(e){
+    if (!dragging || phase !== 'guess' || role === 'host') return;
+    guess = angleFromEvent(e);
+    setNeedle(guess);
+    updateGuessInstructions();
+  }
+  function pointerUp(){ dragging = false; }
+
+  svg.addEventListener('pointerdown', pointerDown);
+  svg.addEventListener('pointermove', pointerMove);
+  window.addEventListener('pointerup', pointerUp);
+
+  // ---------------- Online play (PeerJS, peer-to-peer) ----------------
+  let peer = null;
+  let conn = null;
+  let role = 'local'; // 'local' | 'host' | 'guest'
+
+  const onlineOffline = document.getElementById('onlineOffline');
+  const onlineJoinForm = document.getElementById('onlineJoinForm');
+  const onlineStatus = document.getElementById('onlineStatus');
+  const onlineStatusText = document.getElementById('onlineStatusText');
+  const hostBtn = document.getElementById('hostBtn');
+  const joinBtn = document.getElementById('joinBtn');
+  const joinConfirmBtn = document.getElementById('joinConfirmBtn');
+  const joinCancelBtn = document.getElementById('joinCancelBtn');
+  const joinCodeInput = document.getElementById('joinCodeInput');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+
+  function showOnlinePane(which){
+    onlineOffline.style.display = which === 'offline' ? 'flex' : 'none';
+    onlineJoinForm.style.display = which === 'joinForm' ? 'flex' : 'none';
+    onlineStatus.style.display = which === 'status' ? 'flex' : 'none';
+  }
+
+  function randomRoomCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  function send(msg){
+    if (conn && conn.open) conn.send(msg);
+  }
+
+  function setupConnection(){
+    conn.on('data', handleData);
+    conn.on('close', () => {
+      onlineStatusText.textContent = 'Your teammate disconnected.';
+      role = 'local';
+      showOnlinePane('offline');
+      newRound();
+    });
+  }
+
+  function handleData(msg){
+    if (role === 'host' && msg.type === 'lockGuess'){
+      guess = msg.angle;
+      reveal();
+    } else if (role === 'guest' && msg.type === 'state'){
+      applyRemoteState(msg.state);
+    }
+  }
+
+  function broadcastState(){
+    if (role !== 'host') return;
+    send({
+      type: 'state',
+      state: {
+        left: document.getElementById('endLeft').textContent,
+        right: document.getElementById('endRight').textContent,
+        round, phase, totalScore, roundsPlayed,
+        clue: clueEcho.classList.contains('show') ? clueEcho.innerHTML : '',
+        guess,
+        target: phase === 'reveal' ? target : null
+      }
+    });
+  }
+
+  function applyRemoteState(state){
+    document.getElementById('endLeft').textContent = state.left;
+    document.getElementById('endRight').textContent = state.right;
+    document.getElementById('roundTag').textContent = 'ROUND ' + String(state.round).padStart(2,'0');
+    document.getElementById('scoreVal').textContent = state.totalScore;
+    document.getElementById('roundsVal').textContent = state.roundsPlayed;
+    document.getElementById('avgVal').textContent = state.roundsPlayed ? (state.totalScore / state.roundsPlayed).toFixed(1) : '\u2014';
+
+    phase = state.phase;
+    round = state.round;
+    totalScore = state.totalScore;
+    roundsPlayed = state.roundsPlayed;
+
+    targetMark.setAttribute('opacity', 0);
+    clueRow.classList.remove('show');
+    scoreCallout.classList.remove('show');
+    zonesG.setAttribute('opacity', 0);
+
+    if (phase === 'clue'){
+      guess = 90;
+      setNeedle(guess);
+      clueEcho.classList.remove('show');
+      instructions.textContent = "Waiting for the host to give the clue\u2026";
+      mainBtn.style.display = 'none';
+    } else if (phase === 'guess'){
+      guess = 90;
+      if (state.clue){ clueEcho.innerHTML = state.clue; clueEcho.classList.add('show'); }
+      setNeedle(guess);
+      updateGuessInstructions();
+      mainBtn.style.display = 'block';
+      mainBtn.disabled = false;
+      mainBtn.textContent = 'Lock guess & reveal';
+    } else if (phase === 'reveal'){
+      target = state.target;
+      guess = state.guess;
+      buildZones(target);
+      zonesG.setAttribute('opacity', 1);
+      setTargetLine(target);
+      targetMark.setAttribute('opacity', 1);
+      setNeedle(guess);
+      const diff = Math.abs(guess - target);
+      const pts = scoreFor(diff);
+      ptsVal.textContent = pts;
+      scoreCallout.classList.add('show');
+      instructions.textContent = "Target was " + toScale(target) + ", you guessed " + toScale(guess) + ". Off by " + toScale(diff) + ".";
+      mainBtn.style.display = 'none';
+    }
+  }
+
+  function enterGuestWaitingUI(){
+    skipBtn.style.display = 'none';
+    document.getElementById('endLeft').textContent = '\u2014';
+    document.getElementById('endRight').textContent = '\u2014';
+    document.getElementById('roundTag').textContent = 'ROUND \u2014';
+    clueRow.classList.remove('show');
+    clueEcho.classList.remove('show');
+    scoreCallout.classList.remove('show');
+    zonesG.setAttribute('opacity', 0);
+    targetMark.setAttribute('opacity', 0);
+    mainBtn.style.display = 'none';
+    instructions.textContent = "Connected! Waiting for the host to start the round\u2026";
+  }
+
+  hostBtn.addEventListener('click', () => {
+    const code = randomRoomCode();
+    onlineStatusText.textContent = 'Opening room\u2026';
+    showOnlinePane('status');
+    peer = new Peer('wl-' + code, { debug: 0 });
+    peer.on('open', () => {
+      onlineStatusText.textContent = 'Room code: ' + code + ' \u2014 share it with your teammate. Waiting for them to join\u2026';
+    });
+    peer.on('connection', (c) => {
+      conn = c;
+      setupConnection();
+      conn.on('open', () => {
+        role = 'host';
+        onlineStatusText.textContent = 'Connected as HOST \u00B7 room ' + code;
+        skipBtn.style.display = 'inline-block';
+        mainBtn.style.display = 'block';
+        broadcastState();
+      });
+    });
+    peer.on('error', () => {
+      showOnlinePane('offline');
+      alert("Couldn't open a room. Please try hosting again.");
+    });
+  });
+
+  joinBtn.addEventListener('click', () => {
+    showOnlinePane('joinForm');
+    joinCodeInput.value = '';
+    joinCodeInput.focus();
+  });
+
+  joinCancelBtn.addEventListener('click', () => showOnlinePane('offline'));
+
+  joinConfirmBtn.addEventListener('click', () => {
+    const code = joinCodeInput.value.trim().toUpperCase();
+    if (!code) return;
+    onlineStatusText.textContent = 'Connecting\u2026';
+    showOnlinePane('status');
+    peer = new Peer({ debug: 0 });
+    peer.on('open', () => {
+      conn = peer.connect('wl-' + code, { reliable: true });
+      setupConnection();
+      conn.on('open', () => {
+        role = 'guest';
+        onlineStatusText.textContent = 'Connected as GUESSER \u00B7 room ' + code;
+        enterGuestWaitingUI();
+      });
+    });
+    peer.on('error', () => {
+      showOnlinePane('offline');
+      alert("Couldn't connect. Double-check the room code and try again.");
+    });
+  });
+
+  disconnectBtn.addEventListener('click', () => {
+    if (conn) conn.close();
+    if (peer) peer.destroy();
+    conn = null; peer = null; role = 'local';
+    showOnlinePane('offline');
+    skipBtn.style.display = 'inline-block';
+    newRound();
+  });
+
+  // ---------------- Boot ----------------
+  reshuffle();
+  newRound();
+})();
+</script>
+
+</body>
+</html>
