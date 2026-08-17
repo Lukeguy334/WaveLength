@@ -291,6 +291,14 @@
   }
   .card-face.red { color: #b3223c; }
   .card-face .bottom { align-self: flex-end; transform: rotate(180deg); }
+  .card-face .idx {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.02;
+    gap: 1px;
+  }
+  .card-face .idx .s { font-size: 0.78em; }
   .card-face .suit-center {
     font-size: calc(var(--card-font) * 1.7);
     text-align: center;
@@ -1359,10 +1367,11 @@
 
   function cardHTML(card, extraClass){
     const red = SUIT_RED[card.suit];
+    const idx = '<span class="r">' + card.rank + '</span><span class="s">' + SUIT_SYMBOL[card.suit] + '</span>';
     return '<div class="card-face ' + (red ? 'red' : '') + ' ' + (extraClass||'') + '" data-card-id="' + card.id + '">' +
-      '<div class="top">' + card.rank + SUIT_SYMBOL[card.suit] + '</div>' +
+      '<div class="top idx">' + idx + '</div>' +
       '<div class="suit-center">' + SUIT_SYMBOL[card.suit] + '</div>' +
-      '<div class="bottom">' + card.rank + SUIT_SYMBOL[card.suit] + '</div>' +
+      '<div class="bottom idx">' + idx + '</div>' +
       '</div>';
   }
 
