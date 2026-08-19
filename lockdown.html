@@ -95,6 +95,7 @@
   .overlay-msg p { color:var(--muted); margin:0; max-width:420px; }
 
   .runner-controls { display:flex; justify-content:center; gap:12px; margin-top:14px; }
+  .controls-hint { text-align:center; font-size:12px; color:var(--muted); margin-top:12px; }
   .runner-controls button {
     width:64px; height:64px; border-radius:14px; border:1px solid var(--brass); background:var(--panel);
     color:var(--brass-bright); font-size:22px; font-family:'Space Grotesk',sans-serif; cursor:pointer; user-select:none;
@@ -213,6 +214,7 @@
     </div>
 
     <div id="runnerUI" class="hidden">
+      <div class="controls-hint">&larr;&rarr; or A/D to move &middot; &uarr;, W, or Space to jump</div>
       <div class="runner-controls">
         <button id="btnLeft">&larr;</button>
         <button id="btnJump">&uarr;</button>
@@ -311,7 +313,7 @@
   function freshRunner(spawn){
     return { x:spawn.x, y:spawn.y, vx:0, vy:0, onGround:false, facing:1, alive:true,
       invulnUntil:0, frozenUntil:0, reversedUntil:0, slowUntil:0, gravityUntil:0, onIce:false,
-      lastGroundedAt:-1, jumpBufferedAt:-1 };
+      lastGroundedAt:-1, jumpBufferedAt:-999, jumpHeldPrev:false };
   }
 
   function newMatch(){
@@ -478,16 +480,18 @@
     }
     let speed = MOVE_SPEED * (slowed?0.6:1) * (r.onIce?1:1);
     if (moveDir !== 0){ r.vx = moveDir*speed; r.facing = moveDir; }
-    else if (r.onIce){ r.vx *= 0.98; } else { r.vx = 0; }
+    else if (r.onIce){ r.vx *= 0.98; } else { r.vx *= 0.55; if (Math.abs(r.vx) < 4) r.vx = 0; }
 
-    if (input.jump) r.jumpBufferedAt = state.now;
+    const jumpPressed = input.jump && !r.jumpHeldPrev;
+    r.jumpHeldPrev = !!input.jump;
+    if (jumpPressed) r.jumpBufferedAt = state.now;
     const canCoyoteJump = r.onGround || (state.now - r.lastGroundedAt < 0.1);
-    const wantsJump = input.jump || (state.now - r.jumpBufferedAt < 0.12);
+    const wantsJump = (state.now - r.jumpBufferedAt) < 0.12;
     if (!frozen && wantsJump && canCoyoteJump){
       r.vy = gravFlip ? -JUMP_V : JUMP_V;
       r.onGround = false;
-      r.jumpBufferedAt = -1;
-      r.lastGroundedAt = -1;
+      r.jumpBufferedAt = -999;
+      r.lastGroundedAt = -999;
     }
 
     const g = gravFlip ? -GRAVITY : GRAVITY;
@@ -778,26 +782,44 @@
   // ---------------- Blocker UI ----------------
   const toolGrid = document.getElementById('toolGrid');
   const toolHint = document.getElementById('toolHint');
+  let renderedToolIds = null;
   function renderToolbar(){
-    toolGrid.innerHTML = '';
     if (!state) return;
-    state.unlockedTools.forEach(id => {
+    const idsKey = state.unlockedTools.join(',');
+    if (renderedToolIds !== idsKey){
+      renderedToolIds = idsKey;
+      toolGrid.innerHTML = '';
+      state.unlockedTools.forEach(id => {
+        const def = TOOLS[id];
+        const btn = document.createElement('button');
+        btn.dataset.toolId = id;
+        btn.className = 'tool-btn';
+        btn.innerHTML = '<span class="tname">'+def.name+'</span><span class="ttag"></span><div class="cd-overlay"></div>';
+        btn.addEventListener('click', () => {
+          if (btn.disabled) return;
+          if (def.target === 'self'){
+            doToolAction(id, null);
+          } else {
+            armedTool = (armedTool===id) ? null : id;
+            updateToolbarState();
+          }
+        });
+        toolGrid.appendChild(btn);
+      });
+    }
+    updateToolbarState();
+  }
+  function updateToolbarState(){
+    if (!state) return;
+    Array.from(toolGrid.children).forEach(btn => {
+      const id = btn.dataset.toolId;
       const def = TOOLS[id];
       const cd = state.cooldownUntil[id] || 0;
       const remaining = Math.max(0, cd - state.now);
-      const btn = document.createElement('button');
       btn.className = 'tool-btn' + (armedTool===id?' armed':'') + (remaining>0?' cooling':'');
-      btn.innerHTML = '<span class="tname">'+def.name+'</span><span class="ttag">Tier '+def.tier+(remaining>0?' \u00b7 '+remaining.toFixed(1)+'s':'')+'</span><div class="cd-overlay" style="width:'+(remaining>0?Math.min(100,(remaining/def.cooldown)*100):0)+'%"></div>';
       btn.disabled = remaining>0;
-      btn.addEventListener('click', () => {
-        if (def.target === 'self'){
-          doToolAction(id, null);
-        } else {
-          armedTool = (armedTool===id) ? null : id;
-          renderToolbar();
-        }
-      });
-      toolGrid.appendChild(btn);
+      btn.querySelector('.ttag').textContent = 'Tier '+def.tier+(remaining>0?' \u00b7 '+remaining.toFixed(1)+'s':'');
+      btn.querySelector('.cd-overlay').style.width = (remaining>0?Math.min(100,(remaining/def.cooldown)*100):0)+'%';
     });
     toolHint.textContent = armedTool ? ('Tap the arena to use ' + TOOLS[armedTool].name + '.') : 'Pick a tool, then tap the arena to use it.';
   }
@@ -822,15 +844,19 @@
   // ---------------- Tool-pick UI ----------------
   const pickUI = document.getElementById('pickUI');
   const pickGrid = document.getElementById('pickGrid');
+  let lastRenderedChoices = null;
   function renderPickUI(){
-    if (!state || state.phase !== 'toolPick'){ pickUI.classList.add('hidden'); return; }
+    if (!state || state.phase !== 'toolPick'){ pickUI.classList.add('hidden'); lastRenderedChoices = null; return; }
     if (myRole !== 'blocker'){
       pickUI.classList.add('hidden');
+      lastRenderedChoices = null;
       showOverlay('Choosing an upgrade\u2026', (mode==='local'?'Computer':'Your opponent') + ' is picking a new tool.', []);
       return;
     }
     hideOverlay();
     pickUI.classList.remove('hidden');
+    if (lastRenderedChoices === state.toolChoices) return; // already built for this pick, don't tear down mid-click
+    lastRenderedChoices = state.toolChoices;
     pickGrid.innerHTML = '';
     state.toolChoices.forEach(id => {
       const def = TOOLS[id];
@@ -864,17 +890,104 @@
 
   // ---------------- Rendering ----------------
   const ctx = canvas.getContext('2d');
+  let prevOnGroundVis = true;
+  let landSquashAt = -999;
   function drawStick(r){
+    const facing = r.facing || 1;
+    const airborne = !r.onGround;
+    if (r.onGround && !prevOnGroundVis) landSquashAt = state.now;
+    prevOnGroundVis = r.onGround;
+    const squashT = Math.max(0, 1 - (state.now - landSquashAt) / 0.16);
+    const squashY = 1 - squashT*0.22;
+    const squashX = 1 + squashT*0.18;
+
     ctx.save();
     ctx.translate(r.x, r.y);
-    ctx.strokeStyle = COLORS.teal; ctx.lineWidth = 3; ctx.lineCap='round';
-    const bob = r.onGround ? Math.sin(state.now*14)*4*(Math.abs(r.vx)>10?1:0) : 0;
-    ctx.beginPath(); ctx.arc(0,-RUNNER_H+8,8,0,Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+16); ctx.lineTo(0,-14); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+22); ctx.lineTo(-9*r.facing,-RUNNER_H+30+bob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+22); ctx.lineTo(9*r.facing,-RUNNER_H+34-bob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(-8,0+bob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(8,0-bob); ctx.stroke();
+
+    const speed01 = Math.min(1, Math.abs(r.vx) / MOVE_SPEED);
+    ctx.save();
+    ctx.globalAlpha = airborne ? Math.max(0.05, 0.22 - Math.min(0.18, Math.abs(r.vy)/4000)) : 0.24;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 11 - speed01*2, 3.4, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.scale(squashX, squashY);
+    ctx.strokeStyle = COLORS.teal;
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const feetY = 0, hipY = -15, shoulderY = -29, headY = -36, headR = 6.5;
+    let legL, legR, armL, armR;
+
+    if (!airborne){
+      const moving = Math.abs(r.vx) > 8;
+      if (moving){
+        const phase = r.x * 0.05;
+        const sw = Math.sin(phase) * 11;
+        const lift = Math.max(0, Math.cos(phase)) * 3;
+        const liftR = Math.max(0, -Math.cos(phase)) * 3;
+        legL = { x: -sw, y: feetY - lift };
+        legR = { x: sw, y: feetY - liftR };
+        armL = { x: sw*0.6, y: shoulderY + 10 };
+        armR = { x: -sw*0.6, y: shoulderY + 10 };
+      } else {
+        const sway = Math.sin(state.now * 1.6) * 1.2;
+        legL = { x: -3.5, y: feetY };
+        legR = { x: 3.5, y: feetY };
+        armL = { x: 3 + sway, y: shoulderY + 11 };
+        armR = { x: -3 - sway, y: shoulderY + 11 };
+      }
+    } else if (r.vy < -80){
+      legL = { x: -5*facing, y: hipY + 13 };
+      legR = { x: 4*facing, y: hipY + 16 };
+      armL = { x: -9*facing, y: shoulderY + 6 };
+      armR = { x: 10*facing, y: shoulderY + 13 };
+    } else if (r.vy > 80){
+      legL = { x: -8*facing, y: feetY - 1 };
+      legR = { x: 9*facing, y: feetY + 2 };
+      armL = { x: -10*facing, y: shoulderY + 12 };
+      armR = { x: 7*facing, y: shoulderY + 9 };
+    } else {
+      legL = { x: -5, y: feetY - 2 };
+      legR = { x: 5, y: feetY - 2 };
+      armL = { x: -6, y: shoulderY + 11 };
+      armR = { x: 6, y: shoulderY + 11 };
+    }
+
+    [legL, legR].forEach(leg => {
+      const kneeX = leg.x * 0.5;
+      const kneeY = hipY + (leg.y - hipY) * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(0, hipY);
+      ctx.lineTo(kneeX, kneeY);
+      ctx.lineTo(leg.x, leg.y);
+      ctx.stroke();
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(0, hipY);
+    ctx.lineTo(0, shoulderY);
+    ctx.stroke();
+
+    [armL, armR].forEach(arm => {
+      const elbowX = arm.x * 0.5;
+      const elbowY = shoulderY + (arm.y - shoulderY) * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, shoulderY);
+      ctx.lineTo(elbowX, elbowY);
+      ctx.lineTo(arm.x, arm.y);
+      ctx.stroke();
+    });
+
+    ctx.beginPath();
+    ctx.arc(0, headY, headR, 0, Math.PI*2);
+    ctx.fillStyle = COLORS.ink;
+    ctx.fill();
+    ctx.stroke();
+
     ctx.restore();
   }
   function render(){
