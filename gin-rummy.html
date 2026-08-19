@@ -314,11 +314,9 @@
     box-shadow: 0 3px 6px rgba(0,0,0,0.4);
   }
 
-  .stock-pile { position: relative; cursor: pointer; }
+  .stock-pile { cursor: pointer; }
   .stock-pile .stock-count {
-    position: absolute;
-    bottom: -20px;
-    left: 0; right: 0;
+    margin-top: 8px;
     text-align: center;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
@@ -1226,6 +1224,7 @@
     authState = newMatchState(hostLobbyPlayers.map(p => ({ id: p.id, name: p.name })), hostMatchTarget);
     dealHand(authState);
     Object.keys(hostConns).forEach(pid => { const c = hostConns[pid]; if (c.open) c.send({ type: 'start' }); });
+    broadcastAll();
     enterGame();
   });
 
@@ -1259,12 +1258,18 @@
         } else if (msg.type === 'lobby'){
           renderJoinLobby(msg.players);
         } else if (msg.type === 'start'){
-          enterGame();
+          if (!screens.game.classList.contains('active')) enterGame();
         } else if (msg.type === 'state'){
           viewState = msg.state;
-          if (screens.game.classList.contains('active')){
+          if (!screens.game.classList.contains('active')){
+            enterGame();
+          } else {
             renderGame();
-            if (viewState.phase === 'handEnd' || viewState.phase === 'matchOver') showHandEndModal();
+          }
+          if (viewState.phase === 'handEnd' || viewState.phase === 'matchOver'){
+            showHandEndModal();
+          } else {
+            document.getElementById('modalRoot').innerHTML = '';
           }
         }
       });
