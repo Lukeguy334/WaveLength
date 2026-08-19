@@ -416,11 +416,19 @@
     border-top: 1px solid var(--felt-line);
     margin-top: 6px;
   }
-  .hand-row .card-face { cursor: pointer; transition: transform 0.1s ease; }
+  .hand-row .card-face { cursor: pointer; transition: transform 0.1s ease; touch-action: none; }
   .hand-row .card-face.selected {
     transform: translateY(-10px);
     box-shadow: 0 0 0 3px var(--teal), 0 5px 10px rgba(0,0,0,0.5);
   }
+  .hand-row .card-face.just-drawn {
+    animation: drawPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes drawPulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--brass-bright), 0 6px 14px rgba(232,197,114,0.45); }
+    50% { box-shadow: 0 0 0 5px var(--brass-bright), 0 9px 18px rgba(232,197,114,0.7); }
+  }
+  .hand-row .card-face.dragging { cursor: grabbing; }
 
   .action-row {
     display: flex;
@@ -1087,6 +1095,46 @@
   let selectedDiscardIndex = null;
   let playOffArmedCardId = null;
   let grabArmed = false;
+  let handOrder = [];
+  let lastHandNumForOrder = null;
+  let lastHandIdsSeen = null;
+  let highlightDrawIds = new Set();
+  let highlightTimer = null;
+  let dragState = null;
+
+  function reconcileHandOrder(hand, handNum){
+    if (handNum !== lastHandNumForOrder){
+      handOrder = hand.slice()
+        .sort((a,b) => (a.suit.localeCompare(b.suit) || (RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank))))
+        .map(c => c.id);
+      lastHandNumForOrder = handNum;
+      return;
+    }
+    const idSet = {};
+    hand.forEach(c => { idSet[c.id] = true; });
+    handOrder = handOrder.filter(id => idSet[id]);
+    hand.forEach(c => { if (handOrder.indexOf(c.id) === -1) handOrder.push(c.id); });
+  }
+
+  function updateDrawHighlight(hand, handNum){
+    const idSet = {};
+    hand.forEach(c => { idSet[c.id] = true; });
+    if (handNum !== lastHandNumForOrder || lastHandIdsSeen === null){
+      lastHandIdsSeen = idSet;
+      return;
+    }
+    const newIds = hand.filter(c => !lastHandIdsSeen[c.id]).map(c => c.id);
+    const grew = Object.keys(idSet).length > Object.keys(lastHandIdsSeen).length;
+    if (grew && newIds.length){
+      highlightDrawIds = new Set(newIds);
+      if (highlightTimer) clearTimeout(highlightTimer);
+      highlightTimer = setTimeout(() => { highlightDrawIds = new Set(); highlightTimer = null; renderGame(); }, 3000);
+    } else if (!grew){
+      if (highlightDrawIds.size){ highlightDrawIds = new Set(); if (highlightTimer){ clearTimeout(highlightTimer); highlightTimer = null; } }
+    }
+    lastHandIdsSeen = idSet;
+  }
+
 
   function uid(){ return 'p' + Math.random().toString(36).slice(2, 9); }
 
@@ -1424,17 +1472,19 @@
     if (s.grabAvailable){
       const card = s.grabAvailable.card;
       const anyMeldWorks = s.tableMelds.some(m => canExtendMeld(m, card));
-      const div = document.createElement('div');
-      div.className = 'grab-banner';
-      div.innerHTML = '<span>Open card: ' + card.rank + SUIT_SYMBOL[card.suit] + ' &mdash; anyone can grab it to extend a meld before the next draw.</span>';
       if (anyMeldWorks){
+        const div = document.createElement('div');
+        div.className = 'grab-banner';
+        div.innerHTML = '<span>Open card: ' + card.rank + SUIT_SYMBOL[card.suit] + ' &mdash; anyone can grab it to extend a meld before the next draw.</span>';
         const btn = document.createElement('button');
         btn.className = 'act-btn';
         btn.textContent = grabArmed ? 'Tap a meld below\u2026' : 'Grab it';
         btn.addEventListener('click', () => { grabArmed = true; renderGame(); });
         div.appendChild(btn);
+        grabWrap.appendChild(div);
+      } else {
+        grabArmed = false;
       }
-      grabWrap.appendChild(div);
     } else {
       grabArmed = false;
     }
@@ -1554,16 +1604,81 @@
     const handEl = document.getElementById('handRow');
     handEl.innerHTML = '';
     if (me){
-      me.hand.slice().sort((a,b) => (a.suit.localeCompare(b.suit) || (RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank)))).forEach(card => {
+      reconcileHandOrder(me.hand, s.handNum);
+      updateDrawHighlight(me.hand, s.handNum);
+      const byId = {};
+      me.hand.forEach(c => { byId[c.id] = c; });
+      const orderedHand = handOrder.map(id => byId[id]).filter(Boolean);
+
+      orderedHand.forEach(card => {
         const wrap = document.createElement('div');
-        wrap.innerHTML = cardHTML(card, selectedHandIds.has(card.id) ? 'selected' : '');
+        const classes = [];
+        if (selectedHandIds.has(card.id)) classes.push('selected');
+        if (highlightDrawIds.has(card.id)) classes.push('just-drawn');
+        wrap.innerHTML = cardHTML(card, classes.join(' '));
         const cardEl = wrap.firstElementChild;
-        cardEl.addEventListener('click', () => {
-          if (!(isMyTurn && s.phase === 'act')) return;
-          if (selectedHandIds.has(card.id)) selectedHandIds.delete(card.id);
-          else selectedHandIds.add(card.id);
+
+        cardEl.addEventListener('pointerdown', (e) => {
+          dragState = { cardId: card.id, startX: e.clientX, startY: e.clientY, moved: false, el: cardEl };
+          try { cardEl.setPointerCapture(e.pointerId); } catch(err){}
+          cardEl.style.transition = 'none';
+        });
+        cardEl.addEventListener('pointermove', (e) => {
+          if (!dragState || dragState.el !== cardEl) return;
+          const dx = e.clientX - dragState.startX;
+          const dy = e.clientY - dragState.startY;
+          if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dragState.moved = true;
+          if (dragState.moved){
+            cardEl.classList.add('dragging');
+            cardEl.style.zIndex = '80';
+            cardEl.style.transform = 'translate(' + dx + 'px,' + (dy - 12) + 'px) scale(1.06)';
+          }
+        });
+        const finishDrag = (e) => {
+          if (!dragState || dragState.el !== cardEl) return;
+          const wasMoved = dragState.moved;
+          const draggedId = dragState.cardId;
+          cardEl.style.transition = '';
+          cardEl.style.transform = '';
+          cardEl.style.zIndex = '';
+          cardEl.classList.remove('dragging');
+          dragState = null;
+
+          if (!wasMoved){
+            if (isMyTurn && s.phase === 'act'){
+              if (selectedHandIds.has(draggedId)) selectedHandIds.delete(draggedId);
+              else selectedHandIds.add(draggedId);
+            }
+            renderGame();
+            return;
+          }
+
+          const siblings = Array.from(handEl.children).filter(el => el !== cardEl);
+          let insertBeforeId = null;
+          for (const sib of siblings){
+            const r = sib.getBoundingClientRect();
+            const mid = r.left + r.width / 2;
+            if (e.clientX < mid){ insertBeforeId = sib.getAttribute('data-card-id'); break; }
+          }
+          const fromIdx = handOrder.indexOf(draggedId);
+          if (fromIdx !== -1) handOrder.splice(fromIdx, 1);
+          if (insertBeforeId){
+            const toIdx = handOrder.indexOf(insertBeforeId);
+            handOrder.splice(toIdx, 0, draggedId);
+          } else {
+            handOrder.push(draggedId);
+          }
+          renderGame();
+        };
+        cardEl.addEventListener('pointerup', finishDrag);
+        cardEl.addEventListener('pointercancel', () => {
+          if (!dragState || dragState.el !== cardEl) return;
+          cardEl.style.transition = ''; cardEl.style.transform = ''; cardEl.style.zIndex = '';
+          cardEl.classList.remove('dragging');
+          dragState = null;
           renderGame();
         });
+
         handEl.appendChild(cardEl);
       });
     }
@@ -1588,6 +1703,7 @@
       playOffBtn.disabled = selectedHandIds.size !== 1;
       playOffBtn.addEventListener('click', () => {
         playOffArmedCardId = Array.from(selectedHandIds)[0];
+        selectedHandIds.clear();
         renderGame();
       });
       actionRow.appendChild(playOffBtn);
