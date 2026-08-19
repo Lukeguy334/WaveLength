@@ -664,12 +664,16 @@
     document.getElementById('hostWaitPanel').classList.remove('hidden');
 
     peer = new Peer('lockdown-'+hostRoomCode, { debug:0 });
-    peer.on('open', () => { mode='host'; });
+    let hostOpenTimeout = setTimeout(() => {
+      document.getElementById('hostWaitText').textContent = "Having trouble opening the room. Check your connection and try again.";
+    }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(hostOpenTimeout); });
     peer.on('connection', (c) => {
       if (conn){ c.on('open', ()=>c.close()); return; }
       conn = c;
       conn.on('data', (msg) => handleGuestMessage(msg));
       conn.on('open', () => {
+        clearTimeout(hostOpenTimeout);
         conn.send({ type:'assign', role: role==='runner'?'blocker':'runner' });
         state = newMatch();
         aiNextAct = null;
@@ -678,7 +682,7 @@
       });
       conn.on('close', () => { document.getElementById('hostWaitText').textContent = 'Your teammate disconnected.'; });
     });
-    peer.on('error', () => alert("Couldn't open a room. Try again."));
+    peer.on('error', () => { clearTimeout(hostOpenTimeout); alert("Couldn't open a room. Try again."); });
   });
   function handleGuestMessage(msg){
     if (msg.type === 'input'){ inputFlags = msg.flags; }
@@ -698,23 +702,48 @@
   }
 
   // ---------------- JOIN ----------------
+  let joinConnectTimeout = null;
   document.getElementById('joinConnect').addEventListener('click', () => {
     const name = document.getElementById('joinName').value.trim() || 'Player';
     const code = document.getElementById('joinCode').value.trim().toUpperCase();
-    const errEl = document.getElementById('joinError'); errEl.textContent='';
-    if (!code){ errEl.textContent='Enter a room code.'; return; }
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color = 'var(--muted)';
+    errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
     myName = name; myId = uid();
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return;
+      settled = true;
+      clearTimeout(joinConnectTimeout);
+      errEl.style.color = 'var(--rose)';
+      errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try { peer.destroy(); } catch(e){} }
+    }
+    joinConnectTimeout = setTimeout(() => {
+      fail("Couldn't reach that room. Double-check the code and that your teammate's room is still open, then try again.");
+    }, 10000);
     peer = new Peer({ debug:0 });
     peer.on('open', () => {
       conn = peer.connect('lockdown-'+code, { reliable:true });
-      conn.on('open', () => {});
+      conn.on('open', () => {
+        settled = true;
+        clearTimeout(joinConnectTimeout);
+        errEl.textContent = '';
+        btn.disabled = false;
+      });
       conn.on('data', (msg) => {
         if (msg.type === 'assign'){ myRole = msg.role; mode='guest'; }
         else if (msg.type === 'state'){ state = msg.state; if (!screens.game.classList.contains('active')) enterGame(); else renderFrame(); }
       });
-      conn.on('error', () => { errEl.textContent="Couldn't connect. Check the code."; });
+      conn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      conn.on('close', () => fail('Connection closed before the game could start.'));
     });
-    peer.on('error', () => { errEl.textContent="Couldn't connect. Check the code."; });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
   });
 
   function broadcastState(){
