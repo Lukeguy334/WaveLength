@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lockdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c;
+    --ink-2: #191f29;
+    --panel: #1c232f;
+    --panel-line: #313c4c;
+    --brass: #c9a24b;
+    --brass-bright: #e8c572;
+    --teal: #4fd1c5;
+    --rose: #e2637a;
+    --paper: #ede7d9;
+    --muted: #8791a1;
+    --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%);
+    color: var(--paper); font-family: 'Inter', sans-serif;
+  }
+  body { padding: 20px 14px 50px; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .topbar { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  h1 {
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px);
+    letter-spacing:0.03em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card {
+    background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px;
+    padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit;
+  }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input {
+    width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px;
+    padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px;
+  }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn {
+    padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2);
+    color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer;
+  }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn {
+    margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px;
+    padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer;
+  }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn {
+    margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px;
+    border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer;
+  }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  /* ---------- Game screen ---------- */
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+  .hud { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; align-items:center; }
+  .hud-chip {
+    display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:9px; padding:8px 12px; font-size:13px;
+  }
+  .hud-chip .num { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--brass-bright); }
+  .lives-row { display:flex; gap:3px; }
+  .life-dot { width:12px; height:12px; border-radius:50%; background:var(--rose); }
+  .life-dot.lost { background:var(--panel-line); }
+
+  .canvas-wrap { position:relative; border:1px solid var(--panel-line); border-radius:14px; overflow:hidden; background:#0b0f14; box-shadow:0 14px 28px var(--shadow); }
+  canvas#game { display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+
+  .overlay-msg {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;
+    background:rgba(10,12,16,0.72); text-align:center; padding:20px; gap:10px;
+  }
+  .overlay-msg h2 { font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); margin:0; font-size:clamp(22px,5vw,30px); }
+  .overlay-msg p { color:var(--muted); margin:0; max-width:420px; }
+
+  .runner-controls { display:flex; justify-content:center; gap:12px; margin-top:14px; }
+  .runner-controls button {
+    width:64px; height:64px; border-radius:14px; border:1px solid var(--brass); background:var(--panel);
+    color:var(--brass-bright); font-size:22px; font-family:'Space Grotesk',sans-serif; cursor:pointer; user-select:none;
+  }
+  .runner-controls button:active { background:rgba(201,162,75,0.2); }
+
+  .tool-bar { margin-top:14px; }
+  .tool-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin-top:8px; }
+  .tool-btn {
+    position:relative; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid var(--panel-line);
+    background:var(--ink-2); color:var(--paper); cursor:pointer; font-family:'Inter',sans-serif; overflow:hidden;
+  }
+  .tool-btn .tname { font-weight:600; font-size:13px; display:block; }
+  .tool-btn .ttag { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .tool-btn.armed { border-color:var(--teal); box-shadow:0 0 0 2px rgba(79,209,197,0.3); }
+  .tool-btn.cooling { opacity:0.5; cursor:not-allowed; }
+  .tool-btn .cd-overlay {
+    position:absolute; left:0; bottom:0; height:3px; background:var(--rose); width:0%;
+  }
+  .tool-hint { font-size:12px; color:var(--muted); margin-top:8px; min-height:16px; }
+
+  .pick-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px; }
+  .pick-card {
+    background:var(--ink-2); border:1px solid var(--panel-line); border-radius:12px; padding:16px; text-align:left;
+    cursor:pointer; color:inherit; font-family:inherit;
+  }
+  .pick-card:hover { border-color:var(--brass); }
+  .pick-card .tier { font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--brass-bright); }
+  .pick-card h4 { font-family:'Space Grotesk',sans-serif; margin:6px 0 6px; font-size:15px; }
+  .pick-card p { margin:0; font-size:12px; color:var(--muted); line-height:1.5; }
+
+  .a11y-toggle { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); }
+  .a11y-toggle input { width:16px; height:16px; accent-color:var(--brass); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="topbar">
+    <h1>Lockdown</h1>
+  </div>
+
+  <!-- ============ LOBBY ============ -->
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0;color:var(--muted);font-size:14px;">One player runs for the door. The other builds a gauntlet to stop them.</p>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickVsComputer"><h3>Play vs Computer</h3><p>You're the Runner. A simple AI Blocker throws hazards in your way.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room for one other player. Pick your role, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it to take the other role.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETUP: VS COMPUTER ============ -->
+  <div id="setupVsComputer" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play vs Computer</h3>
+      <p style="color:var(--muted);font-size:13px;">You play the Runner. Reach the door on all 10 levels with lives to spare.</p>
+      <button class="primary-btn" id="vscStart">Start running &rarr;</button>
+      <button class="secondary-btn" id="vscBack">Back</button>
+    </div>
+  </div>
+
+  <!-- ============ SETUP: HOST ============ -->
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Your role</label>
+      <div class="choice-row" id="hostRoleChoice">
+        <button class="choice-btn active" data-val="runner">Runner (escape)</button>
+        <button class="choice-btn" data-val="blocker">Blocker (stop them)</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for your teammate to join&hellip;</p>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ============ SETUP: JOIN ============ -->
+  <div id="setupJoin" class="hidden">
+    <div class="panel" id="joinFormPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="gameScreen">
+    <div class="hud">
+      <div class="hud-chip">Level <span class="num" id="hudLevel">1</span>/10</div>
+      <div class="hud-chip">Lives <span class="lives-row" id="hudLives"></span></div>
+      <div class="hud-chip" id="hudRole">Runner</div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="game" width="960" height="540"></canvas>
+      <div class="overlay-msg hidden" id="overlay">
+        <h2 id="overlayTitle"></h2>
+        <p id="overlayText"></p>
+        <div id="overlayActions"></div>
+      </div>
+    </div>
+
+    <div id="runnerUI" class="hidden">
+      <div class="runner-controls">
+        <button id="btnLeft">&larr;</button>
+        <button id="btnJump">&uarr;</button>
+        <button id="btnRight">&rarr;</button>
+      </div>
+    </div>
+
+    <div id="blockerUI" class="hidden tool-bar">
+      <div class="tool-hint" id="toolHint">Pick a tool, then tap the arena to use it.</div>
+      <div class="tool-grid" id="toolGrid"></div>
+    </div>
+
+    <div id="pickUI" class="hidden panel" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Choose your next upgrade</h3>
+      <div class="pick-grid" id="pickGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="a11y-toggle"><input type="checkbox" id="largeToggle"> Larger UI text</label>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+
+  // =====================================================================
+  // Constants
+  // =====================================================================
+  const CW = 960, CH = 540;
+  const GRAVITY = 1800, MOVE_SPEED = 260, JUMP_V = -650;
+  const RUNNER_W = 22, RUNNER_H = 42;
+  const TICK = 1/60;
+
+  const COLORS = { teal:'#4fd1c5', rose:'#e2637a', brass:'#c9a24b', brassBright:'#e8c572', paper:'#ede7d9', panel:'#1c232f', panelLine:'#313c4c', ink:'#0b0f14' };
+
+  // =====================================================================
+  // Level data (10 hand-built single-screen layouts)
+  // =====================================================================
+  const LEVELS = [
+    { platforms:[{x:0,y:500,w:350,h:40},{x:430,y:500,w:530,h:40}], door:{x:900,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:250,h:40},{x:330,y:440,w:100,h:20},{x:510,y:500,w:450,h:40}], door:{x:900,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:200,h:40},{x:260,y:460,w:100,h:20},{x:420,y:410,w:100,h:20},{x:580,y:460,w:100,h:20},{x:740,y:500,w:220,h:40}], door:{x:900,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:220,h:40},{x:340,y:430,w:90,h:20},{x:520,y:380,w:90,h:20},{x:700,y:500,w:260,h:40}], door:{x:900,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:180,h:40},{x:280,y:450,w:80,h:20},{x:440,y:400,w:80,h:20},{x:600,y:450,w:80,h:20},{x:760,y:500,w:200,h:40}], door:{x:900,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:150,h:40},{x:250,y:450,w:75,h:20},{x:405,y:400,w:75,h:20},{x:560,y:450,w:75,h:20},{x:715,y:500,w:170,h:40}], door:{x:780,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:140,h:40},{x:240,y:450,w:75,h:20},{x:395,y:400,w:75,h:20},{x:550,y:450,w:75,h:20},{x:705,y:500,w:160,h:40}], door:{x:765,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:130,h:40},{x:230,y:450,w:80,h:20},{x:390,y:400,w:80,h:20},{x:550,y:450,w:80,h:20},{x:710,y:500,w:150,h:40}], door:{x:765,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:130,h:40},{x:230,y:450,w:80,h:20},{x:390,y:400,w:80,h:20},{x:550,y:450,w:80,h:20},{x:710,y:500,w:150,h:40}], door:{x:765,y:430,w:40,h:70}, spawn:{x:40,y:455} },
+    { platforms:[{x:0,y:500,w:130,h:40},{x:230,y:450,w:80,h:20},{x:390,y:400,w:80,h:20},{x:550,y:450,w:80,h:20},{x:710,y:500,w:150,h:40}], door:{x:765,y:430,w:40,h:70}, spawn:{x:40,y:455} }
+  ];
+
+  // =====================================================================
+  // Tool pool
+  // =====================================================================
+  const TOOLS = {
+    spike_trap:    { name:'Spike Trap', tier:1, cooldown:3, target:'snap', desc:'Instant-kill spikes on a platform. Tap a ledge.' },
+    ice_patch:     { name:'Ice Patch', tier:1, cooldown:3, target:'snap', desc:'Makes a ledge slippery for the rest of the level.' },
+    gust:          { name:'Wind Gust', tier:1, cooldown:3, target:'free', desc:'Shoves the Runner back if they\u2019re near your tap.' },
+    collapse_trigger:{ name:'Collapsing Floor', tier:2, cooldown:5, target:'snap', desc:'That ledge breaks the moment they land on it.' },
+    saw_blade:     { name:'Saw Blade', tier:2, cooldown:5, target:'free', desc:'A patrolling blade. Touch it, lose a life.' },
+    freeze_ray:    { name:'Freeze Ray', tier:2, cooldown:5, target:'self', desc:'Freezes the Runner in place for 1.5s.' },
+    reverse_controls:{ name:'Reverse Controls', tier:2, cooldown:6, target:'self', desc:'Flips their left/right for 3s.' },
+    meteor_drop:   { name:'Meteor Drop', tier:2, cooldown:5, target:'free', desc:'A rock falls from the sky where you tap.' },
+    slow_time:     { name:'Tar Pit', tier:3, cooldown:7, target:'self', desc:'Slows the Runner by 40% for 4s.' },
+    wall_slam:     { name:'Wall Slam', tier:3, cooldown:7, target:'free', desc:'A wall drops floor-to-ceiling for 4s.' },
+    trapdoor:      { name:'Trapdoor', tier:3, cooldown:7, target:'snap', desc:'That ledge opens up beneath them for 3s.' },
+    gravity_flip:  { name:'Gravity Flip', tier:3, cooldown:8, target:'self', desc:'Flips their gravity for 3s.' },
+    darkness:      { name:'Blackout', tier:4, cooldown:10, target:'self', desc:'Blinds the Runner\u2019s view for 5s.' },
+    homing_saw:    { name:'Homing Saw', tier:4, cooldown:10, target:'free', desc:'A saw that slowly drifts toward the Runner.' },
+    rewind_runner: { name:'Rewind', tier:4, cooldown:10, target:'self', desc:'Snaps the Runner back to where they were ~2.5s ago.' }
+  };
+  const TOOL_IDS = Object.keys(TOOLS);
+
+  function weightedToolChoices(level, excludeIds){
+    const pool = TOOL_IDS.filter(id => excludeIds.indexOf(id) === -1);
+    const tierBias = level <= 3 ? [3,2,1,0] : level <= 6 ? [1,3,2,1] : level <= 8 ? [0,2,3,2] : [0,1,2,3];
+    const weighted = [];
+    pool.forEach(id => {
+      const w = tierBias[TOOLS[id].tier - 1] + 1;
+      for (let i=0;i<w;i++) weighted.push(id);
+    });
+    const picks = [];
+    const used = {};
+    while (picks.length < 3 && picks.length < pool.length){
+      const cand = weighted[Math.floor(Math.random()*weighted.length)];
+      if (!used[cand]){ used[cand]=true; picks.push(cand); }
+    }
+    return picks;
+  }
+
+  // =====================================================================
+  // Simulation
+  // =====================================================================
+  function freshRunner(spawn){
+    return { x:spawn.x, y:spawn.y, vx:0, vy:0, onGround:false, facing:1, alive:true,
+      invulnUntil:0, frozenUntil:0, reversedUntil:0, slowUntil:0, gravityUntil:0, onIce:false,
+      lastGroundedAt:-1, jumpBufferedAt:-1 };
+  }
+
+  function newMatch(){
+    const level = LEVELS[0];
+    return {
+      phase:'toolPick', levelIndex:0, lives:5,
+      runner: freshRunner(level.spawn),
+      hazards: [],
+      unlockedTools: [],
+      cooldownUntil: {},
+      toolChoices: weightedToolChoices(1, []),
+      history: [],
+      lastDeath:'',
+      winner:null,
+      now:0
+    };
+  }
+
+  function currentLevel(state){ return LEVELS[state.levelIndex]; }
+
+  function platformAt(level, x){
+    for (const p of level.platforms){ if (x >= p.x && x <= p.x + p.w) return p; }
+    return null;
+  }
+
+  function rectsOverlap(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+
+  function runnerRect(r){ return { x:r.x - RUNNER_W/2, y:r.y - RUNNER_H, w:RUNNER_W, h:RUNNER_H }; }
+
+  function killRunner(state, reason){
+    if (state.runner.invulnUntil > state.now) return;
+    state.lives -= 1;
+    state.lastDeath = reason;
+    if (state.lives <= 0){
+      state.phase = 'gameOver'; state.winner = 'blocker';
+      return;
+    }
+    const lvl = currentLevel(state);
+    state.runner = freshRunner(lvl.spawn);
+    state.runner.invulnUntil = state.now + 1.2;
+  }
+
+  function advanceLevel(state){
+    state.levelIndex += 1;
+    if (state.levelIndex >= LEVELS.length){
+      state.phase = 'victory'; state.winner = 'runner';
+      return;
+    }
+    state.hazards = [];
+    state.runner = freshRunner(currentLevel(state).spawn);
+    state.runner.invulnUntil = state.now + 1;
+    state.toolChoices = weightedToolChoices(state.levelIndex+1, state.unlockedTools);
+    state.phase = 'toolPick';
+  }
+
+  function pickTool(state, toolId){
+    if (state.phase !== 'toolPick') return;
+    if (state.toolChoices.indexOf(toolId) === -1) return;
+    state.unlockedTools.push(toolId);
+    state.phase = 'playing';
+  }
+
+  function activateTool(state, toolId, target){
+    if (state.unlockedTools.indexOf(toolId) === -1) return false;
+    if (state.phase !== 'playing') return false;
+    const cd = state.cooldownUntil[toolId] || 0;
+    if (cd > state.now) return false;
+    const def = TOOLS[toolId];
+    const lvl = currentLevel(state);
+    let placed = true;
+
+    if (def.target === 'snap'){
+      const plat = platformAt(lvl, target.x);
+      if (!plat) return false;
+      const hx = Math.max(plat.x+8, Math.min(plat.x+plat.w-8, target.x));
+      if (toolId === 'spike_trap'){
+        state.hazards.push({ type:'spike', x:hx, y:plat.y, id:rid() });
+      } else if (toolId === 'ice_patch'){
+        state.hazards.push({ type:'ice', x:plat.x, y:plat.y, w:plat.w, id:rid() });
+      } else if (toolId === 'collapse_trigger'){
+        state.hazards.push({ type:'collapse', platX:plat.x, platY:plat.y, platW:plat.w, platH:plat.h, triggered:false, breakAt:null, id:rid() });
+      } else if (toolId === 'trapdoor'){
+        state.hazards.push({ type:'trapdoor', platX:plat.x, platY:plat.y, platW:plat.w, platH:plat.h, openAt: state.now+0.5, closeAt:null, open:false, id:rid() });
+      }
+    } else if (def.target === 'free'){
+      if (toolId === 'gust'){
+        const rr = runnerRect(state.runner);
+        const rcx = rr.x + rr.w/2;
+        if (Math.abs(rcx - target.x) < 90){
+          state.runner.vx += (rcx < target.x ? -1 : 1) * 420;
+        }
+      } else if (toolId === 'saw_blade'){
+        state.hazards.push({ type:'saw', cx:target.x, cy:target.y, x:target.x, range:70, dir:1, speed:110, id:rid() });
+      } else if (toolId === 'meteor_drop'){
+        state.hazards.push({ type:'meteor', x:target.x, y:0, vy:0, spawnedAt:state.now, id:rid() });
+      } else if (toolId === 'wall_slam'){
+        state.hazards.push({ type:'wall', x:target.x, expiresAt: state.now+4, telegraphUntil: state.now+0.5, id:rid() });
+      } else if (toolId === 'homing_saw'){
+        state.hazards.push({ type:'homingsaw', x:target.x, y:Math.min(460,target.y), id:rid() });
+      } else { placed = false; }
+    } else if (def.target === 'self'){
+      if (toolId === 'freeze_ray'){ state.runner.frozenUntil = state.now + 1.5; }
+      else if (toolId === 'reverse_controls'){ state.runner.reversedUntil = state.now + 3; }
+      else if (toolId === 'slow_time'){ state.runner.slowUntil = state.now + 4; }
+      else if (toolId === 'gravity_flip'){ state.runner.gravityUntil = state.now + 3; }
+      else if (toolId === 'darkness'){ state.runner.darknessUntil = state.now + 5; }
+      else if (toolId === 'rewind_runner'){
+        const targetT = state.now - 2.5;
+        let best = null;
+        for (const h of state.history){ if (h.t <= targetT) best = h; }
+        if (best){ state.runner.x = best.x; state.runner.y = best.y; state.runner.vx=0; state.runner.vy=0; state.runner.invulnUntil = state.now+0.6; }
+      }
+    }
+
+    if (placed) state.cooldownUntil[toolId] = state.now + def.cooldown;
+    return placed;
+  }
+
+  function stepSim(state, dt, input){
+    state.now += dt;
+    if (state.phase !== 'playing') return;
+    const lvl = currentLevel(state);
+    const r = state.runner;
+
+    // history for rewind
+    state.history.push({ t: state.now, x:r.x, y:r.y });
+    while (state.history.length && state.history[0].t < state.now - 4) state.history.shift();
+
+    // hazard timers
+    state.hazards.forEach(hz => {
+      if (hz.type === 'saw'){
+        hz.x += hz.dir * hz.speed * dt;
+        if (hz.x > hz.cx + hz.range){ hz.x = hz.cx + hz.range; hz.dir = -1; }
+        if (hz.x < hz.cx - hz.range){ hz.x = hz.cx - hz.range; hz.dir = 1; }
+      } else if (hz.type === 'homingsaw'){
+        const dx = r.x - hz.x;
+        hz.x += Math.max(-60,Math.min(60,dx)) * 0.5 * dt;
+      } else if (hz.type === 'meteor'){
+        hz.vy += GRAVITY*1.4*dt;
+        hz.y += hz.vy*dt;
+      } else if (hz.type === 'trapdoor'){
+        if (!hz.open && state.now >= hz.openAt){ hz.open = true; hz.closeAt = state.now + 3; }
+        if (hz.open && hz.closeAt && state.now >= hz.closeAt){ hz.removed = true; }
+      } else if (hz.type === 'wall'){
+        if (state.now >= hz.expiresAt) hz.removed = true;
+      } else if (hz.type === 'collapse'){
+        if (hz.triggered && hz.breakAt === null){ /* handled at collision */ }
+        if (hz.breakAt !== null && state.now >= hz.breakAt) hz.removed = true;
+      }
+    });
+    state.hazards = state.hazards.filter(h => !h.removed);
+
+    if (r.alive === false) return;
+
+    // input & status effects
+    const frozen = r.frozenUntil > state.now;
+    const reversed = r.reversedUntil > state.now;
+    const slowed = r.slowUntil > state.now;
+    const gravFlip = r.gravityUntil > state.now;
+    let moveDir = 0;
+    if (!frozen){
+      moveDir = (input.left?-1:0) + (input.right?1:0);
+      if (reversed) moveDir *= -1;
+    }
+    let speed = MOVE_SPEED * (slowed?0.6:1) * (r.onIce?1:1);
+    if (moveDir !== 0){ r.vx = moveDir*speed; r.facing = moveDir; }
+    else if (r.onIce){ r.vx *= 0.98; } else { r.vx = 0; }
+
+    if (input.jump) r.jumpBufferedAt = state.now;
+    const canCoyoteJump = r.onGround || (state.now - r.lastGroundedAt < 0.1);
+    const wantsJump = input.jump || (state.now - r.jumpBufferedAt < 0.12);
+    if (!frozen && wantsJump && canCoyoteJump){
+      r.vy = gravFlip ? -JUMP_V : JUMP_V;
+      r.onGround = false;
+      r.jumpBufferedAt = -1;
+      r.lastGroundedAt = -1;
+    }
+
+    const g = gravFlip ? -GRAVITY : GRAVITY;
+    r.vy += g*dt;
+    if (r.vy > 1400) r.vy = 1400; if (r.vy < -1400) r.vy = -1400;
+
+    // move X, collide
+    r.x += r.vx*dt;
+    r.onIce = false;
+    let rr = runnerRect(r);
+    lvl.platforms.forEach(p => {
+      if (rectsOverlap(rr,p)){
+        if (r.vx > 0) r.x = p.x - RUNNER_W/2;
+        else if (r.vx < 0) r.x = p.x + p.w + RUNNER_W/2;
+        rr = runnerRect(r);
+      }
+    });
+    state.hazards.forEach(hz => {
+      if (hz.type === 'wall' && !hz.removed){
+        const wr = { x:hz.x-8, y:0, w:16, h:CH };
+        if (state.now >= hz.telegraphUntil && rectsOverlap(rr,wr)){
+          if (r.vx > 0) r.x = wr.x - RUNNER_W/2; else if (r.vx < 0) r.x = wr.x+wr.w+RUNNER_W/2;
+          rr = runnerRect(r);
+        }
+      }
+    });
+
+    // move Y, collide
+    r.y += r.vy*dt;
+    r.onGround = false;
+    rr = runnerRect(r);
+    lvl.platforms.forEach(p => {
+      if (rectsOverlap(rr,p)){
+        if (r.vy >= 0 && rr.y+rr.h - r.vy*dt <= p.y + 2){
+          r.y = p.y; r.vy = 0; r.onGround = true; r.lastGroundedAt = state.now;
+          const hzOnPlat = state.hazards.find(h => h.type==='ice' && p.x===h.x && p.y===h.y);
+          if (hzOnPlat) r.onIce = true;
+          const collapseHz = state.hazards.find(h => h.type==='collapse' && h.platX===p.x && h.platY===p.y && !h.triggered);
+          if (collapseHz){ collapseHz.triggered = true; collapseHz.breakAt = state.now + 0.4; }
+        } else if (r.vy < 0){
+          r.y = p.y + p.h + RUNNER_H; r.vy = 0;
+        }
+        rr = runnerRect(r);
+      }
+    });
+    state.hazards.forEach(hz => {
+      if (hz.type === 'trapdoor' && hz.open){
+        // during open window, that platform stops colliding: handled by skip below
+      }
+    });
+
+    // re-check ground against trapdoor-open / removed platforms: simple approach -
+    // if runner is standing exactly on a platform that has an OPEN trapdoor hazard, they fall through
+    const standingHz = state.hazards.find(h => h.type==='trapdoor' && h.open && Math.abs(r.y - h.platY) < 1 && r.x >= h.platX && r.x <= h.platX+h.platW);
+    if (standingHz){ r.onGround = false; }
+    const brokenHz = state.hazards.find(h => h.type==='collapse' && h.removed);
+
+    if (r.y - RUNNER_H > CH + 60){ killRunner(state,'fell'); return; }
+
+    // hazard collision (deadly ones)
+    rr = runnerRect(r);
+    for (const hz of state.hazards){
+      if (hz.type==='spike'){
+        const sr = { x:hz.x-10, y:hz.y-14, w:20, h:14 };
+        if (rectsOverlap(rr,sr)){ killRunner(state,'spiked'); return; }
+      } else if (hz.type==='saw' || hz.type==='homingsaw'){
+        const sr = { x:hz.x-16, y:(hz.y||460)-16, w:32, h:32 };
+        if (rectsOverlap(rr,sr)){ killRunner(state,'sawed'); return; }
+      } else if (hz.type==='meteor'){
+        const sr = { x:hz.x-14, y:hz.y-14, w:28, h:28 };
+        if (rectsOverlap(rr,sr)){ killRunner(state,'crushed'); return; }
+      }
+    }
+
+    // win check
+    if (rectsOverlap(rr, lvl.door)) advanceLevel(state);
+  }
+
+  function rid(){ return 'h'+Math.random().toString(36).slice(2,8); }
+
+  // =====================================================================
+  // Simple AI blocker
+  // =====================================================================
+  function aiMaybeAct(state, nextActAt){
+    if (state.now < nextActAt.t) return nextActAt.t;
+    const ready = state.unlockedTools.filter(id => (state.cooldownUntil[id]||0) <= state.now);
+    if (ready.length){
+      const toolId = ready[Math.floor(Math.random()*ready.length)];
+      const def = TOOLS[toolId];
+      const r = state.runner;
+      const predictX = Math.max(20,Math.min(CW-20, r.x + r.vx*0.4 + (Math.random()*80-40)));
+      let target = null;
+      if (def.target === 'snap' || def.target === 'free'){
+        target = { x: predictX, y: r.y - 40 };
+      }
+      activateTool(state, toolId, target);
+    }
+    return state.now + 1.3 + Math.random()*1.6;
+  }
+
+  function aiPickTool(state){
+    if (state.phase !== 'toolPick') return;
+    const choices = state.toolChoices;
+    const weighted = choices.slice();
+    choices.forEach(id => { if (TOOLS[id].tier>=3) weighted.push(id); });
+    const pick = weighted[Math.floor(Math.random()*weighted.length)];
+    pickTool(state, pick);
+  }
+
+  // =====================================================================
+  // App controller
+  // =====================================================================
+  let mode='local', myRole='runner', myId=null, myName='';
+  let state=null;
+  let peer=null, conn=null;
+  let aiNextAct = { t:0 };
+  let inputFlags = { left:false, right:false, jump:false };
+  let armedTool = null;
+  let lastSentInput = null;
+
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    vsc: document.getElementById('setupVsComputer'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickVsComputer').addEventListener('click', () => showScreen('vsc'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('vscBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  document.getElementById('hostRoleChoice').querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#hostRoleChoice .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  const largeToggle = document.getElementById('largeToggle');
+  try { if (localStorage.getItem('lockdown-large')==='1'){ largeToggle.checked=true; document.body.style.fontSize='17px'; } } catch(e){}
+  largeToggle.addEventListener('change', () => {
+    document.body.style.fontSize = largeToggle.checked ? '17px' : '';
+    try { localStorage.setItem('lockdown-large', largeToggle.checked?'1':'0'); } catch(e){}
+  });
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+
+  // ---------------- VS COMPUTER ----------------
+  document.getElementById('vscStart').addEventListener('click', () => {
+    mode = 'local'; myRole = 'runner';
+    state = newMatch();
+    aiNextAct = { t: 1.5 };
+    enterGame();
+  });
+
+  // ---------------- HOST ----------------
+  let hostRoomCode=null;
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    const role = document.querySelector('#hostRoleChoice .choice-btn.active').dataset.val;
+    myName = name; myRole = role; myId = uid();
+    hostRoomCode = randomRoomCode();
+    document.getElementById('hostRoomCode').textContent = hostRoomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+
+    peer = new Peer('lockdown-'+hostRoomCode, { debug:0 });
+    peer.on('open', () => { mode='host'; });
+    peer.on('connection', (c) => {
+      if (conn){ c.on('open', ()=>c.close()); return; }
+      conn = c;
+      conn.on('data', (msg) => handleGuestMessage(msg));
+      conn.on('open', () => {
+        conn.send({ type:'assign', role: role==='runner'?'blocker':'runner' });
+        state = newMatch();
+        aiNextAct = null;
+        enterGame();
+        broadcastState();
+      });
+      conn.on('close', () => { document.getElementById('hostWaitText').textContent = 'Your teammate disconnected.'; });
+    });
+    peer.on('error', () => alert("Couldn't open a room. Try again."));
+  });
+  function handleGuestMessage(msg){
+    if (msg.type === 'input'){ inputFlags = msg.flags; }
+    else if (msg.type === 'toolAction'){ activateTool(state, msg.toolId, msg.target); }
+    else if (msg.type === 'pickTool'){ pickTool(state, msg.toolId); }
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+
+  // ---------------- JOIN ----------------
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError'); errEl.textContent='';
+    if (!code){ errEl.textContent='Enter a room code.'; return; }
+    myName = name; myId = uid();
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      conn = peer.connect('lockdown-'+code, { reliable:true });
+      conn.on('open', () => {});
+      conn.on('data', (msg) => {
+        if (msg.type === 'assign'){ myRole = msg.role; mode='guest'; }
+        else if (msg.type === 'state'){ state = msg.state; if (!screens.game.classList.contains('active')) enterGame(); else renderFrame(); }
+      });
+      conn.on('error', () => { errEl.textContent="Couldn't connect. Check the code."; });
+    });
+    peer.on('error', () => { errEl.textContent="Couldn't connect. Check the code."; });
+  });
+
+  function broadcastState(){
+    if (mode==='host' && conn && conn.open) conn.send({ type:'state', state: state });
+  }
+
+  // ---------------- Runner controls (keyboard + touch) ----------------
+  window.addEventListener('keydown', (e) => {
+    if (!screens.game.classList.contains('active') || myRole!=='runner') return;
+    if (['ArrowLeft','a','A'].includes(e.key)) inputFlags.left = true;
+    if (['ArrowRight','d','D'].includes(e.key)) inputFlags.right = true;
+    if (['ArrowUp','w','W',' '].includes(e.key)) inputFlags.jump = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    if (myRole!=='runner') return;
+    if (['ArrowLeft','a','A'].includes(e.key)) inputFlags.left = false;
+    if (['ArrowRight','d','D'].includes(e.key)) inputFlags.right = false;
+    if (['ArrowUp','w','W',' '].includes(e.key)) inputFlags.jump = false;
+  });
+  function bindHold(el, flag){
+    const down=(e)=>{ e.preventDefault(); inputFlags[flag]=true; };
+    const up=(e)=>{ inputFlags[flag]=false; };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointerleave', up);
+    el.addEventListener('pointercancel', up);
+  }
+  bindHold(document.getElementById('btnLeft'),'left');
+  bindHold(document.getElementById('btnRight'),'right');
+  bindHold(document.getElementById('btnJump'),'jump');
+
+  // ---------------- Blocker UI ----------------
+  const toolGrid = document.getElementById('toolGrid');
+  const toolHint = document.getElementById('toolHint');
+  function renderToolbar(){
+    toolGrid.innerHTML = '';
+    if (!state) return;
+    state.unlockedTools.forEach(id => {
+      const def = TOOLS[id];
+      const cd = state.cooldownUntil[id] || 0;
+      const remaining = Math.max(0, cd - state.now);
+      const btn = document.createElement('button');
+      btn.className = 'tool-btn' + (armedTool===id?' armed':'') + (remaining>0?' cooling':'');
+      btn.innerHTML = '<span class="tname">'+def.name+'</span><span class="ttag">Tier '+def.tier+(remaining>0?' \u00b7 '+remaining.toFixed(1)+'s':'')+'</span><div class="cd-overlay" style="width:'+(remaining>0?Math.min(100,(remaining/def.cooldown)*100):0)+'%"></div>';
+      btn.disabled = remaining>0;
+      btn.addEventListener('click', () => {
+        if (def.target === 'self'){
+          doToolAction(id, null);
+        } else {
+          armedTool = (armedTool===id) ? null : id;
+          renderToolbar();
+        }
+      });
+      toolGrid.appendChild(btn);
+    });
+    toolHint.textContent = armedTool ? ('Tap the arena to use ' + TOOLS[armedTool].name + '.') : 'Pick a tool, then tap the arena to use it.';
+  }
+  function doToolAction(toolId, target){
+    if (mode==='guest'){
+      conn.send({ type:'toolAction', toolId, target });
+    } else {
+      activateTool(state, toolId, target);
+    }
+    armedTool = null;
+  }
+  const canvas = document.getElementById('game');
+  canvas.addEventListener('pointerdown', (e) => {
+    if (myRole !== 'blocker' || !armedTool) return;
+    const rect = canvas.getBoundingClientRect();
+    const scale = CW/rect.width;
+    const x = (e.clientX-rect.left)*scale, y=(e.clientY-rect.top)*scale;
+    doToolAction(armedTool, {x,y});
+    renderToolbar();
+  });
+
+  // ---------------- Tool-pick UI ----------------
+  const pickUI = document.getElementById('pickUI');
+  const pickGrid = document.getElementById('pickGrid');
+  function renderPickUI(){
+    if (!state || state.phase !== 'toolPick'){ pickUI.classList.add('hidden'); return; }
+    if (myRole !== 'blocker'){
+      pickUI.classList.add('hidden');
+      showOverlay('Choosing an upgrade\u2026', (mode==='local'?'Computer':'Your opponent') + ' is picking a new tool.', []);
+      return;
+    }
+    hideOverlay();
+    pickUI.classList.remove('hidden');
+    pickGrid.innerHTML = '';
+    state.toolChoices.forEach(id => {
+      const def = TOOLS[id];
+      const card = document.createElement('button');
+      card.className = 'pick-card';
+      card.innerHTML = '<div class="tier">Tier '+def.tier+'</div><h4>'+def.name+'</h4><p>'+def.desc+'</p>';
+      card.addEventListener('click', () => {
+        if (mode==='guest') conn.send({ type:'pickTool', toolId:id });
+        else pickTool(state, id);
+      });
+      pickGrid.appendChild(card);
+    });
+  }
+
+  // ---------------- Overlay ----------------
+  const overlay = document.getElementById('overlay');
+  function showOverlay(title, text, actions){
+    document.getElementById('overlayTitle').textContent = title;
+    document.getElementById('overlayText').textContent = text;
+    const wrap = document.getElementById('overlayActions');
+    wrap.innerHTML = '';
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.className = 'primary-btn'; b.textContent = a.label;
+      b.addEventListener('click', a.onClick);
+      wrap.appendChild(b);
+    });
+    overlay.classList.remove('hidden');
+  }
+  function hideOverlay(){ overlay.classList.add('hidden'); }
+
+  // ---------------- Rendering ----------------
+  const ctx = canvas.getContext('2d');
+  function drawStick(r){
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    ctx.strokeStyle = COLORS.teal; ctx.lineWidth = 3; ctx.lineCap='round';
+    const bob = r.onGround ? Math.sin(state.now*14)*4*(Math.abs(r.vx)>10?1:0) : 0;
+    ctx.beginPath(); ctx.arc(0,-RUNNER_H+8,8,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+16); ctx.lineTo(0,-14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+22); ctx.lineTo(-9*r.facing,-RUNNER_H+30+bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-RUNNER_H+22); ctx.lineTo(9*r.facing,-RUNNER_H+34-bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(-8,0+bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(8,0-bob); ctx.stroke();
+    ctx.restore();
+  }
+  function render(){
+    ctx.clearRect(0,0,CW,CH);
+    ctx.fillStyle = '#0e1420'; ctx.fillRect(0,0,CW,CH);
+    if (!state) return;
+    const lvl = currentLevel(state);
+    ctx.fillStyle = COLORS.panelLine;
+    lvl.platforms.forEach(p => {
+      ctx.fillStyle = '#232c3a'; ctx.fillRect(p.x,p.y,p.w,p.h);
+      ctx.strokeStyle = COLORS.brass; ctx.lineWidth=2; ctx.strokeRect(p.x+1,p.y+1,p.w-2,p.h-2);
+    });
+    ctx.fillStyle = COLORS.teal; ctx.globalAlpha=0.85;
+    ctx.fillRect(lvl.door.x,lvl.door.y,lvl.door.w,lvl.door.h);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle = COLORS.brassBright; ctx.strokeRect(lvl.door.x,lvl.door.y,lvl.door.w,lvl.door.h);
+
+    state.hazards.forEach(hz => {
+      if (hz.type==='spike'){
+        ctx.fillStyle = COLORS.rose;
+        ctx.beginPath(); ctx.moveTo(hz.x-10,hz.y); ctx.lineTo(hz.x,hz.y-14); ctx.lineTo(hz.x+10,hz.y); ctx.closePath(); ctx.fill();
+      } else if (hz.type==='ice'){
+        ctx.fillStyle='rgba(120,200,230,0.35)'; ctx.fillRect(hz.x,hz.y-6,hz.w,6);
+      } else if (hz.type==='saw' || hz.type==='homingsaw'){
+        const cy = hz.y || 460;
+        ctx.save(); ctx.translate(hz.x,cy); ctx.rotate(state.now*8);
+        ctx.fillStyle='#9aa4b2';
+        for(let i=0;i<8;i++){ ctx.rotate(Math.PI/4); ctx.fillRect(-3,-16,6,10); }
+        ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fillStyle='#606a78'; ctx.fill();
+        ctx.restore();
+      } else if (hz.type==='meteor'){
+        ctx.fillStyle = COLORS.brass; ctx.beginPath(); ctx.arc(hz.x,hz.y,13,0,Math.PI*2); ctx.fill();
+      } else if (hz.type==='wall'){
+        const active = state.now >= hz.telegraphUntil;
+        ctx.fillStyle = active ? 'rgba(201,162,75,0.85)' : 'rgba(201,162,75,0.3)';
+        ctx.fillRect(hz.x-8,0,16,CH);
+      } else if (hz.type==='trapdoor'){
+        ctx.fillStyle = hz.open ? 'rgba(0,0,0,0.6)' : 'rgba(226,99,122,0.3)';
+        ctx.fillRect(hz.platX,hz.platY,hz.platW,hz.platH);
+      } else if (hz.type==='collapse' && hz.triggered && !hz.removed){
+        ctx.fillStyle='rgba(226,99,122,0.35)'; ctx.fillRect(hz.platX,hz.platY,hz.platW,hz.platH);
+      }
+    });
+
+    if (state.runner) drawStick(state.runner);
+
+    if (myRole==='runner' && state.runner && state.runner.darknessUntil > state.now){
+      const grd = ctx.createRadialGradient(state.runner.x,state.runner.y-20,40,state.runner.x,state.runner.y-20,220);
+      grd.addColorStop(0,'rgba(0,0,0,0)'); grd.addColorStop(1,'rgba(0,0,0,0.95)');
+      ctx.fillStyle = grd; ctx.fillRect(0,0,CW,CH);
+    }
+
+    if (armedTool && myRole==='blocker'){
+      ctx.fillStyle='rgba(79,209,197,0.15)'; ctx.fillRect(0,0,CW,CH);
+    }
+  }
+
+  function updateHud(){
+    document.getElementById('hudLevel').textContent = state.levelIndex+1;
+    const livesEl = document.getElementById('hudLives'); livesEl.innerHTML='';
+    for (let i=0;i<5;i++){
+      const d = document.createElement('span');
+      d.className = 'life-dot' + (i < state.lives ? '' : ' lost');
+      livesEl.appendChild(d);
+    }
+    document.getElementById('hudRole').textContent = myRole==='runner' ? 'You: Runner' : 'You: Blocker';
+    document.getElementById('runnerUI').classList.toggle('hidden', myRole!=='runner');
+    document.getElementById('blockerUI').classList.toggle('hidden', myRole!=='blocker');
+  }
+
+  function renderFrame(){
+    if (!state) return;
+    updateHud();
+    render();
+    if (myRole==='blocker') renderToolbar();
+    if (state.phase === 'toolPick') renderPickUI(); else pickUI.classList.add('hidden');
+    if (state.phase === 'gameOver'){
+      showOverlay(myRole==='blocker' ? 'You win!' : 'Caught!', 'Ran out of lives on level '+(state.levelIndex+1)+'.', [{ label:'Back to lobby', onClick:()=>location.reload() }]);
+    } else if (state.phase === 'victory'){
+      showOverlay(myRole==='runner' ? 'You escaped!' : 'They got away.', 'All 10 levels cleared.', [{ label:'Back to lobby', onClick:()=>location.reload() }]);
+    } else if (state.phase === 'toolPick'){
+      // overlay handled in renderPickUI
+    } else {
+      hideOverlay();
+    }
+  }
+
+  // ---------------- Main loop ----------------
+  let lastT = null, acc = 0;
+  function loop(ts){
+    requestAnimationFrame(loop);
+    if (lastT===null) lastT = ts;
+    let dt = (ts-lastT)/1000; lastT = ts;
+    if (dt>0.25) dt=0.25;
+    acc += dt;
+
+    if (mode==='guest'){
+      // send input periodically
+      if (myRole==='runner'){
+        const flagsStr = JSON.stringify(inputFlags);
+        if (flagsStr !== lastSentInput){ conn && conn.open && conn.send({type:'input', flags:inputFlags}); lastSentInput = flagsStr; }
+      }
+      renderFrame();
+      return;
+    }
+
+    while (acc >= TICK){
+      if (state){
+        const runnerInput = myRole==='runner' ? inputFlags : inputFlags; // host may or may not be runner; guest input applied via handleGuestMessage into inputFlags when host!==runner
+        stepSim(state, TICK, runnerInput);
+        if (mode==='local' && state.phase==='playing' && aiNextAct){
+          aiNextAct.t = aiMaybeAct(state, aiNextAct);
+        }
+        if (mode==='local' && state.phase==='toolPick'){
+          aiPickTool(state);
+        }
+        if (mode==='host' && state.phase==='toolPick' && myRole==='runner'){
+          // guest is blocker and will send pickTool; nothing to do here
+        }
+      }
+      acc -= TICK;
+    }
+    if (mode==='host') broadcastState();
+    renderFrame();
+  }
+  requestAnimationFrame(loop);
+
+  function enterGame(){
+    showScreen('game');
+    hideOverlay();
+  }
+
+})();
+</script>
+</body>
+</html>
