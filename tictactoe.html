@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 50px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px); letter-spacing:0.03em; margin:0 0 16px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+  .hud { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; align-items:center; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .hud-chip .num { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--brass-bright); }
+  .player-row { display:flex; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .player-card { flex:1; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .player-card.active-turn { border-color:var(--teal); box-shadow:0 0 0 2px rgba(79,209,197,0.25); }
+  .player-card .pname { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; }
+  .player-card .mark { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
+  .player-card .mark.x { color: var(--teal); }
+  .player-card .mark.o { color: var(--rose); }
+  .player-card .clock { font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--muted); }
+  .player-card .clock.low { color: var(--rose); }
+
+  .board-wrap { display:flex; justify-content:center; margin: 10px 0 20px; }
+  .board { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:min(420px,88vw); aspect-ratio:1; }
+  .cell { background:#232c3a; border:1px solid var(--panel-line); border-radius:12px; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:min(14vw,52px); cursor:pointer; color:var(--paper); position:relative; }
+  .cell:hover:not(.filled):not(.disabled) { border-color:var(--brass); }
+  .cell.filled, .cell.disabled { cursor:default; }
+  .cell .mark-x { color: var(--teal); }
+  .cell .mark-o { color: var(--rose); }
+  .cell.win-cell { background: rgba(201,162,75,0.18); border-color: var(--brass-bright); }
+
+  .overlay-msg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; background:rgba(10,12,16,0.72); text-align:center; padding:20px; gap:10px; border-radius:12px; }
+  .overlay-msg h2 { font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); margin:0; font-size:clamp(20px,5vw,28px); }
+  .overlay-msg p { color:var(--muted); margin:0; max-width:380px; }
+  .board-area { position:relative; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>Tic-Tac-Toe</h1>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0;color:var(--muted);font-size:14px;">Three in a row wins. Quick, classic, no surprises.</p>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickVsComputer"><h3>Play vs Computer</h3><p>Pick a difficulty and go.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupVsComputer" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play vs Computer</h3>
+      <label class="field-label">Difficulty</label>
+      <div class="choice-row" id="diffChoice">
+        <button class="choice-btn active" data-val="easy">Easy</button>
+        <button class="choice-btn" data-val="medium">Medium</button>
+        <button class="choice-btn" data-val="hard">Hard</button>
+      </div>
+      <label class="field-label">Go first?</label>
+      <div class="choice-row" id="firstChoice">
+        <button class="choice-btn active" data-val="me">You (X)</button>
+        <button class="choice-btn" data-val="cpu">Computer (X)</button>
+      </div>
+      <label class="field-label">Timing</label>
+      <div class="choice-row" id="timeChoiceVC">
+        <button class="choice-btn active" data-val="0">Untimed</button>
+        <button class="choice-btn" data-val="60">1 min each</button>
+        <button class="choice-btn" data-val="180">3 min each</button>
+      </div>
+      <button class="primary-btn" id="vscStart">Start &rarr;</button>
+      <button class="secondary-btn" id="vscBack">Back</button>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Timing</label>
+      <div class="choice-row" id="timeChoiceHost">
+        <button class="choice-btn active" data-val="0">Untimed</button>
+        <button class="choice-btn" data-val="60">1 min each</button>
+        <button class="choice-btn" data-val="180">3 min each</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for an opponent to join&hellip;</p>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div class="hud">
+      <div class="hud-chip" id="hudStatus">Your turn</div>
+    </div>
+    <div class="player-row">
+      <div class="player-card" id="cardX"><span class="pname" id="nameX">Player 1</span><span class="mark x">X</span><span class="clock hidden" id="clockX">1:00</span></div>
+      <div class="player-card" id="cardO"><span class="pname" id="nameO">Player 2</span><span class="mark o">O</span><span class="clock hidden" id="clockO">1:00</span></div>
+    </div>
+    <div class="board-area">
+      <div class="board-wrap"><div class="board" id="board"></div></div>
+      <div class="overlay-msg hidden" id="overlay">
+        <h2 id="overlayTitle"></h2>
+        <p id="overlayText"></p>
+        <div id="overlayActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function emptyBoard(){ return Array(9).fill(null); }
+
+  function checkWinner(board){
+    for (const line of WIN_LINES){
+      const [a,b,c] = line;
+      if (board[a] && board[a]===board[b] && board[a]===board[c]) return { mark: board[a], line };
+    }
+    if (board.every(c => c !== null)) return { mark: 'draw', line: null };
+    return null;
+  }
+
+  function availableMoves(board){
+    const moves = [];
+    for (let i=0;i<9;i++) if (!board[i]) moves.push(i);
+    return moves;
+  }
+
+  // Perfect minimax for hard difficulty
+  function minimax(board, aiMark, currentTurn, depth){
+    const result = checkWinner(board);
+    if (result){
+      if (result.mark === 'draw') return { score: 0 };
+      return { score: result.mark === aiMark ? (10-depth) : (depth-10) };
+    }
+    const moves = availableMoves(board);
+    const nextTurn = currentTurn === 'X' ? 'O' : 'X';
+    let best = null;
+    for (const m of moves){
+      const b2 = board.slice(); b2[m] = currentTurn;
+      const r = minimax(b2, aiMark, nextTurn, depth+1);
+      if (currentTurn === aiMark){
+        if (best===null || r.score > best.score) best = { score:r.score, move:m };
+      } else {
+        if (best===null || r.score < best.score) best = { score:r.score, move:m };
+      }
+    }
+    return best;
+  }
+
+  function aiMove(board, mark, difficulty){
+    const moves = availableMoves(board);
+    if (difficulty === 'hard'){
+      return minimax(board, mark, mark, 0).move;
+    }
+    const oppMark = mark==='X' ? 'O' : 'X';
+    if (difficulty === 'medium'){
+      // win if possible
+      for (const m of moves){ const b2=board.slice(); b2[m]=mark; if (checkWinner(b2) && checkWinner(b2).mark===mark) return m; }
+      // block opponent win
+      for (const m of moves){ const b2=board.slice(); b2[m]=oppMark; if (checkWinner(b2) && checkWinner(b2).mark===oppMark) return m; }
+      // else random, slight center/corner preference
+      const pref = [4,0,2,6,8,1,3,5,7].filter(i=>moves.includes(i));
+      return Math.random()<0.7 ? pref[0] : moves[Math.floor(Math.random()*moves.length)];
+    }
+    // easy: mostly random, occasionally blocks an immediate loss
+    if (Math.random() < 0.35){
+      for (const m of moves){ const b2=board.slice(); b2[m]=oppMark; if (checkWinner(b2) && checkWinner(b2).mark===oppMark) return m; }
+    }
+    return moves[Math.floor(Math.random()*moves.length)];
+  }
+
+  // ---------------- App state ----------------
+  let mode='local', myRole='X', myId=null, myName='';
+  let game = null; // { board, turn, timeLimit, clockX, clockO, lastTick, status:'playing'|'won'|'draw', winner, winLine, difficulty }
+  let peer=null, conn=null;
+  let clockTimer = null;
+
+  function newGame(timeLimit, difficulty, humanFirst){
+    return {
+      board: emptyBoard(),
+      turn: 'X',
+      timeLimit: timeLimit,
+      clockX: timeLimit, clockO: timeLimit,
+      lastTick: Date.now(),
+      status: 'playing', winner: null, winLine: null,
+      difficulty: difficulty || null,
+      humanFirst: humanFirst
+    };
+  }
+
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    vsc: document.getElementById('setupVsComputer'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickVsComputer').addEventListener('click', () => showScreen('vsc'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('vscBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function wireChoiceRow(id){
+    document.getElementById(id).querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#'+id+' .choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  ['diffChoice','firstChoice','timeChoiceVC','timeChoiceHost'].forEach(wireChoiceRow);
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+
+  // ---------------- VS COMPUTER ----------------
+  document.getElementById('vscStart').addEventListener('click', () => {
+    const difficulty = document.querySelector('#diffChoice .choice-btn.active').dataset.val;
+    const first = document.querySelector('#firstChoice .choice-btn.active').dataset.val;
+    const timeLimit = parseInt(document.querySelector('#timeChoiceVC .choice-btn.active').dataset.val, 10);
+    mode = 'local';
+    myRole = first === 'me' ? 'X' : 'O';
+    game = newGame(timeLimit, difficulty, first==='me');
+    document.getElementById('nameX').textContent = first==='me' ? 'You' : 'Computer';
+    document.getElementById('nameO').textContent = first==='me' ? 'Computer' : 'You';
+    enterGame();
+    maybeAiMove();
+  });
+
+  // ---------------- HOST ----------------
+  let hostRoomCode=null, hostTimeLimit=0;
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostTimeLimit = parseInt(document.querySelector('#timeChoiceHost .choice-btn.active').dataset.val, 10);
+    myName = name; myId = uid();
+    hostRoomCode = randomRoomCode();
+    document.getElementById('hostRoomCode').textContent = hostRoomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+
+    peer = new Peer('ttt-'+hostRoomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      if (conn){ c.on('open', ()=>c.close()); return; }
+      conn = c;
+      conn.on('data', (msg) => handleGuestMessage(msg));
+      conn.on('open', () => {
+        clearTimeout(openTimeout);
+        const guestName = 'Opponent';
+        myRole = 'X';
+        game = newGame(hostTimeLimit, null, true);
+        document.getElementById('nameX').textContent = myName;
+        document.getElementById('nameO').textContent = guestName;
+        conn.send({ type:'start', hostName:myName, timeLimit:hostTimeLimit });
+        enterGame();
+        broadcastState();
+      });
+      conn.on('close', () => { if (game && game.status==='playing'){ document.getElementById('hudStatus').textContent = 'Opponent disconnected.'; } });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name; myId = uid();
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      conn = peer.connect('ttt-'+code, { reliable:true });
+      conn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      conn.on('data', (msg) => {
+        if (msg.type === 'start'){
+          mode='guest'; myRole='O';
+          game = newGame(msg.timeLimit, null, false);
+          document.getElementById('nameX').textContent = msg.hostName;
+          document.getElementById('nameO').textContent = myName;
+          enterGame();
+        } else {
+          handleGuestMessage(msg);
+        }
+      });
+      conn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      conn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+  function handleGuestMessage(msg){
+    if (msg.type === 'state'){ game = msg.game; renderAll(); }
+    else if (msg.type === 'move'){ applyMove(msg.cell, msg.by); }
+  }
+  function broadcastState(){
+    if (mode==='host' && conn && conn.open) conn.send({ type:'state', game });
+  }
+
+  // ---------------- Game logic ----------------
+  function enterGame(){
+    showScreen('game');
+    hideOverlay();
+    buildBoardDom();
+    renderAll();
+    startClockTimer();
+  }
+
+  const boardEl = document.getElementById('board');
+  function buildBoardDom(){
+    boardEl.innerHTML = '';
+    for (let i=0;i<9;i++){
+      const cell = document.createElement('button');
+      cell.className = 'cell';
+      cell.dataset.idx = i;
+      cell.addEventListener('click', () => onCellClick(i));
+      boardEl.appendChild(cell);
+    }
+  }
+
+  function onCellClick(i){
+    if (!game || game.status !== 'playing') return;
+    if (game.board[i]) return;
+    if (game.turn !== myRole) return;
+    if (mode === 'guest'){
+      conn.send({ type:'move', cell:i, by: myRole });
+      return;
+    }
+    applyMove(i, game.turn);
+    if (mode === 'host') broadcastState();
+    if (mode === 'local') maybeAiMove();
+  }
+
+  function applyMove(i, mark){
+    if (!game || game.status !== 'playing') return;
+    if (game.board[i]) return;
+    if (mark !== game.turn) return;
+    game.board[i] = mark;
+    const result = checkWinner(game.board);
+    if (result){
+      game.status = result.mark === 'draw' ? 'draw' : 'won';
+      game.winner = result.mark === 'draw' ? null : result.mark;
+      game.winLine = result.line;
+    } else {
+      game.turn = game.turn === 'X' ? 'O' : 'X';
+    }
+    game.lastTick = Date.now();
+    renderAll();
+  }
+
+  function maybeAiMove(){
+    if (!game || game.status !== 'playing') return;
+    const aiMark = myRole === 'X' ? 'O' : 'X';
+    if (game.turn !== aiMark) return;
+    setTimeout(() => {
+      if (!game || game.status !== 'playing') return;
+      const mv = aiMove(game.board, aiMark, game.difficulty);
+      applyMove(mv, aiMark);
+    }, 380 + Math.random()*350);
+  }
+
+  // ---------------- Clock ----------------
+  function startClockTimer(){
+    if (clockTimer) clearInterval(clockTimer);
+    if (!game || !game.timeLimit) { updateClockDisplay(); return; }
+    clockTimer = setInterval(() => {
+      if (!game || game.status !== 'playing' || !game.timeLimit) return;
+      if (mode === 'guest') return; // authoritative side (host or local) ticks the clock
+      const now = Date.now();
+      const dt = (now - game.lastTick) / 1000;
+      game.lastTick = now;
+      if (game.turn === 'X') game.clockX = Math.max(0, game.clockX - dt);
+      else game.clockO = Math.max(0, game.clockO - dt);
+      if (game.clockX <= 0 || game.clockO <= 0){
+        game.status = 'won';
+        game.winner = game.clockX <= 0 ? 'O' : 'X';
+        game.winLine = null;
+        game.timeoutLoss = true;
+      }
+      if (mode === 'host') broadcastState();
+      updateClockDisplay();
+      if (game.status !== 'playing') renderAll();
+    }, 250);
+  }
+
+  function updateClockDisplay(){
+    const cx = document.getElementById('clockX'), co = document.getElementById('clockO');
+    if (!game || !game.timeLimit){ cx.classList.add('hidden'); co.classList.add('hidden'); return; }
+    cx.classList.remove('hidden'); co.classList.remove('hidden');
+    const fmt = (s) => { s = Math.max(0,Math.ceil(s)); const m=Math.floor(s/60), sec=s%60; return m+':'+(sec<10?'0':'')+sec; };
+    cx.textContent = fmt(game.clockX); co.textContent = fmt(game.clockO);
+    cx.classList.toggle('low', game.clockX < 15 && game.clockX > 0);
+    co.classList.toggle('low', game.clockO < 15 && game.clockO > 0);
+  }
+
+  // ---------------- Rendering ----------------
+  function renderAll(){
+    if (!game) return;
+    const cells = boardEl.querySelectorAll('.cell');
+    cells.forEach((cell, i) => {
+      const v = game.board[i];
+      cell.classList.toggle('filled', !!v);
+      cell.classList.toggle('disabled', game.status !== 'playing' || game.turn !== myRole || mode==='guest');
+      cell.classList.toggle('win-cell', !!(game.winLine && game.winLine.includes(i)));
+      cell.innerHTML = v ? '<span class="mark-'+v.toLowerCase()+'">'+v+'</span>' : '';
+    });
+    document.getElementById('cardX').classList.toggle('active-turn', game.status==='playing' && game.turn==='X');
+    document.getElementById('cardO').classList.toggle('active-turn', game.status==='playing' && game.turn==='O');
+    updateClockDisplay();
+
+    const statusEl = document.getElementById('hudStatus');
+    if (game.status === 'playing'){
+      statusEl.textContent = game.turn === myRole ? 'Your turn' : "Opponent's turn";
+    } else if (game.status === 'draw'){
+      statusEl.textContent = "It's a draw";
+      showOverlay("It's a draw!", 'Nobody gets the board this time.', [{ label:'Back to lobby', onClick:()=>location.reload() }]);
+    } else {
+      const iWon = game.winner === myRole;
+      statusEl.textContent = iWon ? 'You win!' : (mode==='local' ? 'Computer wins' : 'Opponent wins');
+      const reasonText = game.timeoutLoss ? (iWon ? 'They ran out of time.' : 'You ran out of time.') : (iWon ? 'Three in a row.' : 'They got three in a row.');
+      showOverlay(iWon ? 'You win!' : 'You lose', reasonText, [{ label:'Back to lobby', onClick:()=>location.reload() }]);
+    }
+  }
+
+  const overlay = document.getElementById('overlay');
+  let lastOverlayKey = null;
+  function showOverlay(title, text, actions){
+    const key = title+'|'+text;
+    overlay.classList.remove('hidden');
+    if (lastOverlayKey === key) return;
+    lastOverlayKey = key;
+    document.getElementById('overlayTitle').textContent = title;
+    document.getElementById('overlayText').textContent = text;
+    const wrap = document.getElementById('overlayActions');
+    wrap.innerHTML = '';
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.className='primary-btn'; b.textContent=a.label;
+      b.addEventListener('click', a.onClick);
+      wrap.appendChild(b);
+    });
+  }
+  function hideOverlay(){ overlay.classList.add('hidden'); lastOverlayKey = null; }
+
+})();
+</script>
+</body>
+</html>
