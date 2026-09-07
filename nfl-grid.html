@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFL Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0 0 6px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .grid-wrap { display:inline-block; border:1px solid var(--panel-line); border-radius:12px; overflow:hidden; background:var(--ink-2); }
+  .nfl-grid { display:grid; grid-template-columns:110px repeat(3,1fr); }
+  .cell-base { border:1px solid var(--panel-line); padding:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11.5px; min-height:64px; }
+  .corner-cell { background:var(--panel); }
+  .cat-cell { background:var(--panel); font-weight:600; color:var(--brass-bright); line-height:1.3; }
+  .answer-cell { background:var(--ink); position:relative; }
+  .answer-cell input { width:100%; background:transparent; border:none; color:var(--paper); font-size:13px; text-align:center; outline:none; }
+  .answer-cell.graded-correct { background:rgba(79,209,197,0.15); }
+  .answer-cell.graded-incorrect { background:rgba(226,99,122,0.12); }
+  .answer-cell .grade-toggle { position:absolute; bottom:2px; right:2px; display:flex; gap:2px; }
+  .grade-btn { width:20px; height:20px; border-radius:5px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-size:11px; cursor:pointer; line-height:1; }
+  .grade-btn.correct-active { background:rgba(79,209,197,0.3); border-color:var(--teal); color:var(--teal); }
+  .grade-btn.incorrect-active { background:rgba(226,99,122,0.3); border-color:var(--rose); color:var(--rose); }
+
+  .timer-display { font-family:'JetBrains Mono',monospace; font-size:18px; color:var(--brass-bright); }
+  .hud-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+
+  .score-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--panel-line); font-size:14px; }
+  .score-row .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; }
+  .rules-note { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:12px 14px; font-size:13px; color:var(--muted); margin-bottom:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>NFL Grid</h1>
+  <p class="subtitle">Name a real player who fits both the row and the column. Nine squares, one grid.</p>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <div class="rules-note">This game doesn't grade answers for you &mdash; after everyone fills the grid, you all review the answers together and mark each one correct or not. Keeps things honest and works for any era of NFL history, not just what's in some database.</div>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Time per grid</label>
+      <div class="choice-row" id="timeChoice">
+        <button class="choice-btn" data-val="120">2 min</button>
+        <button class="choice-btn active" data-val="240">4 min</button>
+        <button class="choice-btn" data-val="0">Untimed</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Time per grid</label>
+      <div class="choice-row" id="hostTimeChoice">
+        <button class="choice-btn" data-val="120">2 min</button>
+        <button class="choice-btn active" data-val="240">4 min</button>
+        <button class="choice-btn" data-val="0">Untimed</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start grid &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const CATEGORIES = [
+    'Played for the Cowboys','Played for the Patriots','Played for the Chiefs','Played for the Packers',
+    'Played for the Steelers','Played for the 49ers','Played for the Eagles','Played for the Ravens',
+    'Played for the Bills','Played for the Giants','Played for the Jets','Played for the Dolphins',
+    'Played for the Raiders','Played for the Broncos','Played for the Seahawks','Played for the Rams',
+    'Played for the Lions','Played for the Vikings','Played for the Bears','Played for the Saints',
+    'Played for the Buccaneers','Played for the Falcons','Played for the Panthers','Played for the Titans',
+    'Played for the Colts','Played for the Jaguars','Played for the Texans','Played for the Bengals',
+    'Played for the Browns','Played for the Cardinals','Played for the Chargers','Played for the Commanders',
+    'Won a Super Bowl','Named league MVP','Named Super Bowl MVP','Made 5+ Pro Bowls',
+    'Named Rookie of the Year','Elected to the Pro Football Hall of Fame','Led the league in a major stat category in some season',
+    'Drafted in the 1st round','Drafted after round 5 (or undrafted)',
+    'Played quarterback','Played wide receiver','Played running back','Played tight end',
+    'Played linebacker','Played cornerback or safety','Played on the offensive line','Played on the defensive line',
+    'Played 12+ NFL seasons','Played for 3 or more different NFL teams','Was a college teammate of another NFL star',
+    'Wore #12','Wore #7','Wore #80','Wore #1','Wore #99',
+    'Played in a Pro Bowl or All-Star game','Was a team captain','Went to a Big Ten school',
+    'Went to an SEC school','Played in multiple Super Bowls'
+  ];
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function pickGrid(){
+    const chosen = shuffle(CATEGORIES).slice(0,6);
+    return { rows: chosen.slice(0,3), cols: chosen.slice(3,6) };
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function wireChoiceRow(id){
+    document.getElementById(id).querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#'+id+' .choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  ['timeChoice','hostTimeChoice'].forEach(wireChoiceRow);
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 8) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove(); localPlayerCount--;
+    });
+    row.appendChild(input); row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // Shared grid-filling UI
+  // ============================================================
+  function emptyAnswers(){ return Array(9).fill(''); }
+
+  function renderGridFill(container, grid, answers, timeLeft, onTimeUpdate, onDone){
+    container.innerHTML = '';
+    if (timeLeft !== null){
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">Time <span class="timer-display" id="gridTimeLeft">' + formatTime(timeLeft) + '</span></div>';
+      container.appendChild(hud);
+    }
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'grid-wrap';
+    const gridEl = document.createElement('div');
+    gridEl.className = 'nfl-grid';
+    gridEl.appendChild(makeCell('corner-cell', ''));
+    grid.cols.forEach(c => gridEl.appendChild(makeCell('cat-cell', c)));
+    grid.rows.forEach((rowCat, ri) => {
+      gridEl.appendChild(makeCell('cat-cell', rowCat));
+      grid.cols.forEach((colCat, ci) => {
+        const idx = ri*3+ci;
+        const cell = document.createElement('div');
+        cell.className = 'cell-base answer-cell';
+        const input = document.createElement('input');
+        input.value = answers[idx] || '';
+        input.placeholder = '\u2014';
+        input.addEventListener('input', () => { answers[idx] = input.value; });
+        cell.appendChild(input);
+        gridEl.appendChild(cell);
+      });
+    });
+    gridWrap.appendChild(gridEl);
+    container.appendChild(gridWrap);
+
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'primary-btn';
+    doneBtn.style.display = 'block';
+    doneBtn.textContent = 'Submit grid \u2192';
+    doneBtn.addEventListener('click', onDone);
+    container.appendChild(doneBtn);
+
+    function makeCell(cls, text){
+      const d = document.createElement('div');
+      d.className = 'cell-base ' + cls;
+      d.textContent = text;
+      return d;
+    }
+  }
+  function formatTime(s){
+    s = Math.max(0, Math.ceil(s));
+    const m = Math.floor(s/60), sec = s%60;
+    return m+':'+(sec<10?'0':'')+sec;
+  }
+
+  function renderGradingScreen(container, grid, results, onGradeToggle, actions, showControls){
+    container.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Review answers together</h3>' +
+      '<p style="color:var(--muted);font-size:13px;">For each player, mark every square correct (\u2713) or not (\u2717) as a group, then see final scores.</p>';
+    results.forEach((r, ri) => {
+      const block = document.createElement('div');
+      block.style.marginBottom = '20px';
+      const h = document.createElement('h4');
+      h.style.fontFamily = "'Space Grotesk',sans-serif";
+      h.textContent = r.name;
+      block.appendChild(h);
+      const gridWrap = document.createElement('div');
+      gridWrap.className = 'grid-wrap';
+      const gridEl = document.createElement('div');
+      gridEl.className = 'nfl-grid';
+      const mk = (cls,text) => { const d=document.createElement('div'); d.className='cell-base '+cls; d.textContent=text; return d; };
+      gridEl.appendChild(mk('corner-cell',''));
+      grid.cols.forEach(c => gridEl.appendChild(mk('cat-cell', c)));
+      grid.rows.forEach((rowCat, rowIdx) => {
+        gridEl.appendChild(mk('cat-cell', rowCat));
+        grid.cols.forEach((colCat, colIdx) => {
+          const idx = rowIdx*3+colIdx;
+          const cell = document.createElement('div');
+          const grade = r.grades[idx];
+          cell.className = 'cell-base answer-cell' + (grade==='correct'?' graded-correct':grade==='incorrect'?' graded-incorrect':'');
+          cell.innerHTML = '<span>' + escapeHtml(r.answers[idx] || '(blank)') + '</span>';
+          const toggles = document.createElement('div');
+          toggles.className = 'grade-toggle';
+          const yBtn = document.createElement('button');
+          yBtn.className = 'grade-btn' + (grade==='correct'?' correct-active':'');
+          yBtn.textContent = '\u2713';
+          yBtn.addEventListener('click', () => onGradeToggle(ri, idx, grade==='correct'?null:'correct'));
+          const nBtn = document.createElement('button');
+          nBtn.className = 'grade-btn' + (grade==='incorrect'?' incorrect-active':'');
+          nBtn.textContent = '\u2717';
+          nBtn.addEventListener('click', () => onGradeToggle(ri, idx, grade==='incorrect'?null:'incorrect'));
+          toggles.appendChild(yBtn); toggles.appendChild(nBtn);
+          cell.appendChild(toggles);
+          gridEl.appendChild(cell);
+        });
+      });
+      gridWrap.appendChild(gridEl);
+      block.appendChild(gridWrap);
+      const score = r.grades.filter(g=>g==='correct').length;
+      const scoreLine = document.createElement('p');
+      scoreLine.style.color = 'var(--brass-bright)'; scoreLine.style.fontWeight = '600'; scoreLine.style.marginTop = '8px';
+      scoreLine.textContent = score + ' / 9 correct';
+      block.appendChild(scoreLine);
+      panel.appendChild(block);
+    });
+    if (showControls && actions && actions.newGrid){
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'New grid';
+      btn.addEventListener('click', actions.newGrid);
+      panel.appendChild(btn);
+    }
+    const lobbyBtn = document.createElement('button');
+    lobbyBtn.className = 'secondary-btn';
+    lobbyBtn.textContent = 'Back to lobby';
+    lobbyBtn.addEventListener('click', () => location.reload());
+    panel.appendChild(lobbyBtn);
+    container.appendChild(panel);
+  }
+
+  // ============================================================
+  // LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let localState = null;
+  let localTimer = null;
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const timeLimit = parseInt(document.querySelector('#timeChoice .choice-btn.active').dataset.val, 10);
+    mode = 'local';
+    localState = {
+      players: names, timeLimit,
+      draftIndex: 0, stage: 'pass',
+      grid: pickGrid(),
+      answers: emptyAnswers(),
+      timeLeft: timeLimit,
+      results: []
+    };
+    showScreen('game');
+    renderLocal();
+  });
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    const current = localState.players[localState.draftIndex];
+
+    if (localState.stage === 'pass'){
+      body.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83c\udfc8</div><h2>Pass the device to<br>' + escapeHtml(current) + '</h2><p>Fill the grid with real players.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm " + current + ' \u2014 start';
+      btn.addEventListener('click', () => {
+        localState.stage = 'filling';
+        localState.answers = emptyAnswers();
+        localState.timeLeft = localState.timeLimit;
+        renderLocal();
+        if (localState.timeLimit > 0) startLocalTimer();
+      });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (localState.stage === 'filling'){
+      body.innerHTML = '';
+      const hudRow = document.createElement('div');
+      hudRow.style.marginBottom = '4px';
+      hudRow.innerHTML = '<div class="hud-chip" style="display:inline-block;background:var(--panel);border:1px solid var(--panel-line);border-radius:9px;padding:8px 12px;font-size:13px;">' + escapeHtml(current) + ' is filling the grid</div>';
+      body.appendChild(hudRow);
+      const fillDiv = document.createElement('div');
+      body.appendChild(fillDiv);
+      renderGridFill(fillDiv, localState.grid, localState.answers, localState.timeLimit>0?localState.timeLeft:null, null, () => finishLocalGrid());
+      return;
+    }
+
+    if (localState.stage === 'grading'){
+      renderGradingScreen(body, localState.grid, localState.results,
+        (resultIdx, cellIdx, value) => { localState.results[resultIdx].grades[cellIdx] = value; renderLocal(); },
+        { newGrid: () => {
+            localState.draftIndex = 0; localState.results = []; localState.stage='pass'; localState.grid = pickGrid();
+            renderLocal();
+          } },
+        true);
+      return;
+    }
+  }
+  function startLocalTimer(){
+    if (localTimer) clearInterval(localTimer);
+    localTimer = setInterval(() => {
+      if (localState.stage !== 'filling'){ clearInterval(localTimer); return; }
+      localState.timeLeft--;
+      const el = document.getElementById('gridTimeLeft');
+      if (el) el.textContent = formatTime(localState.timeLeft);
+      if (localState.timeLeft <= 0){ clearInterval(localTimer); finishLocalGrid(); }
+    }, 1000);
+  }
+  function finishLocalGrid(){
+    if (localTimer) clearInterval(localTimer);
+    localState.results.push({ name: localState.players[localState.draftIndex], answers: localState.answers, grades: Array(9).fill(null) });
+    localState.draftIndex++;
+    if (localState.draftIndex >= localState.players.length){
+      localState.stage = 'grading';
+    } else {
+      localState.stage = 'pass';
+    }
+    renderLocal();
+  }
+
+  // ============================================================
+  // HOST / JOIN (online, simultaneous grid-filling)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let hostTimeLimit = 240;
+  let onlineGame = null;
+  let onlineTimer = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostTimeLimit = parseInt(document.querySelector('#hostTimeChoice .choice-btn.active').dataset.val, 10);
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, conn: null, answers: emptyAnswers(), grades: Array(9).fill(null), done:false }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+    peer = new Peer('nflgrid-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, answers: emptyAnswers(), grades: Array(9).fill(null), done:false });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+    } else if (msg.type === 'lockIn'){
+      const p = hostPlayers.find(x=>x.id===conn.__playerId);
+      if (p){ p.answers = msg.answers; p.done = true; }
+      checkAllDone();
+    } else if (msg.type === 'grade'){
+      const p = hostPlayers.find(x=>x.id===msg.targetId);
+      if (p) p.grades[msg.idx] = msg.value;
+      broadcastGrades();
+    } else if (msg.type === 'newGrid'){
+      startOnlineGrid();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => { showScreen('game'); startOnlineGrid(); });
+  function startOnlineGrid(){
+    hostPlayers.forEach(p => { p.answers = emptyAnswers(); p.grades = Array(9).fill(null); p.done = false; });
+    onlineGame = { phase:'filling', grid: pickGrid(), timeLeft: hostTimeLimit };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'start', grid: onlineGame.grid, timeLimit: hostTimeLimit }); });
+    if (hostTimeLimit > 0) startOnlineTimer();
+    renderOnline();
+  }
+  function startOnlineTimer(){
+    if (onlineTimer) clearInterval(onlineTimer);
+    onlineTimer = setInterval(() => {
+      if (onlineGame.phase !== 'filling'){ clearInterval(onlineTimer); return; }
+      onlineGame.timeLeft--;
+      const el = document.getElementById('gridTimeLeft');
+      if (el) el.textContent = formatTime(onlineGame.timeLeft);
+      if (onlineGame.timeLeft <= 0){
+        clearInterval(onlineTimer);
+        hostPlayers.forEach(p => p.done = true);
+        checkAllDone();
+      }
+    }, 1000);
+  }
+  function checkAllDone(){
+    if (hostPlayers.every(p => p.done)){
+      onlineGame.phase = 'grading';
+      broadcastGrades();
+    }
+    renderOnline();
+  }
+  function broadcastGrades(){
+    const results = hostPlayers.map(p => ({ id:p.id, name:p.name, answers:p.answers, grades:p.grades }));
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'gradingState', results, grid: onlineGame.grid }); });
+    renderOnline();
+  }
+  function renderOnline(){
+    const body = document.getElementById('gameBody');
+    const me = hostPlayers.find(p=>p.id===myId);
+    if (onlineGame.phase === 'filling'){
+      if (me.done){
+        body.innerHTML = '<div class="panel"><h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Waiting on other players\u2026</h3><p style="color:var(--muted);">' +
+          hostPlayers.map(p => escapeHtml(p.name) + (p.done?' \u2713':' \u2026')).join('<br>') + '</p></div>';
+        return;
+      }
+      body.innerHTML = '';
+      const fillDiv = document.createElement('div');
+      body.appendChild(fillDiv);
+      renderGridFill(fillDiv, onlineGame.grid, me.answers, hostTimeLimit>0?onlineGame.timeLeft:null, null, () => {
+        me.done = true;
+        checkAllDone();
+      });
+    } else {
+      const results = hostPlayers.map(p => ({ name:p.name, answers:p.answers, grades:p.grades }));
+      renderGradingScreen(body, onlineGame.grid, results,
+        (resultIdx, cellIdx, value) => { hostPlayers[resultIdx].grades[cellIdx] = value; broadcastGrades(); },
+        { newGrid: () => startOnlineGrid() },
+        true);
+    }
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    let myAnswers = emptyAnswers();
+    let myGridTimeLeft = 0, myGridTimer = null;
+    peer.on('open', () => {
+      joinConn = peer.connect('nflgrid-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'start'){
+          showScreen('game');
+          myAnswers = emptyAnswers();
+          myGridTimeLeft = msg.timeLimit;
+          let iAmDone = false;
+          function renderGuestFill(){
+            const body = document.getElementById('gameBody');
+            if (iAmDone){
+              body.innerHTML = '<div class="panel"><h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Waiting on other players\u2026</h3></div>';
+              return;
+            }
+            body.innerHTML = '';
+            const fillDiv = document.createElement('div');
+            body.appendChild(fillDiv);
+            renderGridFill(fillDiv, msg.grid, myAnswers, msg.timeLimit>0?myGridTimeLeft:null, null, () => {
+              iAmDone = true;
+              if (myGridTimer) clearInterval(myGridTimer);
+              joinConn.send({ type:'lockIn', answers: myAnswers });
+              renderGuestFill();
+            });
+          }
+          renderGuestFill();
+          if (msg.timeLimit > 0){
+            myGridTimer = setInterval(() => {
+              myGridTimeLeft--;
+              const el = document.getElementById('gridTimeLeft');
+              if (el) el.textContent = formatTime(myGridTimeLeft);
+              if (myGridTimeLeft <= 0){
+                clearInterval(myGridTimer);
+                if (!iAmDone){ iAmDone = true; joinConn.send({ type:'lockIn', answers: myAnswers }); renderGuestFill(); }
+              }
+            }, 1000);
+          }
+        } else if (msg.type === 'gradingState'){
+          renderGradingScreen(document.getElementById('gameBody'), msg.grid, msg.results,
+            (resultIdx, cellIdx, value) => {
+              const targetId = msg.results[resultIdx].id;
+              joinConn.send({ type:'grade', targetId, idx: cellIdx, value });
+            },
+            { newGrid: () => joinConn.send({ type:'newGrid' }) },
+            false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$25 Perfect Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0 0 6px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .budget-hud { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .budget-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:10px 16px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:var(--brass-bright); }
+  .budget-chip.over { color:var(--rose); border-color:var(--rose); }
+  .roster-slots { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-bottom:16px; }
+  .roster-slot { background:var(--ink-2); border:1px dashed var(--panel-line); border-radius:10px; padding:10px; text-align:center; min-height:60px; display:flex; flex-direction:column; justify-content:center; }
+  .roster-slot.filled { border-style:solid; border-color:var(--teal); background:rgba(79,209,197,0.08); cursor:pointer; }
+  .roster-slot .slot-label { font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+  .roster-slot .slot-name { font-size:13px; font-weight:600; margin-top:4px; }
+  .roster-slot .slot-price { font-size:11px; color:var(--brass-bright); font-family:'JetBrains Mono',monospace; }
+
+  .pos-tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .pos-tab { padding:8px 16px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); cursor:pointer; font-size:13px; font-weight:600; }
+  .pos-tab.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  .player-pool { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; max-height:400px; overflow-y:auto; margin-bottom:16px; }
+  .player-card { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:10px; padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .player-card:hover { border-color:var(--brass); }
+  .player-card.disabled { opacity:0.35; cursor:not-allowed; }
+  .player-card .p-info { display:flex; flex-direction:column; }
+  .player-card .p-name { font-size:13px; font-weight:600; }
+  .player-card .p-team { font-size:11px; color:var(--muted); }
+  .player-card .p-price { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; }
+
+  .compare-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:14px; }
+  .compare-card { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:12px; padding:16px; }
+  .compare-card h4 { margin:0 0 10px; font-family:'Space Grotesk',sans-serif; }
+  .compare-row { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; border-bottom:1px solid var(--panel-line); }
+  .compare-total { margin-top:10px; padding-top:8px; font-weight:700; display:flex; justify-content:space-between; color:var(--brass-bright); }
+
+  .edit-note { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:12px 14px; font-size:13px; color:var(--muted); margin-bottom:16px; }
+  .edit-note b { color:var(--brass-bright); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>$25 Perfect Team</h1>
+  <p class="subtitle">Draft a starting lineup under a $25 cap. Compare builds with friends.</p>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0 0 6px;color:var(--muted);font-size:14px;">Roster: 1 QB &middot; 2 RB &middot; 2 WR &middot; 1 TE &middot; 1 FLEX (RB/WR/TE). $25 total budget.</p>
+      <div class="edit-note">Player list is a September 2026 snapshot with rough fun-tier pricing &mdash; not real salaries. Rosters change constantly, so <b>everything below is editable</b>: use "Edit player pool" to add, remove, rename, or re-price anyone before you draft.</div>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickSolo"><h3>Play solo</h3><p>Just you, building a team for fun.</p></button>
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players take turns drafting on one device.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+      <button class="secondary-btn" id="pickEditPool" style="margin-left:0;">Edit player pool</button>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start drafting &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="editPoolScreen" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Edit player pool</h3>
+      <p style="color:var(--muted);font-size:13px;">Changes are saved on this device only.</p>
+      <div id="editPoolList" style="max-height:420px;overflow-y:auto;"></div>
+      <button class="add-player-btn" id="addCustomPlayerBtn">+ Add a player</button>
+      <div>
+        <button class="secondary-btn" id="resetPoolBtn" style="margin-left:0;">Reset to default list</button>
+        <button class="primary-btn" id="editPoolBack">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const DEFAULT_PLAYERS = [
+    {name:'Patrick Mahomes', team:'KC', pos:'QB', price:8},
+    {name:'Josh Allen', team:'BUF', pos:'QB', price:8},
+    {name:'Joe Burrow', team:'CIN', pos:'QB', price:7},
+    {name:'Lamar Jackson', team:'BAL', pos:'QB', price:7},
+    {name:'Jalen Hurts', team:'PHI', pos:'QB', price:6},
+    {name:'Jordan Love', team:'GB', pos:'QB', price:5},
+    {name:'Justin Herbert', team:'LAC', pos:'QB', price:5},
+    {name:'Matthew Stafford', team:'LAR', pos:'QB', price:5},
+    {name:'Dak Prescott', team:'DAL', pos:'QB', price:4},
+    {name:'Caleb Williams', team:'CHI', pos:'QB', price:3},
+    {name:'C.J. Stroud', team:'HOU', pos:'QB', price:3},
+    {name:'Drake Maye', team:'NE', pos:'QB', price:2},
+    {name:'Trevor Lawrence', team:'JAX', pos:'QB', price:2},
+    {name:'Baker Mayfield', team:'TB', pos:'QB', price:2},
+    {name:'Geno Smith', team:'LV', pos:'QB', price:1},
+    {name:'Bryce Young', team:'CAR', pos:'QB', price:1},
+    {name:'Jahmyr Gibbs', team:'DET', pos:'RB', price:8},
+    {name:'Bijan Robinson', team:'ATL', pos:'RB', price:8},
+    {name:'Saquon Barkley', team:'PHI', pos:'RB', price:7},
+    {name:'Ashton Jeanty', team:'LV', pos:'RB', price:6},
+    {name:'James Cook', team:'BUF', pos:'RB', price:5},
+    {name:"De'Von Achane", team:'MIA', pos:'RB', price:5},
+    {name:'Derrick Henry', team:'BAL', pos:'RB', price:5},
+    {name:'Jonathan Taylor', team:'IND', pos:'RB', price:4},
+    {name:'Christian McCaffrey', team:'SF', pos:'RB', price:4},
+    {name:'Breece Hall', team:'NYJ', pos:'RB', price:3},
+    {name:'Josh Jacobs', team:'GB', pos:'RB', price:3},
+    {name:'Kyren Williams', team:'LAR', pos:'RB', price:3},
+    {name:'Omarion Hampton', team:'LAC', pos:'RB', price:2},
+    {name:'Chase Brown', team:'CIN', pos:'RB', price:2},
+    {name:"Ja'Marr Chase", team:'CIN', pos:'WR', price:8},
+    {name:'Justin Jefferson', team:'MIN', pos:'WR', price:8},
+    {name:'CeeDee Lamb', team:'DAL', pos:'WR', price:7},
+    {name:'Puka Nacua', team:'LAR', pos:'WR', price:6},
+    {name:'Amon-Ra St. Brown', team:'DET', pos:'WR', price:6},
+    {name:'Jaxon Smith-Njigba', team:'SEA', pos:'WR', price:5},
+    {name:'A.J. Brown', team:'NE', pos:'WR', price:5},
+    {name:'Nico Collins', team:'HOU', pos:'WR', price:4},
+    {name:'Malik Nabers', team:'NYG', pos:'WR', price:4},
+    {name:'Drake London', team:'ATL', pos:'WR', price:3},
+    {name:'Garrett Wilson', team:'NYJ', pos:'WR', price:3},
+    {name:'Tyreek Hill', team:'MIA', pos:'WR', price:2},
+    {name:'DK Metcalf', team:'PIT', pos:'WR', price:2},
+    {name:'Brian Thomas Jr.', team:'JAX', pos:'WR', price:2},
+    {name:'DJ Moore', team:'CHI', pos:'WR', price:1},
+    {name:'Marvin Harrison Jr.', team:'ARI', pos:'WR', price:1},
+    {name:'Brock Bowers', team:'LV', pos:'TE', price:6},
+    {name:'Trey McBride', team:'ARI', pos:'TE', price:6},
+    {name:'George Kittle', team:'SF', pos:'TE', price:4},
+    {name:'Sam LaPorta', team:'DET', pos:'TE', price:3},
+    {name:'Travis Kelce', team:'KC', pos:'TE', price:3},
+    {name:'Tucker Kraft', team:'GB', pos:'TE', price:2},
+    {name:'Dallas Goedert', team:'PHI', pos:'TE', price:2},
+    {name:'Mark Andrews', team:'BAL', pos:'TE', price:2},
+    {name:'Colston Loveland', team:'CHI', pos:'TE', price:1},
+    {name:'Kyle Pitts', team:'ATL', pos:'TE', price:1}
+  ];
+  const BUDGET = 25;
+  const SLOTS = [
+    { key:'QB1', label:'QB', pos:['QB'] },
+    { key:'RB1', label:'RB', pos:['RB'] },
+    { key:'RB2', label:'RB', pos:['RB'] },
+    { key:'WR1', label:'WR', pos:['WR'] },
+    { key:'WR2', label:'WR', pos:['WR'] },
+    { key:'TE1', label:'TE', pos:['TE'] },
+    { key:'FLEX', label:'FLEX', pos:['RB','WR','TE'] }
+  ];
+
+  function loadPool(){
+    try {
+      const saved = localStorage.getItem('nfl-team-pool');
+      if (saved) return JSON.parse(saved);
+    } catch(e){}
+    return DEFAULT_PLAYERS.slice();
+  }
+  function savePool(pool){
+    try { localStorage.setItem('nfl-team-pool', JSON.stringify(pool)); } catch(e){}
+  }
+  let PLAYER_POOL = loadPool();
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    editPool: document.getElementById('editPoolScreen'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('pickEditPool').addEventListener('click', () => { showScreen('editPool'); renderEditPool(); });
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('editPoolBack').addEventListener('click', () => showScreen('lobby'));
+
+  // ---------------- Edit pool screen ----------------
+  function renderEditPool(){
+    const list = document.getElementById('editPoolList');
+    list.innerHTML = '';
+    PLAYER_POOL.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = 'player-row-input';
+      row.innerHTML = '<input class="text-input" data-field="name" style="flex:2;" value="'+escapeHtml(p.name)+'">' +
+        '<input class="text-input" data-field="team" style="flex:1;max-width:70px;" value="'+escapeHtml(p.team)+'">' +
+        '<select data-field="pos" style="background:var(--ink-2);border:1px solid var(--panel-line);border-radius:8px;color:var(--paper);padding:10px;">' +
+        ['QB','RB','WR','TE'].map(pos => '<option value="'+pos+'"'+(p.pos===pos?' selected':'')+'>'+pos+'</option>').join('') + '</select>' +
+        '<input class="text-input" data-field="price" type="number" min="1" max="20" style="flex:0 0 60px;" value="'+p.price+'">';
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-player-btn';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.addEventListener('click', () => { PLAYER_POOL.splice(idx,1); savePool(PLAYER_POOL); renderEditPool(); });
+      row.appendChild(removeBtn);
+      row.querySelectorAll('[data-field]').forEach(input => {
+        input.addEventListener('change', () => {
+          const field = input.dataset.field;
+          p[field] = field === 'price' ? (parseInt(input.value,10)||1) : input.value;
+          savePool(PLAYER_POOL);
+        });
+      });
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('addCustomPlayerBtn').addEventListener('click', () => {
+    PLAYER_POOL.push({ name:'New Player', team:'', pos:'QB', price:1 });
+    savePool(PLAYER_POOL);
+    renderEditPool();
+  });
+  document.getElementById('resetPoolBtn').addEventListener('click', () => {
+    PLAYER_POOL = DEFAULT_PLAYERS.slice();
+    savePool(PLAYER_POOL);
+    renderEditPool();
+  });
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 8) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove(); localPlayerCount--;
+    });
+    row.appendChild(input); row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // Shared roster-builder UI (used by local pass-turn + online simultaneous)
+  // ============================================================
+  function emptyRoster(){
+    const r = {};
+    SLOTS.forEach(s => { r[s.key] = null; });
+    return r;
+  }
+  function rosterSpent(roster){
+    return Object.values(roster).reduce((sum,p) => sum + (p?p.price:0), 0);
+  }
+  function rosterComplete(roster){
+    return SLOTS.every(s => roster[s.key] !== null);
+  }
+  function findOpenSlotFor(roster, player){
+    for (const s of SLOTS){
+      if (roster[s.key] === null && s.pos.includes(player.pos)) return s.key;
+    }
+    return null;
+  }
+  function playerUsedElsewhere(roster, player, exceptSlot){
+    return Object.entries(roster).some(([k,v]) => k!==exceptSlot && v && v.name===player.name);
+  }
+
+  function renderRosterBuilder(container, roster, onChange, onDone){
+    container.innerHTML = '';
+    const spent = rosterSpent(roster);
+    const remaining = BUDGET - spent;
+
+    const hud = document.createElement('div');
+    hud.className = 'budget-hud';
+    hud.innerHTML = '<div class="budget-chip' + (remaining<0?' over':'') + '">$' + remaining + ' left</div>' +
+      '<div style="color:var(--muted);font-size:13px;">of $' + BUDGET + ' budget</div>';
+    container.appendChild(hud);
+
+    const slotsEl = document.createElement('div');
+    slotsEl.className = 'roster-slots';
+    SLOTS.forEach(s => {
+      const p = roster[s.key];
+      const div = document.createElement('div');
+      div.className = 'roster-slot' + (p ? ' filled' : '');
+      div.innerHTML = '<div class="slot-label">' + s.label + '</div>' +
+        (p ? '<div class="slot-name">'+escapeHtml(p.name)+'</div><div class="slot-price">$'+p.price+'</div>' : '<div class="slot-name" style="color:var(--muted);">Empty</div>');
+      if (p){
+        div.addEventListener('click', () => { roster[s.key] = null; onChange(); });
+        div.title = 'Click to remove';
+      }
+      slotsEl.appendChild(div);
+    });
+    container.appendChild(slotsEl);
+
+    let activeTab = renderRosterBuilder.__activeTab || 'QB';
+    const tabs = document.createElement('div');
+    tabs.className = 'pos-tabs';
+    ['QB','RB','WR','TE'].forEach(pos => {
+      const tab = document.createElement('button');
+      tab.className = 'pos-tab' + (pos===activeTab?' active':'');
+      tab.textContent = pos;
+      tab.addEventListener('click', () => { renderRosterBuilder.__activeTab = pos; onChange(); });
+      tabs.appendChild(tab);
+    });
+    container.appendChild(tabs);
+
+    const pool = document.createElement('div');
+    pool.className = 'player-pool';
+    PLAYER_POOL.filter(p => p.pos === activeTab).sort((a,b)=>b.price-a.price).forEach(p => {
+      const targetSlot = findOpenSlotFor(roster, p);
+      const alreadyIn = playerUsedElsewhere(roster, p, null);
+      const canAfford = remaining >= p.price;
+      const disabled = !targetSlot || alreadyIn || !canAfford;
+      const card = document.createElement('div');
+      card.className = 'player-card' + (disabled?' disabled':'');
+      card.innerHTML = '<div class="p-info"><span class="p-name">'+escapeHtml(p.name)+'</span><span class="p-team">'+escapeHtml(p.team)+' &middot; '+p.pos+'</span></div><span class="p-price">$'+p.price+'</span>';
+      if (!disabled){
+        card.addEventListener('click', () => {
+          const slot = findOpenSlotFor(roster, p);
+          if (slot){ roster[slot] = p; onChange(); }
+        });
+      }
+      pool.appendChild(card);
+    });
+    container.appendChild(pool);
+
+    const actionRow = document.createElement('div');
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'primary-btn';
+    doneBtn.textContent = 'Lock in team \u2192';
+    doneBtn.disabled = !rosterComplete(roster) || remaining < 0;
+    doneBtn.addEventListener('click', () => onDone());
+    actionRow.appendChild(doneBtn);
+    if (!rosterComplete(roster)){
+      const hint = document.createElement('p');
+      hint.style.color = 'var(--muted)'; hint.style.fontSize = '13px';
+      hint.textContent = 'Fill every slot to lock in your team.';
+      actionRow.appendChild(hint);
+    } else if (remaining < 0){
+      const hint = document.createElement('p');
+      hint.style.color = 'var(--rose)'; hint.style.fontSize = '13px';
+      hint.textContent = "You're over budget \u2014 swap someone out.";
+      actionRow.appendChild(hint);
+    }
+    container.appendChild(actionRow);
+  }
+
+  function renderComparison(container, results, onPlayAgain, showControls, title){
+    container.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">' + (title || 'Everyone\'s teams') + '</h3>';
+    const grid = document.createElement('div');
+    grid.className = 'compare-grid';
+    results.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'compare-card';
+      let html = '<h4>' + escapeHtml(r.name) + '</h4>';
+      SLOTS.forEach(s => {
+        const p = r.roster[s.key];
+        html += '<div class="compare-row"><span>' + s.label + '</span><span>' + (p?escapeHtml(p.name)+' ($'+p.price+')':'\u2014') + '</span></div>';
+      });
+      html += '<div class="compare-total"><span>Total spent</span><span>$' + rosterSpent(r.roster) + ' / $' + BUDGET + '</span></div>';
+      card.innerHTML = html;
+      grid.appendChild(card);
+    });
+    panel.appendChild(grid);
+    if (showControls){
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Draft again';
+      btn.addEventListener('click', onPlayAgain);
+      panel.appendChild(btn);
+    }
+    const lobbyBtn = document.createElement('button');
+    lobbyBtn.className = 'secondary-btn';
+    lobbyBtn.textContent = 'Back to lobby';
+    lobbyBtn.addEventListener('click', () => location.reload());
+    panel.appendChild(lobbyBtn);
+    container.appendChild(panel);
+  }
+
+  // ============================================================
+  // LOCAL MODE (pass-turn drafting)
+  // ============================================================
+  let mode = 'local';
+  let localState = null;
+
+  document.getElementById('pickSolo').addEventListener('click', () => {
+    mode = 'solo';
+    localState = {
+      players: ['You'],
+      draftIndex: 0,
+      stage: 'drafting', // no pass-device needed when it's just you
+      roster: emptyRoster(),
+      results: [],
+      solo: true
+    };
+    showScreen('game');
+    renderLocal();
+  });
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    mode = 'local';
+    localState = {
+      players: names,
+      draftIndex: 0,
+      stage: 'pass', // pass -> drafting
+      roster: emptyRoster(),
+      results: [],
+      solo: false
+    };
+    showScreen('game');
+    renderLocal();
+  });
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    const drafter = localState.players[localState.draftIndex];
+
+    if (localState.stage === 'pass'){
+      body.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83c\udfc8</div><h2>Pass the device to<br>' + escapeHtml(drafter) + '</h2><p>Build your $25 roster.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm " + drafter + ' \u2014 start drafting';
+      btn.addEventListener('click', () => { localState.stage = 'drafting'; renderLocal(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    body.innerHTML = '';
+    if (!localState.solo){
+      const hudRow = document.createElement('div');
+      hudRow.style.marginBottom = '10px';
+      hudRow.innerHTML = '<div class="hud-chip" style="display:inline-block;background:var(--panel);border:1px solid var(--panel-line);border-radius:9px;padding:8px 12px;font-size:13px;">' + escapeHtml(drafter) + ' is drafting</div>';
+      body.appendChild(hudRow);
+    }
+    const builderDiv = document.createElement('div');
+    body.appendChild(builderDiv);
+    renderRosterBuilder(builderDiv, localState.roster, renderLocal, () => {
+      localState.results.push({ name: drafter, roster: localState.roster });
+      localState.draftIndex++;
+      localState.roster = emptyRoster();
+      renderRosterBuilder.__activeTab = 'QB';
+      if (localState.draftIndex >= localState.players.length){
+        renderComparison(document.getElementById('gameBody'), localState.results, () => {
+          localState.draftIndex = 0; localState.results = []; localState.roster = emptyRoster();
+          localState.stage = localState.solo ? 'drafting' : 'pass';
+          renderLocal();
+        }, true, localState.solo ? 'Your team' : 'Everyone\'s teams');
+      } else {
+        localState.stage = 'pass';
+        renderLocal();
+      }
+    });
+  }
+
+  // ============================================================
+  // HOST / JOIN (online, simultaneous drafting)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = []; // [{id,name,conn,roster,done}]
+  let onlineGame = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, conn: null, roster: emptyRoster(), done: false }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('nflteam-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, roster: emptyRoster(), done:false });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id, pool: PLAYER_POOL });
+      renderHostPlayerList();
+    } else if (msg.type === 'rosterUpdate'){
+      const p = hostPlayers.find(x=>x.id===conn.__playerId);
+      if (p) p.roster = msg.roster;
+    } else if (msg.type === 'lockIn'){
+      const p = hostPlayers.find(x=>x.id===conn.__playerId);
+      if (p){ p.roster = msg.roster; p.done = true; }
+      checkAllDone();
+    } else if (msg.type === 'playAgain'){
+      startOnlineDraft();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    showScreen('game');
+    startOnlineDraft();
+  });
+  function startOnlineDraft(){
+    hostPlayers.forEach(p => { p.roster = emptyRoster(); p.done = false; });
+    onlineGame = { phase:'drafting' };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'start', pool: PLAYER_POOL }); });
+    renderOnline();
+  }
+  function checkAllDone(){
+    if (hostPlayers.every(p => p.done)){
+      onlineGame.phase = 'result';
+      const results = hostPlayers.map(p => ({ name:p.name, roster:p.roster }));
+      hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'result', results }); });
+    }
+    renderOnline();
+  }
+  function renderOnline(){
+    const body = document.getElementById('gameBody');
+    if (onlineGame.phase === 'drafting'){
+      const me = hostPlayers.find(p=>p.id===myId);
+      if (me.done){
+        body.innerHTML = '<div class="panel"><h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Waiting on other players\u2026</h3><p style="color:var(--muted);">' +
+          hostPlayers.map(p => escapeHtml(p.name) + (p.done?' \u2713':' \u2026')).join('<br>') + '</p></div>';
+        return;
+      }
+      body.innerHTML = '';
+      const builderDiv = document.createElement('div');
+      body.appendChild(builderDiv);
+      renderRosterBuilder(builderDiv, me.roster, renderOnline, () => {
+        me.done = true;
+        checkAllDone();
+      });
+    } else if (onlineGame.phase === 'result'){
+      const results = hostPlayers.map(p => ({ name:p.name, roster:p.roster }));
+      renderComparison(body, results, () => startOnlineDraft(), true);
+    }
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    let myRoster = emptyRoster();
+    peer.on('open', () => {
+      joinConn = peer.connect('nflteam-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest'; PLAYER_POOL = msg.pool;
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'start'){
+          PLAYER_POOL = msg.pool;
+          showScreen('game');
+          myRoster = emptyRoster();
+          let iAmDone = false;
+          function renderGuestBuilder(){
+            const body = document.getElementById('gameBody');
+            if (iAmDone){
+              body.innerHTML = '<div class="panel"><h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Waiting on other players\u2026</h3></div>';
+              return;
+            }
+            body.innerHTML = '';
+            const builderDiv = document.createElement('div');
+            body.appendChild(builderDiv);
+            renderRosterBuilder(builderDiv, myRoster, renderGuestBuilder, () => {
+              iAmDone = true;
+              joinConn.send({ type:'lockIn', roster: myRoster });
+              renderGuestBuilder();
+            });
+          }
+          renderGuestBuilder();
+        } else if (msg.type === 'result'){
+          renderComparison(document.getElementById('gameBody'), msg.results, () => {}, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+})();
+</script>
+</body>
+</html>

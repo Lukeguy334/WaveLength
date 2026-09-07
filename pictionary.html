@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pictionary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px); letter-spacing:0.03em; margin:0 0 16px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .remove-player-btn:hover { color:var(--rose); border-color:var(--rose); }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .word-reveal-card { text-align:center; padding:40px 24px; border-radius:16px; background:radial-gradient(ellipse at 50% 0%, rgba(79,209,197,0.15), transparent 70%); border:1px solid rgba(79,209,197,0.35); }
+  .word-reveal-card .tag { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .word-reveal-card .the-word { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(28px,7vw,42px); margin:6px 0 14px; color:var(--teal); }
+
+  .hud-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .hud-chip .num { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--brass-bright); }
+  .timer-chip.low .num { color: var(--rose); }
+
+  .canvas-wrap { border:1px solid var(--panel-line); border-radius:12px; overflow:hidden; background:#f5f1e6; box-shadow:0 14px 28px var(--shadow); touch-action:none; }
+  canvas#drawCanvas { display:block; width:100%; height:auto; cursor:crosshair; }
+
+  .toolbar { display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .color-swatch { width:30px; height:30px; border-radius:50%; border:2px solid var(--panel-line); cursor:pointer; flex-shrink:0; }
+  .color-swatch.active { border-color:var(--paper); box-shadow:0 0 0 2px var(--brass); }
+  .size-btn { width:34px; height:34px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .size-btn.active { border-color:var(--brass); background:rgba(201,162,75,0.15); }
+  .size-btn .dot { border-radius:50%; background:var(--paper); }
+  .tool-spacer { flex:1; min-width:8px; }
+  .icon-btn { background:var(--ink-2); border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 12px; cursor:pointer; font-size:13px; }
+  .icon-btn:hover { color:var(--paper); border-color:var(--brass); }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:7px 12px; font-size:13px; display:flex; gap:6px; align-items:center; }
+  .score-chip.drawing { border-color:var(--brass); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); }
+
+  .guess-log { max-height:150px; overflow-y:auto; margin:10px 0; }
+  .guess-row { display:flex; justify-content:space-between; padding:6px 10px; background:var(--ink-2); border-radius:8px; margin-bottom:6px; font-size:14px; }
+  .guess-row.correct { background:rgba(79,209,197,0.15); color:var(--teal); }
+
+  .round-end-card { text-align:center; padding:30px 24px; }
+  .round-end-card .the-word { font-family:'Space Grotesk',sans-serif; font-size:30px; color:var(--brass-bright); margin:10px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>Pictionary</h1>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0;color:var(--muted);font-size:14px;">One player draws, everyone else guesses. Simple as that.</p>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Difficulty</label>
+      <div class="choice-row" id="diffChoice">
+        <button class="choice-btn active" data-val="mixed">Mixed</button>
+        <button class="choice-btn" data-val="easy">Easy</button>
+        <button class="choice-btn" data-val="medium">Medium</button>
+        <button class="choice-btn" data-val="hard">Hard</button>
+      </div>
+      <label class="field-label">Time per drawing</label>
+      <div class="choice-row" id="timeChoice">
+        <button class="choice-btn" data-val="60">60s</button>
+        <button class="choice-btn active" data-val="90">90s</button>
+        <button class="choice-btn" data-val="120">120s</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Difficulty</label>
+      <div class="choice-row" id="hostDiffChoice">
+        <button class="choice-btn active" data-val="mixed">Mixed</button>
+        <button class="choice-btn" data-val="easy">Easy</button>
+        <button class="choice-btn" data-val="medium">Medium</button>
+        <button class="choice-btn" data-val="hard">Hard</button>
+      </div>
+      <label class="field-label">Time per drawing</label>
+      <div class="choice-row" id="hostTimeChoice">
+        <button class="choice-btn" data-val="60">60s</button>
+        <button class="choice-btn active" data-val="90">90s</button>
+        <button class="choice-btn" data-val="120">120s</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start game &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const WORDS = {
+    easy: ['Sun','Tree','Fish','House','Star','Ball','Cat','Dog','Cup','Book','Cloud','Moon','Boat','Egg','Hat','Shoe','Cake','Kite','Fire','Snowman','Umbrella','Ice Cream','Banana','Guitar','Balloon'],
+    medium: ['Elephant','Robot','Volcano','Pirate','Dinosaur','Skateboard','Rainbow','Octopus','Castle','Rocket','Dragon','Campfire','Waterfall','Telescope','Snowboarding','Lighthouse','Kangaroo','Windmill','Treasure Map','Spaceship','Cactus','Beehive','Sandcastle','Tornado','Scarecrow'],
+    hard: ['Time Travel','Optical Illusion','Gravity','Nightmare','Deja Vu','Procrastination','Claustrophobia','Camouflage','Reflection','Silhouette','Echo','Constellation','Hibernation','Migration','Symmetry','Eclipse','Avalanche','Quicksand','Metamorphosis','Hypnosis','Turbulence','Stalactite','Boomerang','Whirlpool','Mirage']
+  };
+  const COLORS = ['#1a1a1a','#e2637a','#4f8fd1','#4fd1a0','#e8c572','#a78bd6','#e8946a','#ffffff'];
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function pickWord(difficulty){
+    const pool = difficulty === 'mixed' ? ['easy','medium','hard'][Math.floor(Math.random()*3)] : difficulty;
+    const words = WORDS[pool];
+    return words[Math.floor(Math.random()*words.length)];
+  }
+  function usedWordsKey(){ return '__used'; }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function wireChoiceRow(id){
+    document.getElementById(id).querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#'+id+' .choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  ['diffChoice','timeChoice','hostDiffChoice','hostTimeChoice'].forEach(wireChoiceRow);
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 8) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove();
+      localPlayerCount--;
+    });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // Drawing engine (shared by local + online, host + guest)
+  // ============================================================
+  let canvas, ctx;
+  let curColor = COLORS[0], curSize = 4;
+  let drawing = false;
+  let lastPoint = null;
+  let onLocalStroke = null; // callback(point, isNewStroke) - wired per-mode for broadcasting
+
+  function setupCanvas(container, interactive){
+    const wrap = document.createElement('div');
+    wrap.className = 'canvas-wrap';
+    wrap.innerHTML = '<canvas id="drawCanvas" width="800" height="560"></canvas>';
+    container.appendChild(wrap);
+    canvas = document.getElementById('drawCanvas');
+    ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    clearCanvas();
+    if (!interactive) return;
+    function getPos(e){
+      const rect = canvas.getBoundingClientRect();
+      const scale = canvas.width / rect.width;
+      const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+      const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+      return { x: (cx - rect.left) * scale, y: (cy - rect.top) * scale };
+    }
+    canvas.addEventListener('pointerdown', (e) => {
+      drawing = true;
+      const p = getPos(e);
+      lastPoint = p;
+      drawSegment(p, p, curColor, curSize);
+      if (onLocalStroke) onLocalStroke({ x:p.x, y:p.y, color:curColor, size:curSize, newStroke:true });
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      const p = getPos(e);
+      drawSegment(lastPoint, p, curColor, curSize);
+      if (onLocalStroke) onLocalStroke({ x:p.x, y:p.y, color:curColor, size:curSize, newStroke:false });
+      lastPoint = p;
+    });
+    window.addEventListener('pointerup', () => { drawing = false; lastPoint = null; });
+  }
+  function drawSegment(from, to, color, size){
+    ctx.strokeStyle = color; ctx.lineWidth = size;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+  function applyRemotePoint(pt){
+    if (!ctx) return;
+    if (pt.newStroke || !applyRemotePoint.__last){
+      drawSegment({x:pt.x,y:pt.y}, {x:pt.x,y:pt.y}, pt.color, pt.size);
+    } else {
+      drawSegment(applyRemotePoint.__last, {x:pt.x,y:pt.y}, pt.color, pt.size);
+    }
+    applyRemotePoint.__last = { x: pt.x, y: pt.y };
+  }
+  function clearCanvas(){
+    if (!ctx) return;
+    ctx.fillStyle = '#f5f1e6';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    applyRemotePoint.__last = null;
+  }
+
+  function buildToolbar(container, onClear){
+    const bar = document.createElement('div');
+    bar.className = 'toolbar';
+    COLORS.forEach((c,i) => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (i===0?' active':'');
+      sw.style.background = c;
+      sw.addEventListener('click', () => {
+        bar.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('active'));
+        sw.classList.add('active');
+        curColor = c;
+      });
+      bar.appendChild(sw);
+    });
+    [[2,'S'],[4,'M'],[8,'L']].forEach(([sz,label],i) => {
+      const b = document.createElement('button');
+      b.className = 'size-btn' + (sz===4?' active':'');
+      const dotSize = 6 + i*5;
+      b.innerHTML = '<span class="dot" style="width:'+dotSize+'px;height:'+dotSize+'px;"></span>';
+      b.addEventListener('click', () => {
+        bar.querySelectorAll('.size-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        curSize = sz;
+      });
+      bar.appendChild(b);
+    });
+    const spacer = document.createElement('div');
+    spacer.className = 'tool-spacer';
+    bar.appendChild(spacer);
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'icon-btn';
+    clearBtn.textContent = 'Clear canvas';
+    clearBtn.addEventListener('click', () => { clearCanvas(); if (onClear) onClear(); });
+    bar.appendChild(clearBtn);
+    container.appendChild(bar);
+  }
+
+  // ============================================================
+  // LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let players = []; // [{id,name,score}]
+  let game = null;
+
+  function newLocalGame(names, difficulty, timeLimit){
+    return {
+      players: names.map(n => ({ id: uid(), name: n, score: 0 })),
+      difficulty, timeLimit,
+      drawerIndex: 0,
+      word: null,
+      phase: 'reveal', // reveal -> drawing -> roundEnd -> gameEnd
+      timeLeft: timeLimit,
+      roundsCompleted: 0
+    };
+  }
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const difficulty = document.querySelector('#diffChoice .choice-btn.active').dataset.val;
+    const timeLimit = parseInt(document.querySelector('#timeChoice .choice-btn.active').dataset.val, 10);
+    mode = 'local';
+    game = newLocalGame(names, difficulty, timeLimit);
+    game.word = pickWord(difficulty);
+    showScreen('game');
+    renderLocal();
+  });
+
+  let localTimer = null;
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const drawer = game.players[game.drawerIndex];
+
+    if (game.phase === 'reveal'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\u270f\ufe0f</div><h2>Pass the device to<br>' + escapeHtml(drawer.name) + '</h2><p>Everyone else look away!</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm " + drawer.name + ' \u2014 show me my word';
+      btn.addEventListener('click', () => { game.phase = 'wordShown'; renderLocal(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'wordShown'){
+      const card = document.createElement('div');
+      card.className = 'panel word-reveal-card';
+      card.innerHTML = '<div class="tag">Your word to draw</div><div class="the-word">' + escapeHtml(game.word) + '</div>' +
+        '<p style="color:var(--muted);font-size:14px;">Memorize it, then hand the device back to the middle so everyone can see the canvas.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Start drawing \u2192';
+      btn.addEventListener('click', () => {
+        game.phase = 'drawing';
+        game.timeLeft = game.timeLimit;
+        renderLocal();
+        startLocalTimer();
+      });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'drawing'){
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + escapeHtml(drawer.name) + ' is drawing</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + game.timeLeft + '</span>s</div>';
+      body.appendChild(hud);
+
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      game.players.forEach((p,i) => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (i===game.drawerIndex?' drawing':'');
+        chip.innerHTML = escapeHtml(p.name) + ' <span class="pts">' + p.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      body.appendChild(scoreboard);
+
+      setupCanvas(body, true);
+      buildToolbar(body);
+
+      const actionRow = document.createElement('div');
+      actionRow.style.marginTop = '14px';
+      const gotItBtn = document.createElement('button');
+      gotItBtn.className = 'primary-btn';
+      gotItBtn.textContent = 'Someone got it! \u2192';
+      gotItBtn.addEventListener('click', () => endLocalRound(true));
+      actionRow.appendChild(gotItBtn);
+      const giveUpBtn = document.createElement('button');
+      giveUpBtn.className = 'secondary-btn';
+      giveUpBtn.textContent = 'Reveal & skip';
+      giveUpBtn.addEventListener('click', () => endLocalRound(false));
+      actionRow.appendChild(giveUpBtn);
+      body.appendChild(actionRow);
+      return;
+    }
+
+    if (game.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (game.lastGuessed ? '\ud83c\udf89 Got it!' : 'Time to reveal') + '</h3>' +
+        '<div class="the-word">' + escapeHtml(game.word) + '</div>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = game.roundsCompleted >= game.players.length ? 'See final scores \u2192' : 'Next drawer \u2192';
+      btn.addEventListener('click', () => {
+        if (game.roundsCompleted >= game.players.length){
+          game.phase = 'gameEnd';
+        } else {
+          game.drawerIndex = (game.drawerIndex + 1) % game.players.length;
+          game.word = pickWord(game.difficulty);
+          game.phase = 'reveal';
+        }
+        renderLocal();
+      });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'gameEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel';
+      let html = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Final scores</h3>';
+      game.players.slice().sort((a,b)=>b.score-a.score).forEach((p,i) => {
+        html += '<div class="guess-row' + (i===0?' correct':'') + '"><span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(p.name) + '</span><span class="pts">' + p.score + ' pts</span></div>';
+      });
+      card.innerHTML = html;
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Play again';
+      btn.addEventListener('click', () => {
+        const names = game.players.map(p=>p.name);
+        game = newLocalGame(names, game.difficulty, game.timeLimit);
+        game.word = pickWord(game.difficulty);
+        renderLocal();
+      });
+      card.appendChild(btn);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  function startLocalTimer(){
+    if (localTimer) clearInterval(localTimer);
+    localTimer = setInterval(() => {
+      if (game.phase !== 'drawing') { clearInterval(localTimer); return; }
+      game.timeLeft--;
+      const numEl = document.getElementById('timeLeftNum');
+      const chipEl = document.getElementById('timerChip');
+      if (numEl) numEl.textContent = game.timeLeft;
+      if (chipEl) chipEl.classList.toggle('low', game.timeLeft <= 10);
+      if (game.timeLeft <= 0){
+        clearInterval(localTimer);
+        endLocalRound(false);
+      }
+    }, 1000);
+  }
+
+  function endLocalRound(guessed){
+    if (localTimer) clearInterval(localTimer);
+    game.lastGuessed = guessed;
+    if (guessed){
+      const drawer = game.players[game.drawerIndex];
+      drawer.score += 2;
+      game.players.forEach((p,i) => { if (i !== game.drawerIndex) p.score += 1; });
+    }
+    game.roundsCompleted++;
+    game.phase = 'roundEnd';
+    renderLocal();
+  }
+
+  // ============================================================
+  // HOST / JOIN (online)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = []; // [{id,name,score,conn}]
+  let hostDifficulty = 'mixed', hostTimeLimit = 90;
+  let onlineTimer = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostDifficulty = document.querySelector('#hostDiffChoice .choice-btn.active').dataset.val;
+    hostTimeLimit = parseInt(document.querySelector('#hostTimeChoice .choice-btn.active').dataset.val, 10);
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('pictionary-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => {
+        hostPlayers = hostPlayers.filter(p => p.conn !== c);
+        renderHostPlayerList();
+        broadcastLobby();
+      });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name: (msg.name||'Player').slice(0,16), score:0, conn });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      broadcastLobby();
+    } else if (msg.type === 'draw'){
+      hostPlayers.forEach(p => { if (p.conn && p.conn !== conn) p.conn.send({ type:'draw', point: msg.point }); });
+      applyRemotePoint(msg.point);
+    } else if (msg.type === 'clear'){
+      clearCanvas();
+      hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'clear' }); });
+    } else if (msg.type === 'guess'){
+      handleGuess(conn.__playerId, msg.text);
+    } else if (msg.type === 'gotIt'){
+      if (game.drawerId === conn.__playerId || conn.__playerId === myId) endOnlineRound(true);
+    } else if (msg.type === 'giveUp'){
+      if (game.drawerId === conn.__playerId) endOnlineRound(false);
+    } else if (msg.type === 'nextRound'){
+      advanceOnlineRound();
+    } else if (msg.type === 'playAgain'){
+      startOnlineGame();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  function broadcastLobby(){
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'lobby', players: hostPlayers.map(x=>({id:x.id,name:x.name})) }); });
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    showScreen('game');
+    startOnlineGame();
+  });
+
+  function startOnlineGame(){
+    hostPlayers.forEach(p => p.score = 0);
+    game = {
+      order: hostPlayers.map(p=>p.id),
+      drawerTurn: 0,
+      drawerId: hostPlayers[0].id,
+      word: pickWord(hostDifficulty),
+      difficulty: hostDifficulty,
+      timeLimit: hostTimeLimit,
+      timeLeft: hostTimeLimit,
+      phase: 'drawing',
+      guesses: [],
+      roundsCompleted: 0
+    };
+    clearCanvas();
+    broadcastGameState();
+    startOnlineTimer();
+  }
+  function advanceOnlineRound(){
+    game.roundsCompleted++;
+    if (game.roundsCompleted >= hostPlayers.length){
+      game.phase = 'gameEnd';
+      broadcastGameState();
+      return;
+    }
+    game.drawerTurn = (game.drawerTurn + 1) % hostPlayers.length;
+    game.drawerId = game.order[game.drawerTurn];
+    game.word = pickWord(game.difficulty);
+    game.timeLeft = game.timeLimit;
+    game.guesses = [];
+    game.phase = 'drawing';
+    clearCanvas();
+    broadcastGameState();
+    startOnlineTimer();
+  }
+  function handleGuess(playerId, text){
+    const correct = text.trim().toLowerCase() === game.word.toLowerCase();
+    game.guesses.push({ playerId, text, correct });
+    if (correct) endOnlineRound(true, playerId);
+    else broadcastGameState();
+  }
+  function endOnlineRound(guessed, guesserId){
+    if (onlineTimer) clearInterval(onlineTimer);
+    game.lastGuessed = guessed;
+    if (guessed){
+      const drawer = hostPlayers.find(p=>p.id===game.drawerId);
+      if (drawer) drawer.score += 2;
+      if (guesserId){
+        const g = hostPlayers.find(p=>p.id===guesserId);
+        if (g) g.score += 1;
+      } else {
+        hostPlayers.forEach(p => { if (p.id !== game.drawerId) p.score += 1; });
+      }
+    }
+    game.phase = 'roundEnd';
+    broadcastGameState();
+  }
+  function startOnlineTimer(){
+    if (onlineTimer) clearInterval(onlineTimer);
+    onlineTimer = setInterval(() => {
+      if (game.phase !== 'drawing'){ clearInterval(onlineTimer); return; }
+      game.timeLeft--;
+      if (game.timeLeft <= 0){
+        clearInterval(onlineTimer);
+        endOnlineRound(false);
+      } else {
+        broadcastTimerOnly();
+      }
+    }, 1000);
+  }
+  function broadcastTimerOnly(){
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'timer', timeLeft: game.timeLeft }); });
+    const numEl = document.getElementById('timeLeftNum');
+    if (numEl) numEl.textContent = game.timeLeft;
+  }
+  function redactedGameFor(viewerId){
+    const g = JSON.parse(JSON.stringify(game));
+    if (viewerId !== g.drawerId && g.phase === 'drawing') g.word = null;
+    g.players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    return g;
+  }
+  function broadcastGameState(){
+    hostPlayers.forEach(p => {
+      if (p.conn) p.conn.send({ type:'state', game: redactedGameFor(p.id), myId: p.id });
+    });
+    renderOnline();
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('pictionary-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'lobby'){
+          document.getElementById('joinWaitText').textContent = "You're in with: " + msg.players.map(p=>p.name).join(', ') + '.';
+        } else if (msg.type === 'state'){
+          game = msg.game;
+          if (!screens.game.classList.contains('active')) showScreen('game');
+          renderOnline();
+        } else if (msg.type === 'draw'){
+          applyRemotePoint(msg.point);
+        } else if (msg.type === 'clear'){
+          clearCanvas();
+        } else if (msg.type === 'timer'){
+          game.timeLeft = msg.timeLeft;
+          const numEl = document.getElementById('timeLeftNum');
+          if (numEl) numEl.textContent = game.timeLeft;
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+  function renderOnline(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const iAmDrawer = game.drawerId === myId;
+    const drawerName = (game.players.find(p=>p.id===game.drawerId) || {}).name || '\u2026';
+
+    if (game.phase === 'drawing' || game.phase === 'roundEnd'){
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + escapeHtml(drawerName) + ' is drawing</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + game.timeLeft + '</span>s</div>' +
+        (iAmDrawer ? '<div class="hud-chip">Your word: <b style="color:var(--teal);margin-left:4px;">' + escapeHtml(game.word||'') + '</b></div>' : '');
+      body.appendChild(hud);
+
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      (game.players||[]).forEach(p => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (p.id===game.drawerId?' drawing':'');
+        chip.innerHTML = escapeHtml(p.name) + ' <span class="pts">' + p.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      body.appendChild(scoreboard);
+
+      setupCanvas(body, iAmDrawer && game.phase === 'drawing');
+      if (iAmDrawer && game.phase === 'drawing'){
+        onLocalStroke = (pt) => {
+          if (mode === 'host') {
+            hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'draw', point: pt }); });
+          } else {
+            joinConn.send({ type:'draw', point: pt });
+          }
+        };
+        buildToolbar(body, () => {
+          if (mode === 'host') hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'clear' }); });
+          else joinConn.send({ type:'clear' });
+        });
+      } else {
+        onLocalStroke = null;
+      }
+
+      if (game.phase === 'drawing'){
+        if (iAmDrawer){
+          const actionRow = document.createElement('div');
+          actionRow.style.marginTop = '14px';
+          const giveUpBtn = document.createElement('button');
+          giveUpBtn.className = 'secondary-btn';
+          giveUpBtn.textContent = 'Reveal & skip';
+          giveUpBtn.addEventListener('click', () => {
+            if (mode==='host') endOnlineRound(false);
+            else joinConn.send({ type:'giveUp' });
+          });
+          actionRow.appendChild(giveUpBtn);
+          body.appendChild(actionRow);
+        } else {
+          const guessRow = document.createElement('div');
+          guessRow.style.marginTop = '14px';
+          const input = document.createElement('input');
+          input.className = 'text-input';
+          input.placeholder = 'Type your guess\u2026';
+          guessRow.appendChild(input);
+          const submitBtn = document.createElement('button');
+          submitBtn.className = 'primary-btn';
+          submitBtn.textContent = 'Guess';
+          submitBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (!text) return;
+            if (mode==='host') handleGuess(myId, text);
+            else joinConn.send({ type:'guess', text });
+            input.value = '';
+          });
+          guessRow.appendChild(submitBtn);
+          body.appendChild(guessRow);
+          if (game.guesses && game.guesses.length){
+            const log = document.createElement('div');
+            log.className = 'guess-log';
+            game.guesses.slice().reverse().forEach(g => {
+              const pl = (game.players||[]).find(p=>p.id===g.playerId) || {name:'?'};
+              const row = document.createElement('div');
+              row.className = 'guess-row' + (g.correct?' correct':'');
+              row.innerHTML = '<span>' + escapeHtml(pl.name) + '</span><span>' + escapeHtml(g.text) + (g.correct?' \u2713':'') + '</span>';
+              log.appendChild(row);
+            });
+            body.appendChild(log);
+          }
+        }
+      } else {
+        const card = document.createElement('div');
+        card.className = 'panel round-end-card';
+        card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (game.lastGuessed ? '\ud83c\udf89 Got it!' : 'Time to reveal') + '</h3>' +
+          '<div class="the-word">' + escapeHtml(game.word) + '</div>';
+        if (mode === 'host'){
+          const btn = document.createElement('button');
+          btn.className = 'primary-btn';
+          btn.textContent = 'Next drawer \u2192';
+          btn.addEventListener('click', () => advanceOnlineRound());
+          card.appendChild(btn);
+        } else {
+          const p = document.createElement('p');
+          p.style.color='var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='14px';
+          p.textContent = 'Waiting for the host to continue\u2026';
+          card.appendChild(p);
+        }
+        body.appendChild(card);
+      }
+      return;
+    }
+
+    if (game.phase === 'gameEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel';
+      let html = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Final scores</h3>';
+      (game.players||[]).slice().sort((a,b)=>b.score-a.score).forEach((p,i) => {
+        html += '<div class="guess-row' + (i===0?' correct':'') + '"><span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(p.name) + '</span><span class="pts">' + p.score + ' pts</span></div>';
+      });
+      card.innerHTML = html;
+      if (mode === 'host'){
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Play again';
+        btn.addEventListener('click', () => startOnlineGame());
+        card.appendChild(btn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='14px';
+        p.textContent = 'Waiting for the host to start another game\u2026';
+        card.appendChild(p);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+})();
+</script>
+</body>
+</html>

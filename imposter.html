@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imposter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px); letter-spacing:0.03em; margin:0 0 16px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .remove-player-btn:hover { color:var(--rose); border-color:var(--rose); }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .reveal-card { text-align:center; padding:40px 24px; border-radius:16px; }
+  .reveal-card.imposter-mode { background:radial-gradient(ellipse at 50% 0%, rgba(226,99,122,0.18), transparent 70%); border:1px solid rgba(226,99,122,0.4); }
+  .reveal-card.knows-mode { background:radial-gradient(ellipse at 50% 0%, rgba(79,209,197,0.15), transparent 70%); border:1px solid rgba(79,209,197,0.35); }
+  .reveal-card .tag { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .reveal-card .role-word { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(28px,7vw,42px); margin:6px 0 14px; }
+  .reveal-card.imposter-mode .role-word { color:var(--rose); }
+  .reveal-card.knows-mode .role-word { color:var(--teal); }
+  .reveal-card .category-tag { font-size:13px; color:var(--muted); }
+  .reveal-card .hint-text { color:var(--muted); font-size:14px; margin-top:16px; max-width:400px; margin-left:auto; margin-right:auto; line-height:1.6; }
+
+  .turn-tracker { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:18px; text-align:center; margin-bottom:14px; }
+  .turn-tracker .now-giving { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .turn-tracker .player-name { font-family:'Space Grotesk',sans-serif; font-size:24px; color:var(--brass-bright); }
+  .player-chip-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px; }
+  .player-chip { padding:6px 12px; border-radius:20px; border:1px solid var(--panel-line); font-size:13px; color:var(--muted); }
+  .player-chip.current { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.12); }
+  .player-chip.done { opacity:0.5; text-decoration:line-through; }
+
+  .vote-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:16px; }
+  .vote-card { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:10px; padding:16px 10px; text-align:center; cursor:pointer; font-family:'Space Grotesk',sans-serif; font-weight:600; }
+  .vote-card:hover { border-color:var(--brass); }
+  .vote-card.selected { border-color:var(--teal); background:rgba(79,209,197,0.12); color:var(--teal); }
+
+  .reveal-summary { text-align:center; padding:10px; }
+  .reveal-summary .word-display { font-family:'Space Grotesk',sans-serif; font-size:32px; color:var(--brass-bright); margin:10px 0; }
+  .reveal-summary .outcome-banner { font-family:'Space Grotesk',sans-serif; font-size:24px; margin:16px 0 8px; }
+  .reveal-summary .outcome-banner.caught { color:var(--teal); }
+  .reveal-summary .outcome-banner.escaped { color:var(--rose); }
+  .vote-tally { margin:18px 0; text-align:left; max-width:320px; margin-left:auto; margin-right:auto; }
+  .vote-tally-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--panel-line); font-size:14px; }
+  .vote-tally-row .count { color:var(--brass-bright); font-family:'JetBrains Mono',monospace; }
+
+  .clue-log { max-height:200px; overflow-y:auto; margin:14px 0; text-align:left; }
+  .clue-log-row { display:flex; justify-content:space-between; padding:8px 10px; background:var(--ink-2); border-radius:8px; margin-bottom:6px; font-size:14px; }
+  .clue-log-row .cl-name { color:var(--muted); }
+  .clue-log-row .cl-word { font-weight:600; color:var(--paper); }
+
+  .timer-display { font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--brass-bright); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>Imposter</h1>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0;color:var(--muted);font-size:14px;">Everyone gets the same secret word &mdash; except one Imposter, who has to bluff. Give one-word clues, then vote out who you think is faking it.</p>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>3&ndash;10 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (3&ndash;10)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Category</label>
+      <div class="choice-row" id="categoryChoice"></div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Category</label>
+      <div class="choice-row" id="hostCategoryChoice"></div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 3)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start game &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const CATEGORIES = {
+    'Food & Drink': ['Pizza','Sushi','Tacos','Pancakes','Ice Cream','Coffee','Spaghetti','Burger','Popcorn','Watermelon','Hot Sauce','Birthday Cake','Lemonade','Bacon','Cereal'],
+    'Places': ['Beach','Airport','Library','Hospital','Amusement Park','Desert Island','Haunted House','Ski Resort','Zoo','Subway','Farm','Castle','Space Station','Volcano','Campsite'],
+    'Jobs': ['Firefighter','Dentist','Chef','Pilot','Teacher','Lifeguard','Detective','Farmer','Astronaut','Plumber','Photographer','Librarian','Referee','Tattoo Artist','Zookeeper'],
+    'Animals': ['Elephant','Penguin','Octopus','Kangaroo','Shark','Flamingo','Gorilla','Hedgehog','Peacock','Chameleon','Sloth','Rhino','Owl','Jellyfish','Platypus'],
+    'Everyday Objects': ['Umbrella','Backpack','Toothbrush','Flashlight','Mirror','Alarm Clock','Sunglasses','Blender','Stapler','Pillow','Candle','Wallet','Headphones','Ladder','Thermometer'],
+    'Sports & Games': ['Basketball','Bowling','Chess','Surfing','Archery','Gymnastics','Dodgeball','Golf','Boxing','Skateboarding','Fencing','Darts','Rock Climbing','Curling','Tug of War'],
+    'Nature & Weather': ['Thunderstorm','Rainbow','Avalanche','Waterfall','Blizzard','Sunrise','Earthquake','Tornado','Glacier','Tide Pool','Fog','Wildfire','Quicksand','Meteor Shower','Drought'],
+    'Fantasy & Fiction': ['Dragon','Wizard','Pirate Ship','Time Machine','Vampire','Genie','Robot','Mermaid','Ghost','Superhero','Alien','Zombie','Fairy','Knight','Werewolf']
+  };
+  const CATEGORY_NAMES = Object.keys(CATEGORIES);
+
+  function pickWord(categoryName){
+    const cats = categoryName === 'Any' ? CATEGORY_NAMES : [categoryName];
+    const cat = cats[Math.floor(Math.random()*cats.length)];
+    const words = CATEGORIES[cat];
+    const word = words[Math.floor(Math.random()*words.length)];
+    return { category: cat, word };
+  }
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function wireCategoryChoice(id, defaultAny){
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    const options = defaultAny ? ['Any'].concat(CATEGORY_NAMES) : CATEGORY_NAMES;
+    options.forEach((name,i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn' + (i===0?' active':'');
+      btn.textContent = name;
+      btn.dataset.val = name;
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+      el.appendChild(btn);
+    });
+  }
+  wireCategoryChoice('categoryChoice', true);
+  wireCategoryChoice('hostCategoryChoice', true);
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(defaultName){
+    if (localPlayerCount >= 10) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.value = defaultName || '';
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 3) return;
+      row.remove();
+      localPlayerCount--;
+    });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', () => addPlayerRow());
+
+  // ---------------- Game state ----------------
+  let mode = 'local'; // local | host | guest
+  let myId = null, myName = '';
+  let peer = null, hostConns = {}, joinConn = null;
+  let players = []; // [{id, name}]
+  let game = null; // shared shape below
+
+  function newGameCommon(category, playerList){
+    const { category: cat, word } = pickWord(category);
+    const imposterIdx = Math.floor(Math.random() * playerList.length);
+    return {
+      players: playerList,
+      category: cat,
+      word: word,
+      imposterId: playerList[imposterIdx].id,
+      turnOrder: shuffle(playerList.map(p=>p.id)),
+      clues: [],
+      votes: {},
+      phase: 'reveal' // reveal -> discuss -> vote -> result
+    };
+  }
+
+  function enterGame(){ showScreen('game'); }
+
+  // ============================================================
+  // LOCAL MODE
+  // ============================================================
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const category = document.querySelector('#categoryChoice .choice-btn.active').dataset.val;
+    mode = 'local';
+    players = names.map(n => ({ id: uid(), name: n }));
+    game = newGameCommon(category, players);
+    game.revealIndex = 0;
+    game.revealStage = 'pass'; // pass -> shown
+    game.turnIndex = 0;
+    enterGame();
+    renderLocal();
+  });
+
+  function currentRevealPlayer(){ return game.players[game.revealIndex]; }
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    if (game.phase === 'reveal'){
+      const p = currentRevealPlayer();
+      body.innerHTML = '';
+      if (game.revealStage === 'pass'){
+        const card = document.createElement('div');
+        card.className = 'panel pass-card';
+        card.innerHTML = '<div class="to-icon">\ud83d\udcf1</div><h2>Pass the device to<br>' + escapeHtml(p.name) + '</h2><p>Make sure no one else can see the screen.</p>';
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = "I'm " + p.name + ' \u2014 show me';
+        btn.addEventListener('click', () => { game.revealStage = 'shown'; renderLocal(); });
+        card.appendChild(btn);
+        body.appendChild(card);
+      } else {
+        const isImposter = p.id === game.imposterId;
+        const card = document.createElement('div');
+        card.className = 'panel reveal-card ' + (isImposter ? 'imposter-mode' : 'knows-mode');
+        if (isImposter){
+          card.innerHTML = '<div class="tag">Category: ' + escapeHtml(game.category) + '</div>' +
+            '<div class="role-word">You are the IMPOSTER</div>' +
+            '<p class="hint-text">You don\u2019t know the secret word. Listen closely and bluff a one-word clue that could plausibly fit. Try not to get caught \u2014 or guess the word if you get close!</p>';
+        } else {
+          card.innerHTML = '<div class="tag">Category: ' + escapeHtml(game.category) + '</div>' +
+            '<div class="role-word">' + escapeHtml(game.word) + '</div>' +
+            '<p class="hint-text">Give a one-word clue about this each round \u2014 close enough to prove you know it, vague enough not to give it away. One player doesn\u2019t know the word. Find them.</p>';
+        }
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Got it \u2014 hide & pass';
+        btn.addEventListener('click', () => {
+          game.revealIndex++;
+          if (game.revealIndex >= game.players.length){
+            game.phase = 'discuss';
+          } else {
+            game.revealStage = 'pass';
+          }
+          renderLocal();
+        });
+        card.appendChild(btn);
+        body.appendChild(card);
+      }
+      return;
+    }
+
+    if (game.phase === 'discuss'){
+      body.innerHTML = '';
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Give your clues out loud</h3>' +
+        '<p style="color:var(--muted);font-size:14px;">Going around in order, everyone says ONE word related to the secret \u2014 including the Imposter, who has to bluff. Tap Next after each person speaks.</p>';
+      const tracker = document.createElement('div');
+      tracker.className = 'turn-tracker';
+      const curId = game.turnOrder[game.turnIndex % game.turnOrder.length];
+      const curPlayer = game.players.find(p=>p.id===curId);
+      tracker.innerHTML = '<div class="now-giving">Now giving a clue</div><div class="player-name">' + escapeHtml(curPlayer.name) + '</div>';
+      const chipRow = document.createElement('div');
+      chipRow.className = 'player-chip-row';
+      game.turnOrder.forEach((pid, i) => {
+        const pl = game.players.find(p=>p.id===pid);
+        const chip = document.createElement('span');
+        chip.className = 'player-chip' + (i===(game.turnIndex % game.turnOrder.length) ? ' current' : '');
+        chip.textContent = pl.name;
+        chipRow.appendChild(chip);
+      });
+      tracker.appendChild(chipRow);
+      panel.appendChild(tracker);
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'primary-btn';
+      nextBtn.textContent = 'Next player \u2192';
+      nextBtn.addEventListener('click', () => { game.turnIndex++; renderLocal(); });
+      panel.appendChild(nextBtn);
+      const voteBtn = document.createElement('button');
+      voteBtn.className = 'secondary-btn';
+      voteBtn.textContent = 'Everyone\u2019s ready \u2014 start voting';
+      voteBtn.addEventListener('click', () => {
+        game.phase = 'vote';
+        game.voteRevealIndex = 0;
+        game.voteStage = 'pass';
+        game.votes = {};
+        renderLocal();
+      });
+      panel.appendChild(voteBtn);
+      body.appendChild(panel);
+      return;
+    }
+
+    if (game.phase === 'vote'){
+      const voter = game.players[game.voteRevealIndex];
+      body.innerHTML = '';
+      if (game.voteStage === 'pass'){
+        const card = document.createElement('div');
+        card.className = 'panel pass-card';
+        card.innerHTML = '<div class="to-icon">\ud83d\uddf3\ufe0f</div><h2>Pass the device to<br>' + escapeHtml(voter.name) + '</h2><p>Vote privately for who you think the Imposter is.</p>';
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = "I'm " + voter.name + ' \u2014 let me vote';
+        btn.addEventListener('click', () => { game.voteStage = 'shown'; renderLocal(); });
+        card.appendChild(btn);
+        body.appendChild(card);
+      } else {
+        const panel = document.createElement('div');
+        panel.className = 'panel';
+        panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Who\u2019s the Imposter?</h3>';
+        const grid = document.createElement('div');
+        grid.className = 'vote-grid';
+        let selected = null;
+        game.players.filter(p => p.id !== voter.id).forEach(p => {
+          const c = document.createElement('div');
+          c.className = 'vote-card';
+          c.textContent = p.name;
+          c.addEventListener('click', () => {
+            grid.querySelectorAll('.vote-card').forEach(x=>x.classList.remove('selected'));
+            c.classList.add('selected');
+            selected = p.id;
+            confirmBtn.disabled = false;
+          });
+          grid.appendChild(c);
+        });
+        panel.appendChild(grid);
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'primary-btn';
+        confirmBtn.textContent = 'Confirm vote';
+        confirmBtn.disabled = true;
+        confirmBtn.addEventListener('click', () => {
+          if (!selected) return;
+          game.votes[voter.id] = selected;
+          game.voteRevealIndex++;
+          if (game.voteRevealIndex >= game.players.length){
+            game.phase = 'result';
+          } else {
+            game.voteStage = 'pass';
+          }
+          renderLocal();
+        });
+        panel.appendChild(confirmBtn);
+        body.appendChild(panel);
+      }
+      return;
+    }
+
+    if (game.phase === 'result'){
+      renderResult(body, game, {
+        viewerIsImposter: true, // shared screen - whole group sees the reveal together
+        mode: 'local',
+        showControls: true,
+        onSubmitGuess: (text) => {
+          game.imposterGuessResolved = true;
+          game.imposterGuessCorrect = text.trim().toLowerCase() === game.word.toLowerCase();
+          renderLocal();
+        },
+        onPlayAgain: () => {
+          const playerList = game.players;
+          game = newGameCommon('Any', playerList);
+          game.revealIndex = 0; game.revealStage = 'pass'; game.turnIndex = 0;
+          renderLocal();
+        }
+      });
+      return;
+    }
+  }
+
+  function tallyVotes(game){
+    const counts = {};
+    Object.values(game.votes).forEach(id => { counts[id] = (counts[id]||0) + 1; });
+    let max = 0, leaders = [];
+    game.players.forEach(p => {
+      const c = counts[p.id] || 0;
+      if (c > max){ max = c; leaders = [p.id]; }
+      else if (c === max && max > 0) leaders.push(p.id);
+    });
+    return { counts, leaders, max };
+  }
+
+  function renderResult(body, game, opts){
+    body.innerHTML = '';
+    const { counts, leaders } = tallyVotes(game);
+    const imposter = game.players.find(p => p.id === game.imposterId);
+    const caught = leaders.length === 1 && leaders[0] === game.imposterId;
+    const panel = document.createElement('div');
+    panel.className = 'panel reveal-summary';
+    let html = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Results</h3>';
+    html += '<div class="vote-tally">';
+    game.players.slice().sort((a,b) => (counts[b.id]||0)-(counts[a.id]||0)).forEach(p => {
+      html += '<div class="vote-tally-row"><span>' + escapeHtml(p.name) + (p.id===game.imposterId?' <span style="color:var(--rose)">(Imposter)</span>':'') + '</span><span class="count">' + (counts[p.id]||0) + ' vote' + ((counts[p.id]||0)===1?'':'s') + '</span></div>';
+    });
+    html += '</div>';
+    html += '<div class="outcome-banner ' + (caught?'caught':'escaped') + '">' + (caught ? 'Caught! It was ' + escapeHtml(imposter.name) : (leaders.length>1 ? 'Tied vote \u2014 ' + escapeHtml(imposter.name) + ' slipped away' : escapeHtml(imposter.name) + ' got away with it!')) + '</div>';
+    html += '<div class="tag" style="color:var(--muted);">Category: ' + escapeHtml(game.category) + '</div>';
+    html += '<div class="word-display">' + escapeHtml(game.word) + '</div>';
+    panel.innerHTML = html;
+
+    if (caught && !game.imposterGuessResolved){
+      if (opts.viewerIsImposter){
+        const guessWrap = document.createElement('div');
+        guessWrap.style.marginTop = '16px';
+        guessWrap.innerHTML = '<p style="color:var(--muted);font-size:14px;">You were caught \u2014 but you get one shot to steal the win by guessing the word.</p>';
+        const input = document.createElement('input');
+        input.className = 'text-input';
+        input.placeholder = 'Type the word\u2026';
+        guessWrap.appendChild(input);
+        const guessBtn = document.createElement('button');
+        guessBtn.className = 'primary-btn';
+        guessBtn.textContent = 'Submit guess';
+        guessBtn.addEventListener('click', () => { opts.onSubmitGuess(input.value); });
+        guessWrap.appendChild(guessBtn);
+        panel.appendChild(guessWrap);
+      } else if (opts.mode !== 'local') {
+        const p2 = document.createElement('p');
+        p2.style.color = 'var(--muted)'; p2.style.fontSize = '13px'; p2.style.marginTop = '14px';
+        p2.textContent = imposter.name + ' gets one shot to guess the word and steal the win…';
+        panel.appendChild(p2);
+      } else {
+        const guessWrap = document.createElement('div');
+        guessWrap.style.marginTop = '16px';
+        guessWrap.innerHTML = '<p style="color:var(--muted);font-size:14px;">Since ' + escapeHtml(imposter.name) + ' was caught, they get one shot to steal the win by guessing the word. Pass them the device.</p>';
+        const input = document.createElement('input');
+        input.className = 'text-input';
+        input.placeholder = 'Type the word\u2026';
+        guessWrap.appendChild(input);
+        const guessBtn = document.createElement('button');
+        guessBtn.className = 'primary-btn';
+        guessBtn.textContent = 'Submit guess';
+        guessBtn.addEventListener('click', () => { opts.onSubmitGuess(input.value); });
+        guessWrap.appendChild(guessBtn);
+        panel.appendChild(guessWrap);
+      }
+    } else if (game.imposterGuessResolved){
+      const note = document.createElement('div');
+      note.style.marginTop = '14px';
+      note.style.fontSize = '15px';
+      note.style.fontWeight = '600';
+      note.style.color = game.imposterGuessCorrect ? 'var(--brass-bright)' : 'var(--muted)';
+      note.textContent = game.imposterGuessCorrect ? (imposter.name + ' guessed right \u2014 Imposter steals the win!') : (imposter.name + ' guessed wrong \u2014 the group wins!');
+      panel.appendChild(note);
+    }
+
+    if (opts.showControls){
+      const actionsRow = document.createElement('div');
+      const againBtn = document.createElement('button');
+      againBtn.className = 'primary-btn';
+      againBtn.textContent = 'Play again (same players)';
+      againBtn.addEventListener('click', () => { opts.onPlayAgain(); });
+      actionsRow.appendChild(againBtn);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      actionsRow.appendChild(lobbyBtn);
+      panel.appendChild(actionsRow);
+    } else {
+      const waitP = document.createElement('p');
+      waitP.style.color = 'var(--muted)'; waitP.style.fontSize='13px'; waitP.style.textAlign='center'; waitP.style.marginTop='14px';
+      waitP.textContent = 'Waiting for the host to start another round\u2026';
+      panel.appendChild(waitP);
+    }
+    body.appendChild(panel);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ============================================================
+  // HOST / JOIN (online)
+  // ============================================================
+  let hostRoomCode = null, hostCategory = 'Any';
+  let hostPlayers = []; // [{id,name,conn}] conn null for host itself
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostCategory = document.querySelector('#hostCategoryChoice .choice-btn.active').dataset.val;
+    myId = uid(); myName = name;
+    hostRoomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, conn: null }];
+    document.getElementById('hostRoomCode').textContent = hostRoomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('imposter-'+hostRoomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => {
+        c.send({ type:'awaitingName' });
+      });
+      c.on('close', () => {
+        hostPlayers = hostPlayers.filter(p => p.conn !== c);
+        renderHostPlayerList();
+        broadcastLobby();
+      });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const name = (msg.name || 'Player').slice(0,16);
+      const id = uid();
+      hostPlayers.push({ id, name, conn });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      broadcastLobby();
+    } else if (msg.type === 'vote'){
+      game.votes[conn.__playerId] = msg.votedFor;
+      checkAllVotesIn();
+    } else if (msg.type === 'clue'){
+      game.clues.push({ playerId: conn.__playerId, text: msg.text });
+      game.turnIndex++;
+      broadcastGameState();
+    } else if (msg.type === 'guess'){
+      const imposter = game.players.find(p=>p.id===game.imposterId);
+      game.imposterGuessResolved = true;
+      game.imposterGuessCorrect = msg.text.trim().toLowerCase() === game.word.toLowerCase();
+      broadcastGameState();
+    } else if (msg.type === 'requestNext'){
+      if (msg.action === 'toDiscuss'){ game.phase='discuss'; broadcastGameState(); }
+      if (msg.action === 'toVote'){ game.phase='vote'; game.votes={}; broadcastGameState(); }
+      if (msg.action === 'playAgain'){
+        const playerList = game.players;
+        game = newGameCommon('Any', playerList);
+        broadcastGameState();
+      }
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 3);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 3 ? 'Waiting for players to join\u2026 (need at least 3)' : (hostPlayers.length + ' players ready.');
+  }
+  function broadcastLobby(){
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'lobby', players: hostPlayers.map(x=>({id:x.id,name:x.name})) }); });
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    players = hostPlayers.map(p => ({ id:p.id, name:p.name }));
+    game = newGameCommon(hostCategory, players);
+    game.turnIndex = 0;
+    enterGame();
+    broadcastGameState();
+    renderOnline();
+  });
+  function broadcastGameState(){
+    hostPlayers.forEach(p => {
+      if (!p.conn) return;
+      p.conn.send({ type:'state', game: redactedGameFor(p.id), myId: p.id });
+    });
+    renderOnline();
+  }
+  function redactedGameFor(viewerId){
+    const g = JSON.parse(JSON.stringify(game));
+    if (g.phase === 'result'){
+      g.__wasImposter = (viewerId === game.imposterId);
+      return g; // full reveal - everyone sees the word and who the imposter was
+    }
+    if (viewerId === g.imposterId){
+      g.word = null; // the imposter never learns the real word before the reveal
+    }
+    g.__wasImposter = (viewerId === game.imposterId);
+    g.imposterId = null; // nobody's identity is revealed to others before the reveal
+    return g;
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('imposter-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId;
+          mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start the game\u2026";
+        } else if (msg.type === 'lobby'){
+          document.getElementById('joinWaitText').textContent = "You're in with: " + msg.players.map(p=>p.name).join(', ') + '. Waiting for host to start\u2026';
+        } else if (msg.type === 'state'){
+          game = msg.game;
+          if (screens.game && !screens.game.classList.contains('active')) enterGame();
+          renderOnline();
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+  // ---------------- Online render (host sees full game object; guest sees redacted) ----------------
+  function renderOnline(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const iAmImposter = mode==='host' ? (game.imposterId === myId) : !!game.__wasImposter;
+
+    if (game.phase === 'reveal'){
+      const card = document.createElement('div');
+      card.className = 'panel reveal-card ' + (iAmImposter ? 'imposter-mode' : 'knows-mode');
+      if (iAmImposter){
+        card.innerHTML = '<div class="tag">Category: ' + escapeHtml(game.category) + '</div>' +
+          '<div class="role-word">You are the IMPOSTER</div>' +
+          '<p class="hint-text">You don\u2019t know the secret word. Bluff a one-word clue. Try not to get caught!</p>';
+      } else {
+        card.innerHTML = '<div class="tag">Category: ' + escapeHtml(game.category) + '</div>' +
+          '<div class="role-word">' + escapeHtml(game.word) + '</div>' +
+          '<p class="hint-text">One player doesn\u2019t know this word. Give a clue that proves you know it without giving it away, then help find the Imposter.</p>';
+      }
+      if (mode==='host'){
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Everyone\u2019s seen it \u2014 start clues';
+        btn.addEventListener('click', () => { game.phase='discuss'; broadcastGameState(); });
+        card.appendChild(btn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color = 'var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='16px';
+        p.textContent = 'Waiting for the host to move to clues\u2026';
+        card.appendChild(p);
+      }
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'discuss'){
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Type your one-word clue in turn</h3>';
+      const curId = game.turnOrder[game.turnIndex % game.turnOrder.length];
+      const curPlayer = game.players.find(p=>p.id===curId);
+      const tracker = document.createElement('div');
+      tracker.className = 'turn-tracker';
+      tracker.innerHTML = '<div class="now-giving">Now giving a clue</div><div class="player-name">' + escapeHtml(curPlayer.name) + '</div>';
+      panel.appendChild(tracker);
+      if (game.clues.length){
+        const log = document.createElement('div');
+        log.className = 'clue-log';
+        game.clues.forEach(c => {
+          const pl = game.players.find(p=>p.id===c.playerId);
+          const row = document.createElement('div');
+          row.className = 'clue-log-row';
+          row.innerHTML = '<span class="cl-name">' + escapeHtml(pl.name) + '</span><span class="cl-word">' + escapeHtml(c.text) + '</span>';
+          log.appendChild(row);
+        });
+        panel.appendChild(log);
+      }
+      if (curId === myId){
+        const input = document.createElement('input');
+        input.className = 'text-input';
+        input.placeholder = 'Your one-word clue\u2026';
+        panel.appendChild(input);
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'primary-btn';
+        submitBtn.textContent = 'Submit clue';
+        submitBtn.addEventListener('click', () => {
+          const text = input.value.trim();
+          if (!text) return;
+          if (mode==='host'){
+            game.clues.push({ playerId: myId, text });
+            game.turnIndex++;
+            broadcastGameState();
+          } else {
+            joinConn.send({ type:'clue', text });
+          }
+        });
+        panel.appendChild(submitBtn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px';
+        p.textContent = 'Waiting for ' + curPlayer.name + ' to submit a clue\u2026';
+        panel.appendChild(p);
+      }
+      if (mode==='host'){
+        const voteBtn = document.createElement('button');
+        voteBtn.className = 'secondary-btn';
+        voteBtn.textContent = 'Everyone\u2019s ready \u2014 start voting';
+        voteBtn.addEventListener('click', () => { game.phase='vote'; game.votes={}; broadcastGameState(); });
+        panel.appendChild(voteBtn);
+      }
+      body.appendChild(panel);
+      return;
+    }
+
+    if (game.phase === 'vote'){
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      const already = game.votes && game.votes[myId];
+      panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Who\u2019s the Imposter?</h3>';
+      if (already){
+        panel.innerHTML += '<p style="color:var(--muted);">Vote submitted. Waiting on everyone else\u2026</p>';
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'vote-grid';
+        let selected = null;
+        game.players.filter(p => p.id !== myId).forEach(p => {
+          const c = document.createElement('div');
+          c.className = 'vote-card';
+          c.textContent = p.name;
+          c.addEventListener('click', () => {
+            grid.querySelectorAll('.vote-card').forEach(x=>x.classList.remove('selected'));
+            c.classList.add('selected');
+            selected = p.id;
+            confirmBtn.disabled = false;
+          });
+          grid.appendChild(c);
+        });
+        panel.appendChild(grid);
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'primary-btn';
+        confirmBtn.textContent = 'Confirm vote';
+        confirmBtn.disabled = true;
+        confirmBtn.addEventListener('click', () => {
+          if (!selected) return;
+          if (mode==='host'){
+            game.votes[myId] = selected;
+            checkAllVotesIn();
+          } else {
+            joinConn.send({ type:'vote', votedFor: selected });
+          }
+          panel.innerHTML = '<p style="color:var(--muted);">Vote submitted. Waiting on everyone else\u2026</p>';
+        });
+        panel.appendChild(confirmBtn);
+      }
+      body.appendChild(panel);
+      return;
+    }
+
+    if (game.phase === 'result'){
+      renderResult(body, game, {
+        viewerIsImposter: iAmImposter,
+        mode: 'online',
+        showControls: mode === 'host',
+        onSubmitGuess: (text) => {
+          const correct = text.trim().toLowerCase() === game.word.toLowerCase();
+          game.imposterGuessResolved = true;
+          game.imposterGuessCorrect = correct;
+          if (mode === 'host'){
+            broadcastGameState();
+          } else {
+            joinConn.send({ type:'guess', text });
+          }
+        },
+        onPlayAgain: () => {
+          const playerList = game.players;
+          game = newGameCommon('Any', playerList);
+          broadcastGameState();
+        }
+      });
+      return;
+    }
+  }
+
+  function checkAllVotesIn(){
+    if (Object.keys(game.votes).length >= game.players.length){
+      game.phase = 'result';
+    }
+    broadcastGameState();
+  }
+
+})();
+</script>
+</body>
+</html>
