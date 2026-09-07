@@ -185,9 +185,37 @@
 <script>
 (function(){
   const WORDS = {
-    easy: ['Sun','Tree','Fish','House','Star','Ball','Cat','Dog','Cup','Book','Cloud','Moon','Boat','Egg','Hat','Shoe','Cake','Kite','Fire','Snowman','Umbrella','Ice Cream','Banana','Guitar','Balloon'],
-    medium: ['Elephant','Robot','Volcano','Pirate','Dinosaur','Skateboard','Rainbow','Octopus','Castle','Rocket','Dragon','Campfire','Waterfall','Telescope','Snowboarding','Lighthouse','Kangaroo','Windmill','Treasure Map','Spaceship','Cactus','Beehive','Sandcastle','Tornado','Scarecrow'],
-    hard: ['Time Travel','Optical Illusion','Gravity','Nightmare','Deja Vu','Procrastination','Claustrophobia','Camouflage','Reflection','Silhouette','Echo','Constellation','Hibernation','Migration','Symmetry','Eclipse','Avalanche','Quicksand','Metamorphosis','Hypnosis','Turbulence','Stalactite','Boomerang','Whirlpool','Mirage']
+    easy: ['Apple','Car','Chair','Table','Pencil','Eraser','Clock','Phone','Camera','Glasses',
+  'Toothbrush','Soap','Towel','Backpack','Scissors','Ruler','Key','Door','Window','Mailbox',
+  'Bicycle','Train','Bus','Airplane','Truck','Tractor','Helicopter','Parachute','Motorcycle','Taxi',
+  'Pizza','Hamburger','Hot Dog','Sandwich','Donut','Cookie','Popcorn','Watermelon','Strawberry','Pineapple',
+  'Orange','Lemon','Carrot','Corn','Mushroom','Broccoli','Cupcake','Pancake','Pretzel','Candy',
+  'Lion','Tiger','Bear','Monkey','Giraffe','Zebra','Penguin','Dolphin','Whale','Shark',
+  'Turtle','Frog','Snake','Rabbit','Mouse','Horse','Cow','Pig','Chicken','Duck',
+  'Butterfly','Ladybug','Spider','Ant','Snail','Bee','Parrot','Owl','Bat','Deer','Sunflower','Rose','Leaf','Acorn','Pinecone','Snowflake','Raindrop','Puddle','Mountain','Island','Beach','River','Lake','Garden','Fence','Bridge','Cave','Crown','Sword','Shield','Wand','Gift','Treasure Chest','Flag','Bell','Drum','Piano','Trumpet','Microphone','Yo-Yo','Puzzle','Dice','Teddy Bear','Flashlight','Candle','Lantern','Magnet','Battery','Light Bulb','Snow Globe','Sun','Tree','Fish','House','Star','Ball','Cat','Dog','Cup','Book','Cloud','Moon','Boat','Egg','Hat','Shoe','Cake','Kite','Fire','Snowman','Umbrella','Ice Cream','Banana','Guitar','Balloon'],
+    medium: ['Firefighter','Police Officer','Astronaut','Chef','Doctor','Dentist','Magician','Detective','Cowboy','Farmer',
+  'Pirate Ship','Viking','Knight','Mermaid','Wizard','Superhero','Ninja','Mummy','Ghost','Werewolf',
+  'Giant','Fairy','Genie','Sphinx','Yeti','Unicorn','Griffin','Centaur','Kraken','Sasquatch',
+  'Jungle','Desert','Rainforest','Water Park','Amusement Park','Haunted House','Treehouse Village','Iceberg','Waterfall Cave','Volcano Island',
+  'Tunnel','Roller Coaster','Ferris Wheel','Zip Line','Hot Air Balloon','Cable Car','Subway','Drawbridge','Lava Field','Observatory',
+  'Treasure Hunt','Escape Room','Camping Trip','Road Trip','Sleepover','Birthday Party','Wedding','Parade','Carnival','Concert',
+  'Cooking Show','Talent Show','Science Fair','Spelling Bee','Classroom','Library','Museum','Aquarium','Zoo','Theater',
+  'Bowling','Golfing','Surfing','Rock Climbing','Horseback Riding','Ice Skating','Skiing','Fishing','Archery','Gymnastics',
+  'Martial Arts','Boxing','Baseball Game','Soccer Game','Basketball Game','Tennis Match','Marathon','Relay Race','Obstacle Course','Track Meet',
+  'Alien','UFO Landing','Time Machine','Secret Agent','Spy Gadget','Laser Beam','Force Field','Flying Car','Robot Dog','Talking Computer',
+  'Magic Carpet','Potion','Crystal Ball','Haunted Forest','Secret Passage','Underground City','Lost Island','Ancient Ruins','Hidden Cave','Cursed Treasure','Elephant','Robot','Volcano','Pirate','Dinosaur','Skateboard','Rainbow','Octopus','Castle','Rocket','Dragon','Campfire','Waterfall','Telescope','Snowboarding','Lighthouse','Kangaroo','Windmill','Treasure Map','Spaceship','Cactus','Beehive','Sandcastle','Tornado','Scarecrow'],
+    hard: ['Time Loop','Parallel Universe','Alternate Reality','Future Prediction','False Memory','Daydreaming','Overthinking','Stage Fright','Peer Pressure','Writer’s Block',
+  'Culture Shock','Homesickness','Jet Lag','Road Rage','Social Anxiety','Curiosity','Jealousy','Nostalgia','Determination','Imagination',
+  'Creativity','Confusion','Distraction','Suspicion','Embarrassment','Confidence','Loneliness','Friendship','Betrayal','First Impression',
+  'Second Chance','Breaking a Habit','Making a Decision','Changing Your Mind','Keeping a Secret','Reading Between the Lines','Mixed Feelings','Lost for Words','Inside Joke','Guilty Conscience',
+  'Cause and Effect','Trial and Error','Risk and Reward','Supply and Demand','Chain Reaction','Domino Effect','Butterfly Effect','Ripple Effect','Snowball Effect','Catch-22',
+  'Murphy’s Law','Act of Kindness','Blind Date','Cold Shoulder','Red Herring','Elephant in the Room','Under the Weather','Break the Ice','Walking on Eggshells','Bite the Bullet',
+  'Hit the Nail on the Head','Once in a Blue Moon','Spill the Beans','Let the Cat Out of the Bag','Cost an Arm and a Leg','Back to Square One','The Last Straw','Jumping to Conclusions','Barking Up the Wrong Tree','Miss the Boat',
+  'Digital Footprint','Virtual Reality','Artificial Intelligence','Machine Learning','Cybersecurity','Quantum Physics','Black Hole','Dark Matter','Parallel Lines','Fractal',
+  'Möbius Strip','Probability','Infinity','Chaos Theory','Magnetic Field','Sound Wave','Light Spectrum','Friction','Photosynthesis','Food Chain',
+  'Natural Selection','Genetic Mutation','Fossilization','Plate Tectonics','Geothermal Energy','Carbon Footprint','Climate Change','Ocean Current','Tectonic Shift','Ecosystem',
+  'Earthquake Aftershock','Tsunami Warning','Dust Storm','Thunderstorm','Heat Wave','Polar Vortex','Flash Flood','Landslide','Drought','Wildfire',
+  'Archaeological Dig','Ancient Civilization','Medieval Tournament','Industrial Revolution','Space Exploration','Underwater City','Lost Civilization','Alien Invasion','Robot Uprising','Secret Identity','Time Travel','Optical Illusion','Gravity','Nightmare','Deja Vu','Procrastination','Claustrophobia','Camouflage','Reflection','Silhouette','Echo','Constellation','Hibernation','Migration','Symmetry','Eclipse','Avalanche','Quicksand','Metamorphosis','Hypnosis','Turbulence','Stalactite','Boomerang','Whirlpool','Mirage']
   };
   const COLORS = ['#1a1a1a','#e2637a','#4f8fd1','#4fd1a0','#e8c572','#a78bd6','#e8946a','#ffffff'];
 
