@@ -95,10 +95,29 @@
     <div class="panel">
       <p style="margin:0;color:var(--muted);font-size:14px;">The classic. Full rules &mdash; castling, en passant, promotion, the works.</p>
       <div class="mode-grid">
+        <button class="mode-card" id="pickLocal2p"><h3>Play locally</h3><p>Two players, one device, no setup.</p></button>
         <button class="mode-card" id="pickVsComputer"><h3>Play vs Computer</h3><p>Pick a difficulty and go.</p></button>
         <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
         <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
       </div>
+    </div>
+  </div>
+
+  <div id="setupLocal2p" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">White</label>
+      <input class="text-input" id="local2pNameW" placeholder="Player 1" maxlength="16">
+      <label class="field-label">Black</label>
+      <input class="text-input" id="local2pNameB" placeholder="Player 2" maxlength="16" style="margin-top:8px;">
+      <label class="field-label">Timing</label>
+      <div class="choice-row" id="timeChoiceLocal">
+        <button class="choice-btn active" data-val="0">Untimed</button>
+        <button class="choice-btn" data-val="300">5 min each</button>
+        <button class="choice-btn" data-val="600">10 min each</button>
+      </div>
+      <button class="primary-btn" id="local2pStart">Start &rarr;</button>
+      <button class="secondary-btn" id="local2pBack">Back</button>
     </div>
   </div>
 
@@ -433,6 +452,7 @@
 
   const screens = {
     lobby: document.getElementById('lobbyScreen'),
+    local2p: document.getElementById('setupLocal2p'),
     vsc: document.getElementById('setupVsComputer'),
     host: document.getElementById('setupHost'),
     join: document.getElementById('setupJoin'),
@@ -444,9 +464,11 @@
       else screens[k].classList.toggle('hidden', k!==name);
     });
   }
+  document.getElementById('pickLocal2p').addEventListener('click', () => showScreen('local2p'));
   document.getElementById('pickVsComputer').addEventListener('click', () => showScreen('vsc'));
   document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
   document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('local2pBack').addEventListener('click', () => showScreen('lobby'));
   document.getElementById('vscBack').addEventListener('click', () => showScreen('lobby'));
   document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
   document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
@@ -458,8 +480,24 @@
       });
     });
   }
-  ['diffChoice','firstChoice','timeChoiceVC','hostColorChoice','timeChoiceHost'].forEach(wireChoiceRow);
+  ['diffChoice','firstChoice','timeChoiceVC','hostColorChoice','timeChoiceHost','timeChoiceLocal'].forEach(wireChoiceRow);
   function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  let hotseatNames = null;
+
+  // ---------------- LOCAL HOTSEAT (2 players, 1 device) ----------------
+  document.getElementById('local2pStart').addEventListener('click', () => {
+    const nameW = document.getElementById('local2pNameW').value.trim() || 'Player 1';
+    const nameB = document.getElementById('local2pNameB').value.trim() || 'Player 2';
+    const timeLimit = parseInt(document.querySelector('#timeChoiceLocal .choice-btn.active').dataset.val, 10);
+    mode = 'hotseat';
+    myColor = null;
+    hotseatNames = { w: nameW, b: nameB };
+    flipped = false;
+    game = newGame(timeLimit, null);
+    document.getElementById('nameTop').textContent = nameB;
+    document.getElementById('nameBottom').textContent = nameW;
+    enterGame();
+  });
 
   // ---------------- VS COMPUTER ----------------
   document.getElementById('vscStart').addEventListener('click', () => {
@@ -567,7 +605,7 @@
 
   function handleGuestMessage(msg){
     if (msg.type === 'state'){ game = msg.game; renderAll(); }
-    else if (msg.type === 'move'){ applyPlayerMove(msg.move); }
+    else if (msg.type === 'move'){ applyPlayerMove(msg.move); if (mode === 'host') broadcastState(); }
   }
   function broadcastState(){
     if (mode==='host' && conn && conn.open) conn.send({ type:'state', game });
@@ -605,7 +643,8 @@
 
   function onSquareClick(r,c){
     if (!game || game.status !== 'playing') return;
-    if (game.state.turn !== myColor) return;
+    const actingColor = mode==='hotseat' ? game.state.turn : myColor;
+    if (game.state.turn !== actingColor) return;
     if (mode==='guest' && false) return;
     const piece = game.state.board[r][c];
     if (selected){
@@ -619,11 +658,11 @@
         submitMove(mv);
         return;
       }
-      if (piece && colorOf(piece)===myColor){ selectSquare(r,c); return; }
+      if (piece && colorOf(piece)===actingColor){ selectSquare(r,c); return; }
       selected = null; legalForSelected = []; renderAll();
       return;
     }
-    if (piece && colorOf(piece)===myColor) selectSquare(r,c);
+    if (piece && colorOf(piece)===actingColor) selectSquare(r,c);
   }
 
   function selectSquare(r,c){
@@ -748,6 +787,16 @@
   function renderAll(){
     if (!game) return;
     const st = game.state;
+    if (mode === 'hotseat'){
+      const wantFlip = st.turn === 'b';
+      if (wantFlip !== flipped){
+        flipped = wantFlip;
+        selected = null; legalForSelected = [];
+        buildBoardDom();
+        document.getElementById('nameTop').textContent = flipped ? hotseatNames.w : hotseatNames.b;
+        document.getElementById('nameBottom').textContent = flipped ? hotseatNames.b : hotseatNames.w;
+      }
+    }
     const kingInCheckPos = inCheck(st) ? findKing(st.board, st.turn) : null;
     Array.from(boardEl.children).forEach(sq => {
       const r = parseInt(sq.dataset.r,10), c = parseInt(sq.dataset.c,10);
@@ -776,14 +825,19 @@
     renderMoveList();
 
     const statusEl = document.getElementById('hudStatus');
+    const nameOfColor = (color) => mode==='hotseat' ? hotseatNames[color] : (color===myColor ? 'You' : (mode==='local' ? 'Computer' : 'Opponent'));
     if (game.status === 'playing'){
-      statusEl.textContent = st.turn === myColor ? 'Your turn' : "Opponent's turn";
+      statusEl.textContent = mode==='hotseat' ? (nameOfColor(st.turn) + "'s turn (" + (st.turn==='w'?'White':'Black') + ')') : (st.turn === myColor ? 'Your turn' : "Opponent's turn");
       if (inCheck(st)) statusEl.textContent += ' \u2014 Check!';
     } else {
       if (game.winner === null){
         statusEl.textContent = "It's a draw";
         const reason = game.endReason==='stalemate' ? 'Stalemate \u2014 no legal moves.' : 'Draw by the 50-move rule.';
         showOverlay("It's a draw", reason, [{ label:'Back to lobby', onClick:()=>location.reload() }]);
+      } else if (mode === 'hotseat'){
+        statusEl.textContent = nameOfColor(game.winner) + ' wins!';
+        const reason = game.endReason==='timeout' ? (nameOfColor(game.winner) + ' had more time left.') : 'Checkmate.';
+        showOverlay(nameOfColor(game.winner) + ' wins!', reason, [{ label:'Back to lobby', onClick:()=>location.reload() }]);
       } else {
         const iWon = game.winner === myColor;
         statusEl.textContent = iWon ? 'You win!' : (mode==='local' ? 'Computer wins' : 'Opponent wins');
