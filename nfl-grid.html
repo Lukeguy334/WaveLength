@@ -86,6 +86,7 @@
     <div class="panel">
       <div class="rules-note">This game doesn't grade answers for you &mdash; after everyone fills the grid, you all review the answers together and mark each one correct or not. Keeps things honest and works for any era of NFL history, not just what's in some database.</div>
       <div class="mode-grid">
+        <button class="mode-card" id="pickSolo"><h3>Play solo</h3><p>Fill a grid just for fun, no one to compare with.</p></button>
         <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players pass one device around.</p></button>
         <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
         <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
@@ -313,8 +314,9 @@
     container.innerHTML = '';
     const panel = document.createElement('div');
     panel.className = 'panel';
-    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Review answers together</h3>' +
-      '<p style="color:var(--muted);font-size:13px;">For each player, mark every square correct (\u2713) or not (\u2717) as a group, then see final scores.</p>';
+    const isSolo = results.length === 1;
+    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">' + (isSolo ? 'Review your answers' : 'Review answers together') + '</h3>' +
+      '<p style="color:var(--muted);font-size:13px;">' + (isSolo ? 'Mark every square correct (\u2713) or not (\u2717) \u2014 check your own knowledge, or look one up if you\'re unsure.' : 'For each player, mark every square correct (\u2713) or not (\u2717) as a group, then see final scores.') + '</p>';
     results.forEach((r, ri) => {
       const block = document.createElement('div');
       block.style.marginBottom = '20px';
@@ -383,6 +385,21 @@
   let localState = null;
   let localTimer = null;
 
+  document.getElementById('pickSolo').addEventListener('click', () => {
+    mode = 'solo';
+    localState = {
+      players: ['You'], timeLimit: 0,
+      draftIndex: 0, stage: 'filling',
+      grid: pickGrid(),
+      answers: emptyAnswers(),
+      timeLeft: 0,
+      results: [],
+      solo: true
+    };
+    showScreen('game');
+    renderLocal();
+  });
+
   document.getElementById('localStart').addEventListener('click', () => {
     const inputs = Array.from(localRowsEl.querySelectorAll('input'));
     const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
@@ -394,7 +411,8 @@
       grid: pickGrid(),
       answers: emptyAnswers(),
       timeLeft: timeLimit,
-      results: []
+      results: [],
+      solo: false
     };
     showScreen('game');
     renderLocal();
@@ -426,10 +444,12 @@
 
     if (localState.stage === 'filling'){
       body.innerHTML = '';
-      const hudRow = document.createElement('div');
-      hudRow.style.marginBottom = '4px';
-      hudRow.innerHTML = '<div class="hud-chip" style="display:inline-block;background:var(--panel);border:1px solid var(--panel-line);border-radius:9px;padding:8px 12px;font-size:13px;">' + escapeHtml(current) + ' is filling the grid</div>';
-      body.appendChild(hudRow);
+      if (!localState.solo){
+        const hudRow = document.createElement('div');
+        hudRow.style.marginBottom = '4px';
+        hudRow.innerHTML = '<div class="hud-chip" style="display:inline-block;background:var(--panel);border:1px solid var(--panel-line);border-radius:9px;padding:8px 12px;font-size:13px;">' + escapeHtml(current) + ' is filling the grid</div>';
+        body.appendChild(hudRow);
+      }
       const fillDiv = document.createElement('div');
       body.appendChild(fillDiv);
       renderGridFill(fillDiv, localState.grid, localState.answers, localState.timeLimit>0?localState.timeLeft:null, null, () => finishLocalGrid());
@@ -440,7 +460,9 @@
       renderGradingScreen(body, localState.grid, localState.results,
         (resultIdx, cellIdx, value) => { localState.results[resultIdx].grades[cellIdx] = value; renderLocal(); },
         { newGrid: () => {
-            localState.draftIndex = 0; localState.results = []; localState.stage='pass'; localState.grid = pickGrid();
+            localState.draftIndex = 0; localState.results = [];
+            localState.stage = localState.solo ? 'filling' : 'pass';
+            localState.grid = pickGrid(); localState.answers = emptyAnswers(); localState.timeLeft = localState.timeLimit;
             renderLocal();
           } },
         true);
