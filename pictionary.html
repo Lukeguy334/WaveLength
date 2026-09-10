@@ -116,7 +116,7 @@
     <button class="rules-btn" id="rulesBtn">Rules</button>
   </div>
 
-  <div class="modal-overlay hidden" id="rulesModal">
+<div class="modal-overlay hidden" id="rulesModal">
     <div class="modal-box">
       <div class="modal-header">
         <h3>How to play</h3>
@@ -157,21 +157,21 @@
   <div id="setupLocal" class="hidden">
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
-      <label class="field-label">Players (2&ndash;8)</label>
+      <div class="field-label">Players (2&ndash;8)</div>
       <div id="localPlayerRows"></div>
       <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
-      <label class="field-label">Game type</label>
+      <div class="field-label">Game type</div>
       <div class="choice-row" id="gameTypeChoice">
         <button class="choice-btn active" data-val="draw">Pictionary (draw)</button>
         <button class="choice-btn" data-val="act">Charades (act it out)</button>
       </div>
-      <label class="field-label">Word source</label>
+      <div class="field-label">Word source</div>
       <div class="choice-row" id="wordSourceChoice">
         <button class="choice-btn active" data-val="difficulty">My word lists</button>
         <button class="choice-btn" data-val="category">Category</button>
       </div>
       <div id="difficultyBlock">
-        <label class="field-label">Difficulty</label>
+        <div class="field-label">Difficulty</div>
         <div class="choice-row" id="diffChoice">
           <button class="choice-btn active" data-val="mixed">Mixed</button>
           <button class="choice-btn" data-val="easy">Easy</button>
@@ -180,16 +180,16 @@
         </div>
       </div>
       <div id="categoryBlock" class="hidden">
-        <label class="field-label">Category</label>
+        <div class="field-label">Category</div>
         <div class="choice-row" id="categoryChoice"></div>
       </div>
-      <label class="field-label">Time per round</label>
+      <div class="field-label">Time per round</div>
       <div class="choice-row" id="timeChoice">
         <button class="choice-btn" data-val="60">60s</button>
         <button class="choice-btn active" data-val="90">90s</button>
         <button class="choice-btn" data-val="120">120s</button>
       </div>
-      <label class="field-label">Hard words</label>
+      <div class="field-label">Hard words</div>
       <div class="choice-row" id="hardBonusChoice">
         <button class="choice-btn active" data-val="0">Standard time</button>
         <button class="choice-btn" data-val="30">+30s for hard words</button>
@@ -204,20 +204,20 @@
   <div id="setupHost" class="hidden">
     <div class="panel" id="hostConfigPanel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
-      <label class="field-label">Your name</label>
+      <label class="field-label" for="hostName">Your name</label>
       <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
-      <label class="field-label">Game type</label>
+      <div class="field-label">Game type</div>
       <div class="choice-row" id="hostGameTypeChoice">
         <button class="choice-btn active" data-val="draw">Pictionary (draw)</button>
         <button class="choice-btn" data-val="act">Charades (act it out)</button>
       </div>
-      <label class="field-label">Word source</label>
+      <div class="field-label">Word source</div>
       <div class="choice-row" id="hostWordSourceChoice">
         <button class="choice-btn active" data-val="difficulty">My word lists</button>
         <button class="choice-btn" data-val="category">Category</button>
       </div>
       <div id="hostDifficultyBlock">
-        <label class="field-label">Difficulty</label>
+        <div class="field-label">Difficulty</div>
         <div class="choice-row" id="hostDiffChoice">
           <button class="choice-btn active" data-val="mixed">Mixed</button>
           <button class="choice-btn" data-val="easy">Easy</button>
@@ -226,16 +226,16 @@
         </div>
       </div>
       <div id="hostCategoryBlock" class="hidden">
-        <label class="field-label">Category</label>
+        <div class="field-label">Category</div>
         <div class="choice-row" id="hostCategoryChoice"></div>
       </div>
-      <label class="field-label">Time per round</label>
+      <div class="field-label">Time per round</div>
       <div class="choice-row" id="hostTimeChoice">
         <button class="choice-btn" data-val="60">60s</button>
         <button class="choice-btn active" data-val="90">90s</button>
         <button class="choice-btn" data-val="120">120s</button>
       </div>
-      <label class="field-label">Hard words</label>
+      <div class="field-label">Hard words</div>
       <div class="choice-row" id="hostHardBonusChoice">
         <button class="choice-btn active" data-val="0">Standard time</button>
         <button class="choice-btn" data-val="30">+30s for hard words</button>
@@ -256,9 +256,9 @@
   <div id="setupJoin" class="hidden">
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
-      <label class="field-label">Your name</label>
+      <label class="field-label" for="joinName">Your name</label>
       <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
-      <label class="field-label">Room code</label>
+      <label class="field-label" for="joinCode">Room code</label>
       <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
       <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
       <button class="secondary-btn" id="joinBack">Back</button>
