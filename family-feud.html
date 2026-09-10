@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Feud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body h4 { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; margin:18px 0 6px; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { margin:0 0 10px; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+  .modal-body .rule-callout { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13.5px; color:var(--muted); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .hud-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.in-control { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+
+  .question-title { text-align:center; font-family:'Space Grotesk',sans-serif; font-size:22px; color:var(--paper); margin-bottom:16px; padding:0 10px; }
+  .board { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .board-row { background:#1a2f52; border:2px solid #2f4d82; border-radius:8px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; font-weight:700; }
+  .board-row .rank-num { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); margin-right:10px; }
+  .board-row.hidden-row { color:transparent; user-select:none; }
+  .board-row.hidden-row .rank-num { color:var(--brass-bright); }
+  .board-row .pts-val { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); }
+  .board-row.hidden-row .pts-val { visibility:hidden; }
+  .board-row.revealed { background:rgba(79,209,197,0.15); border-color:var(--teal); color:var(--teal); }
+  .board-row.revealed .pts-val { color:var(--teal); visibility:visible; }
+
+  .strikes-row { display:flex; justify-content:center; gap:10px; margin-bottom:16px; }
+  .strike-x { width:40px; height:40px; border-radius:8px; border:2px solid var(--panel-line); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:var(--panel-line); }
+  .strike-x.active { border-color:var(--rose); color:var(--rose); background:rgba(226,99,122,0.12); }
+
+  .guess-row { display:flex; gap:8px; margin-top:6px; }
+  .guess-row input { flex:1; }
+  .total-banner { text-align:center; font-family:'Space Grotesk',sans-serif; font-size:20px; color:var(--brass-bright); margin-bottom:10px; }
+
+  .round-end-card { text-align:center; padding:30px 24px; }
+  .fm-question-block { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:10px; padding:14px 16px; margin-bottom:12px; }
+  .fm-question-block .fm-q { font-weight:600; margin-bottom:8px; }
+  .fm-answer-options { display:flex; flex-wrap:wrap; gap:6px; }
+  .fm-answer-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:7px; padding:6px 10px; font-size:12.5px; cursor:pointer; }
+  .fm-answer-chip.selected { border-color:var(--teal); background:rgba(79,209,197,0.15); color:var(--teal); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Family Feud</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Guess the top answers on the board. Three strikes and the other side can steal.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="rule-callout">The questions and answers here are written to feel like typical survey results, but they're not from a real survey &mdash; there's no live audience being polled. Treat them as fun trivia-flavored prompts, not real statistics.</div>
+        <h4>Main game</h4>
+        <ul>
+          <li>A question is shown with a hidden board of ranked answers.</li>
+          <li>The player in control types guesses one at a time. A match reveals that answer's spot and points, and they keep guessing.</li>
+          <li>A guess that doesn't match any remaining answer is a strike.</li>
+          <li>After 3 strikes, if any answers are still hidden, control passes to the other player for one single steal attempt &mdash; get it right and they take all the points on the board; get it wrong and the original player banks the points instead.</li>
+        </ul>
+        <h4>Fast Money</h4>
+        <ul>
+          <li>One player answers 5 questions as fast as they can, one word or phrase per question.</li>
+          <li>A second player answers the same 5 questions afterward &mdash; but any answer that repeats player one's exact answer scores zero.</li>
+          <li>After both have answered, the group reveals each question's board together and marks which answer (if any) each response matches.</li>
+          <li>Add up both players' totals &mdash; 200 combined points is the classic target to "win the game."</li>
+        </ul>
+        <h4>Modes</h4>
+        <p>Play the main game solo, locally with 2+ people, or host/join online. Fast Money is pass-and-play (solo or with a partner) since it's inherently sequential.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <div class="mode-grid">
+        <button class="mode-card" id="pickSolo"><h3>Play solo</h3><p>Answer questions against yourself, just for fun.</p></button>
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+        <button class="mode-card" id="pickFastMoney"><h3>Fast Money</h3><p>Just the bonus round &mdash; 5 questions, race the clock.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="setupFastMoney" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Fast Money</h3>
+      <p style="color:var(--muted);font-size:13px;">5 random questions. Play solo for a personal best, or pass the device to a second player who can't repeat your answers.</p>
+      <label class="field-label">Players</label>
+      <div class="choice-row" id="fmPlayerChoice">
+        <button class="choice-btn active" data-val="1">Just me</button>
+        <button class="choice-btn" data-val="2">Two players</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="fmStart">Start &rarr;</button>
+        <button class="secondary-btn" id="fmBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const QUESTIONS = [
+    { q: 'Name something you do before going to bed', answers: [{text:'Brush your teeth', points:35}, {text:'Set an alarm', points:25}, {text:'Turn off the lights', points:20}, {text:'Read a book', points:12}, {text:'Lock the doors', points:8}] },
+    { q: 'Name something you might find in a junk drawer', answers: [{text:'Batteries', points:30}, {text:'Rubber bands', points:22}, {text:'Old receipts', points:18}, {text:'Tape', points:16}, {text:'Spare keys', points:14}] },
+    { q: 'Name a reason someone would be late to work', answers: [{text:'Traffic', points:38}, {text:'Overslept', points:30}, {text:'Car trouble', points:16}, {text:'Forgot something at home', points:10}, {text:'Bad weather', points:6}] },
+    { q: 'Name something people do to relax after a long day', answers: [{text:'Watch TV', points:34}, {text:'Take a bath', points:22}, {text:'Take a nap', points:20}, {text:'Read', points:14}, {text:'Exercise', points:10}] },
+    { q: 'Name something you\'d bring to a picnic', answers: [{text:'Sandwiches', points:28}, {text:'A blanket', points:24}, {text:'Drinks', points:20}, {text:'Fruit', points:16}, {text:'Chips', points:12}] },
+    { q: 'Name a job where you have to wear a uniform', answers: [{text:'Police officer', points:30}, {text:'Firefighter', points:24}, {text:'Nurse', points:20}, {text:'Soldier', points:14}, {text:'Chef', points:12}] },
+    { q: 'Name something that gets more annoying the louder it is', answers: [{text:'A crying baby', points:32}, {text:'A car alarm', points:26}, {text:'A barking dog', points:20}, {text:'A leaf blower', points:14}, {text:'Someone chewing', points:8}] },
+    { q: 'Name a household chore nobody likes doing', answers: [{text:'Cleaning the bathroom', points:30}, {text:'Doing the dishes', points:24}, {text:'Taking out the trash', points:18}, {text:'Vacuuming', points:16}, {text:'Folding laundry', points:12}] },
+    { q: 'Name something you might forget to pack for a trip', answers: [{text:'Phone charger', points:30}, {text:'Toothbrush', points:24}, {text:'Socks', points:18}, {text:'Sunscreen', points:16}, {text:'Medication', points:12}] },
+    { q: 'Name a reason someone might call in sick to work', answers: [{text:'Actually sick', points:36}, {text:'Needed a mental health day', points:26}, {text:'Family emergency', points:18}, {text:'Overslept', points:12}, {text:'Just didn\'t want to go', points:8}] },
+    { q: 'Name something you do when you\'re bored', answers: [{text:'Scroll your phone', points:34}, {text:'Watch TV', points:26}, {text:'Nap', points:18}, {text:'Snack', points:12}, {text:'Clean', points:10}] },
+    { q: 'Name something people collect as a hobby', answers: [{text:'Stamps', points:26}, {text:'Coins', points:24}, {text:'Trading cards', points:20}, {text:'Vinyl records', points:16}, {text:'Action figures', points:14}] },
+    { q: 'Name a food people eat with their hands', answers: [{text:'Pizza', points:30}, {text:'A sandwich', points:24}, {text:'Fries', points:20}, {text:'Chicken wings', points:16}, {text:'Tacos', points:10}] },
+    { q: 'Name something you\'d find on a office desk', answers: [{text:'A computer', points:30}, {text:'A stapler', points:22}, {text:'Pens', points:20}, {text:'A coffee mug', points:16}, {text:'Sticky notes', points:12}] },
+    { q: 'Name an animal people keep as an exotic pet', answers: [{text:'A snake', points:28}, {text:'A lizard', points:22}, {text:'A tarantula', points:20}, {text:'A parrot', points:18}, {text:'A hedgehog', points:12}] },
+    { q: 'Name something you do at the beach', answers: [{text:'Swim', points:32}, {text:'Build a sandcastle', points:24}, {text:'Sunbathe', points:20}, {text:'Play volleyball', points:14}, {text:'Collect shells', points:10}] },
+    { q: 'Name a place you\'d go on a first date', answers: [{text:'A restaurant', points:34}, {text:'The movies', points:24}, {text:'A coffee shop', points:18}, {text:'A park', points:14}, {text:'Mini golf', points:10}] },
+    { q: 'Name something that\'s hard to do quietly', answers: [{text:'Sneeze', points:30}, {text:'Eat chips', points:24}, {text:'Open a candy wrapper', points:20}, {text:'Walk in heels', points:16}, {text:'Yawn', points:10}] },
+    { q: 'Name a reason someone might return an item they bought', answers: [{text:'It didn\'t fit', points:32}, {text:'Changed their mind', points:26}, {text:'It was defective', points:20}, {text:'Found it cheaper elsewhere', points:14}, {text:'Wrong color or size', points:8}] },
+    { q: 'Name something you\'d do with a tax refund', answers: [{text:'Save it', points:28}, {text:'Pay off debt', points:24}, {text:'Go on vacation', points:20}, {text:'Buy something big', points:16}, {text:'Treat themselves', points:12}] },
+    { q: 'Name a game people play at a party', answers: [{text:'Charades', points:26}, {text:'Truth or Dare', points:22}, {text:'Twister', points:20}, {text:'Cards Against Humanity', points:18}, {text:'Musical Chairs', points:14}] },
+    { q: 'Name something you might do on a rainy day', answers: [{text:'Watch movies', points:32}, {text:'Read a book', points:24}, {text:'Nap', points:20}, {text:'Bake something', points:14}, {text:'Play board games', points:10}] },
+    { q: 'Name a reason someone would go to the emergency room', answers: [{text:'Broken bone', points:30}, {text:'Chest pain', points:24}, {text:'Severe allergic reaction', points:20}, {text:'Deep cut', points:16}, {text:'High fever', points:10}] },
+    { q: 'Name something you\'d take on a road trip', answers: [{text:'Snacks', points:30}, {text:'A phone charger', points:24}, {text:'Music or a playlist', points:20}, {text:'A map or GPS', points:16}, {text:'Pillows', points:10}] },
+    { q: 'Name a popular New Year\'s resolution', answers: [{text:'Exercise more', points:34}, {text:'Eat healthier', points:26}, {text:'Save money', points:18}, {text:'Quit a bad habit', points:12}, {text:'Read more', points:10}] },
+  ];
+
+  const STOPWORDS = new Set(['a','an','the','your','you','to','in','on','of','for','with','at','something',
+    'someone','some','and','or','do','does','doing','go','goes','going','get','gets','getting',
+    'take','takes','taking','make','makes','making','have','has','having','be','is','are','was','were',
+    'it','its','more','off','out','up','down','back','away','than','that','this','they','them']);
+  function normalizeText(s){
+    return s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function stem(word){
+    if (word.length > 5 && word.endsWith('ing')) return word.slice(0,-3);
+    if (word.length > 4 && word.endsWith('ed')) return word.slice(0,-2);
+    if (word.length > 4 && word.endsWith('es')) return word.slice(0,-2);
+    if (word.length > 3 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0,-1);
+    return word;
+  }
+  function significantWords(s){
+    return normalizeText(s).split(' ').filter(w => w && !STOPWORDS.has(w)).map(stem);
+  }
+  function matchesAnswer(guess, answerText){
+    const gNorm = normalizeText(guess);
+    const aNorm = normalizeText(answerText);
+    if (!gNorm) return false;
+    if (gNorm === aNorm) return true;
+    if (aNorm.includes(gNorm) || gNorm.includes(aNorm)) return true;
+    const gWords = new Set(significantWords(guess));
+    const aWords = significantWords(answerText);
+    if (aWords.length === 0) return false;
+    const overlap = aWords.filter(w => gWords.has(w));
+    if (aWords.length <= 2) return overlap.length >= 1;
+    return overlap.length >= Math.ceil(aWords.length/2);
+  }
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function pickQuestion(excludeText){
+    let pool = QUESTIONS.filter(q => q.q !== excludeText);
+    if (!pool.length) pool = QUESTIONS;
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  function pickQuestionsUnique(n){
+    const shuffled = QUESTIONS.slice().sort(() => Math.random()-0.5);
+    return shuffled.slice(0, n);
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    fastmoney: document.getElementById('setupFastMoney'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('pickFastMoney').addEventListener('click', () => showScreen('fastmoney'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('fmBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
+  document.querySelectorAll('#fmPlayerChoice .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#fmPlayerChoice .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 8) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove(); localPlayerCount--;
+    });
+    row.appendChild(input); row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // MAIN GAME: SOLO + LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let localState = null;
+
+  function newRoundData(excludeText){
+    const q = pickQuestion(excludeText);
+    return {
+      question: q.q,
+      answers: q.answers.map(a => ({ text:a.text, points:a.points, revealed:false })),
+      strikes: 0,
+      boardTotal: 0,
+      phase: 'guessing', // guessing -> steal -> roundEnd
+      lastResult: null
+    };
+  }
+
+  document.getElementById('pickSolo').addEventListener('click', () => {
+    mode = 'solo';
+    localState = {
+      players: [{ id: uid(), name: 'You', score: 0 }],
+      currentIndex: 0,
+      round: null,
+      solo: true
+    };
+    localState.round = newRoundData(null);
+    showScreen('game');
+    renderLocal();
+  });
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    mode = 'local';
+    localState = {
+      players: names.map(n => ({ id: uid(), name: n, score: 0 })),
+      currentIndex: 0,
+      round: null,
+      solo: false
+    };
+    localState.round = newRoundData(null);
+    showScreen('game');
+    renderLocal();
+  });
+
+  function currentPlayer(){ return localState.players[localState.currentIndex]; }
+  function otherPlayerIndex(){ return (localState.currentIndex + 1) % localState.players.length; }
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const st = localState;
+    const r = st.round;
+    const controlPl = st.solo ? st.players[0] : st.players[r.phase==='steal'?otherPlayerIndex():st.currentIndex];
+
+    if (r.phase === 'guessing' || r.phase === 'steal'){
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        st.players.forEach((pl,i) => {
+          const isControl = r.phase==='steal' ? i===otherPlayerIndex() : i===st.currentIndex;
+          const chip = document.createElement('span');
+          chip.className = 'score-chip' + (isControl?' in-control':'');
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          scoreboard.appendChild(chip);
+        });
+        body.appendChild(scoreboard);
+      }
+
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + (r.phase==='steal' ? 'Steal attempt: '+escapeHtml(controlPl.name) : escapeHtml(controlPl.name) + ' is guessing') + '</div>';
+      body.appendChild(hud);
+
+      const qTitle = document.createElement('div');
+      qTitle.className = 'question-title';
+      qTitle.textContent = r.question;
+      body.appendChild(qTitle);
+
+      const totalBanner = document.createElement('div');
+      totalBanner.className = 'total-banner';
+      totalBanner.textContent = 'Board total: ' + r.boardTotal;
+      body.appendChild(totalBanner);
+
+      const board = document.createElement('div');
+      board.className = 'board';
+      const sorted = r.answers.map((a,i)=>({...a,idx:i})).sort((a,b)=>b.points-a.points);
+      sorted.forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'board-row' + (a.revealed?' revealed':' hidden-row');
+        row.innerHTML = '<span><span class="rank-num">' + (sorted.indexOf(a)+1) + '.</span>' + (a.revealed?escapeHtml(a.text):'??????') + '</span><span class="pts-val">' + a.points + '</span>';
+        board.appendChild(row);
+      });
+      body.appendChild(board);
+
+      if (r.phase === 'guessing'){
+        const strikesRow = document.createElement('div');
+        strikesRow.className = 'strikes-row';
+        for (let i=0;i<3;i++){
+          const x = document.createElement('div');
+          x.className = 'strike-x' + (i<r.strikes?' active':'');
+          x.textContent = 'X';
+          strikesRow.appendChild(x);
+        }
+        body.appendChild(strikesRow);
+      }
+
+      if (r.lastResult){
+        const resultMsg = document.createElement('div');
+        resultMsg.style.textAlign = 'center';
+        resultMsg.style.marginBottom = '10px';
+        resultMsg.style.color = r.lastResult.hit ? 'var(--teal)' : 'var(--rose)';
+        resultMsg.textContent = r.lastResult.hit ? ('"' + r.lastResult.guess + '" is on the board!') : ('"' + r.lastResult.guess + '" is not on the board.');
+        body.appendChild(resultMsg);
+      }
+
+      const guessRow = document.createElement('div');
+      guessRow.className = 'guess-row';
+      const guessInput = document.createElement('input');
+      guessInput.className = 'text-input';
+      guessInput.placeholder = 'Type a guess\u2026';
+      guessRow.appendChild(guessInput);
+      const guessBtn = document.createElement('button');
+      guessBtn.className = 'primary-btn';
+      guessBtn.style.marginTop = '0';
+      guessBtn.textContent = 'Guess';
+      guessBtn.addEventListener('click', () => {
+        const text = guessInput.value.trim();
+        if (!text) return;
+        handleGuessLocal(text);
+      });
+      guessRow.appendChild(guessBtn);
+      body.appendChild(guessRow);
+      return;
+    }
+
+    if (r.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + escapeHtml(r.roundWinnerName || 'Round over') + '</h3>' +
+        '<div class="total-banner">' + r.boardTotal + ' points</div>';
+      const board = document.createElement('div');
+      board.className = 'board';
+      r.answers.slice().sort((a,b)=>b.points-a.points).forEach((a,i) => {
+        const row = document.createElement('div');
+        row.className = 'board-row revealed';
+        row.innerHTML = '<span><span class="rank-num">' + (i+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
+        board.appendChild(row);
+      });
+      card.appendChild(board);
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        scoreboard.style.justifyContent = 'center';
+        st.players.forEach(pl => {
+          const chip = document.createElement('span');
+          chip.className = 'score-chip';
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          scoreboard.appendChild(chip);
+        });
+        card.appendChild(scoreboard);
+      } else {
+        const scoreLine = document.createElement('p');
+        scoreLine.style.color = 'var(--brass-bright)'; scoreLine.style.fontWeight = '600';
+        scoreLine.textContent = 'Total score: ' + st.players[0].score;
+        card.appendChild(scoreLine);
+      }
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Next question \u2192';
+      btn.addEventListener('click', () => {
+        const prevQ = r.question;
+        if (!st.solo) st.currentIndex = (st.currentIndex + 1) % st.players.length;
+        st.round = newRoundData(prevQ);
+        renderLocal();
+      });
+      card.appendChild(btn);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  function handleGuessLocal(guessText){
+    const st = localState;
+    const r = st.round;
+    const hiddenAnswers = r.answers.filter(a => !a.revealed);
+    const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
+
+    if (r.phase === 'guessing'){
+      if (match){
+        match.revealed = true;
+        r.boardTotal += match.points;
+        r.lastResult = { hit:true, guess:guessText };
+        if (r.answers.every(a=>a.revealed)){
+          currentPlayer().score += r.boardTotal;
+          r.roundWinnerName = currentPlayer().name + ' cleared the board!';
+          r.phase = 'roundEnd';
+        }
+      } else {
+        r.strikes++;
+        r.lastResult = { hit:false, guess:guessText };
+        if (r.strikes >= 3){
+          if (st.solo){
+            r.roundWinnerName = 'Out of strikes';
+            r.phase = 'roundEnd';
+          } else {
+            r.phase = 'steal';
+            r.lastResult = null;
+          }
+        }
+      }
+    } else if (r.phase === 'steal'){
+      const stealer = st.players[otherPlayerIndex()];
+      if (match){
+        match.revealed = true;
+        stealer.score += r.boardTotal;
+        r.roundWinnerName = stealer.name + ' stole it!';
+      } else {
+        currentPlayer().score += r.boardTotal;
+        r.roundWinnerName = currentPlayer().name + ' keeps the board';
+      }
+      r.phase = 'roundEnd';
+    }
+    renderLocal();
+  }
+
+  // ============================================================
+  // FAST MONEY
+  // ============================================================
+  document.getElementById('fmStart').addEventListener('click', () => {
+    const numPlayers = parseInt(document.querySelector('#fmPlayerChoice .choice-btn.active').dataset.val, 10);
+    const qs = pickQuestionsUnique(5);
+    mode = 'fastmoney';
+    localState = {
+      fastMoney: true,
+      numPlayers,
+      questions: qs,
+      p1Answers: Array(5).fill(''),
+      p2Answers: Array(5).fill(''),
+      phase: numPlayers === 2 ? 'p1-pass' : 'p1-answering',
+      currentQ: 0,
+      grading: { p1: Array(5).fill(null), p2: Array(5).fill(null) } // each: {matchIdx, points} or null
+    };
+    showScreen('game');
+    renderFastMoney();
+  });
+
+  function renderFastMoney(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const st = localState;
+
+    if (st.phase === 'p1-pass'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 1</h2><p>Answer fast &mdash; first thing that comes to mind for each question. Player 2 shouldn\u2019t be watching.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm ready \u2192";
+      btn.addEventListener('click', () => { st.phase = 'p1-answering'; st.currentQ = 0; renderFastMoney(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'p1-answering' || st.phase === 'p2-answering'){
+      const isP1 = st.phase === 'p1-answering';
+      const answers = isP1 ? st.p1Answers : st.p2Answers;
+      const q = st.questions[st.currentQ];
+      const card = document.createElement('div');
+      card.className = 'panel';
+      const playerLabel = st.numPlayers === 1 ? '' : (isP1?'Player 1 \u2014 ':'Player 2 \u2014 ');
+      card.innerHTML = '<div class="hud-chip" style="display:inline-block;margin-bottom:14px;">' + playerLabel + 'Question ' + (st.currentQ+1) + ' of 5</div>' +
+        '<div class="question-title">' + escapeHtml(q.q) + '</div>';
+      const input = document.createElement('input');
+      input.className = 'text-input';
+      input.placeholder = 'Your answer\u2026';
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') nextBtn.click(); });
+      card.appendChild(input);
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'primary-btn';
+      nextBtn.textContent = st.currentQ < 4 ? 'Next \u2192' : 'Done \u2192';
+      nextBtn.addEventListener('click', () => {
+        answers[st.currentQ] = input.value.trim();
+        if (st.currentQ < 4){
+          st.currentQ++;
+        } else {
+          if (isP1 && st.numPlayers === 2){
+            st.phase = 'p2-pass';
+          } else {
+            st.phase = 'grading';
+          }
+        }
+        renderFastMoney();
+      });
+      card.appendChild(nextBtn);
+      body.appendChild(card);
+      setTimeout(() => input.focus(), 50);
+      return;
+    }
+
+    if (st.phase === 'p2-pass'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 2</h2><p>Same 5 questions. If you give the exact same answer as Player 1, it scores zero &mdash; try to think of something different.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm ready \u2192";
+      btn.addEventListener('click', () => { st.phase = 'p2-answering'; st.currentQ = 0; renderFastMoney(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'grading'){
+      const card = document.createElement('div');
+      card.className = 'panel';
+      card.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Grade the answers together</h3><p style="color:var(--muted);font-size:13px;">For each question, tap the survey answer that best matches what was said &mdash; or leave it blank if nothing matches.</p>';
+
+      const renderPlayerBlock = (label, answers, gradingArr) => {
+        const wrap = document.createElement('div');
+        wrap.style.marginTop = '16px';
+        const h = document.createElement('h4');
+        h.style.fontFamily = "'Space Grotesk',sans-serif";
+        h.textContent = label;
+        wrap.appendChild(h);
+        st.questions.forEach((q, qi) => {
+          const block = document.createElement('div');
+          block.className = 'fm-question-block';
+          block.innerHTML = '<div class="fm-q">' + escapeHtml(q.q) + '<br><span style="color:var(--brass-bright);">Said: "' + escapeHtml(answers[qi] || '(blank)') + '"</span></div>';
+          const opts = document.createElement('div');
+          opts.className = 'fm-answer-options';
+          q.answers.forEach((a, ai) => {
+            const chip = document.createElement('button');
+            chip.className = 'fm-answer-chip' + (gradingArr[qi] && gradingArr[qi].matchIdx===ai ? ' selected' : '');
+            chip.textContent = a.text + ' (' + a.points + ')';
+            chip.addEventListener('click', () => {
+              gradingArr[qi] = (gradingArr[qi] && gradingArr[qi].matchIdx===ai) ? null : { matchIdx: ai, points: a.points };
+              renderFastMoney();
+            });
+            opts.appendChild(chip);
+          });
+          block.appendChild(opts);
+          wrap.appendChild(block);
+        });
+        return wrap;
+      };
+
+      card.appendChild(renderPlayerBlock(st.numPlayers===1 ? 'Your answers' : 'Player 1', st.p1Answers, st.grading.p1));
+      if (st.numPlayers === 2) card.appendChild(renderPlayerBlock('Player 2', st.p2Answers, st.grading.p2));
+
+      const p1Total = st.grading.p1.reduce((s,g) => s + (g?g.points:0), 0);
+      const p2Total = st.numPlayers===2 ? st.grading.p2.reduce((s,g) => s + (g?g.points:0), 0) : 0;
+      const combined = p1Total + p2Total;
+      const totalBanner = document.createElement('div');
+      totalBanner.className = 'total-banner';
+      totalBanner.style.marginTop = '16px';
+      totalBanner.textContent = st.numPlayers===2
+        ? ('Combined: ' + combined + ' / 200' + (combined>=200?' \u2014 You won the game!':''))
+        : ('Total: ' + p1Total);
+      card.appendChild(totalBanner);
+
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.style.marginLeft = '0';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  // ============================================================
+  // HOST / JOIN (online, main game)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let onlineGame = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('feud-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+    } else if (msg.type === 'guess'){
+      const controlId = onlineGame.round.phase==='steal' ? onlineGame.order[(onlineGame.currentIndex+1)%onlineGame.order.length] : onlineGame.order[onlineGame.currentIndex];
+      if (controlId === conn.__playerId) handleGuessOnline(msg.text);
+    } else if (msg.type === 'nextQuestion'){
+      advanceOnlineRound();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    showScreen('game');
+    onlineGame = { order: hostPlayers.map(p=>p.id), currentIndex: 0, round: newRoundData(null) };
+    broadcastOnlineState();
+  });
+  function advanceOnlineRound(){
+    const prevQ = onlineGame.round.question;
+    onlineGame.currentIndex = (onlineGame.currentIndex + 1) % onlineGame.order.length;
+    onlineGame.round = newRoundData(prevQ);
+    broadcastOnlineState();
+  }
+  function handleGuessOnline(guessText){
+    const g = onlineGame;
+    const r = g.round;
+    const hiddenAnswers = r.answers.filter(a => !a.revealed);
+    const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
+    const controlPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+
+    if (r.phase === 'guessing'){
+      if (match){
+        match.revealed = true;
+        r.boardTotal += match.points;
+        r.lastResult = { hit:true, guess:guessText };
+        if (r.answers.every(a=>a.revealed)){
+          controlPlayer.score += r.boardTotal;
+          r.roundWinnerName = controlPlayer.name + ' cleared the board!';
+          r.phase = 'roundEnd';
+        }
+      } else {
+        r.strikes++;
+        r.lastResult = { hit:false, guess:guessText };
+        if (r.strikes >= 3){
+          r.phase = 'steal';
+          r.lastResult = null;
+        }
+      }
+    } else if (r.phase === 'steal'){
+      const stealer = hostPlayers.find(p=>p.id===g.order[(g.currentIndex+1)%g.order.length]);
+      if (match){
+        match.revealed = true;
+        stealer.score += r.boardTotal;
+        r.roundWinnerName = stealer.name + ' stole it!';
+      } else {
+        controlPlayer.score += r.boardTotal;
+        r.roundWinnerName = controlPlayer.name + ' keeps the board';
+      }
+      r.phase = 'roundEnd';
+    }
+    broadcastOnlineState();
+  }
+  function broadcastOnlineState(){
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'state', game: onlineGame, players }); });
+    renderOnline(onlineGame, players, myId, true);
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const r = g.round;
+    const controlId = r.phase==='steal' ? g.order[(g.currentIndex+1)%g.order.length] : g.order[g.currentIndex];
+    const iAmControl = controlId === viewerId;
+    const controlPl = players.find(p=>p.id===controlId) || {name:'\u2026'};
+
+    if (r.phase === 'guessing' || r.phase === 'steal'){
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (pl.id===controlId?' in-control':'');
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      body.appendChild(scoreboard);
+
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + (r.phase==='steal' ? 'Steal attempt: ' : '') + (iAmControl?'Your turn':escapeHtml(controlPl.name)+(r.phase==='steal'?'':' is guessing')) + '</div>';
+      body.appendChild(hud);
+
+      const qTitle = document.createElement('div');
+      qTitle.className = 'question-title';
+      qTitle.textContent = r.question;
+      body.appendChild(qTitle);
+
+      const totalBanner = document.createElement('div');
+      totalBanner.className = 'total-banner';
+      totalBanner.textContent = 'Board total: ' + r.boardTotal;
+      body.appendChild(totalBanner);
+
+      const board = document.createElement('div');
+      board.className = 'board';
+      const sorted = r.answers.map((a,i)=>({...a,idx:i})).sort((a,b)=>b.points-a.points);
+      sorted.forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'board-row' + (a.revealed?' revealed':' hidden-row');
+        row.innerHTML = '<span><span class="rank-num">' + (sorted.indexOf(a)+1) + '.</span>' + (a.revealed?escapeHtml(a.text):'??????') + '</span><span class="pts-val">' + a.points + '</span>';
+        board.appendChild(row);
+      });
+      body.appendChild(board);
+
+      if (r.phase === 'guessing'){
+        const strikesRow = document.createElement('div');
+        strikesRow.className = 'strikes-row';
+        for (let i=0;i<3;i++){
+          const x = document.createElement('div');
+          x.className = 'strike-x' + (i<r.strikes?' active':'');
+          x.textContent = 'X';
+          strikesRow.appendChild(x);
+        }
+        body.appendChild(strikesRow);
+      }
+
+      if (r.lastResult){
+        const resultMsg = document.createElement('div');
+        resultMsg.style.textAlign = 'center';
+        resultMsg.style.marginBottom = '10px';
+        resultMsg.style.color = r.lastResult.hit ? 'var(--teal)' : 'var(--rose)';
+        resultMsg.textContent = r.lastResult.hit ? ('"' + r.lastResult.guess + '" is on the board!') : ('"' + r.lastResult.guess + '" is not on the board.');
+        body.appendChild(resultMsg);
+      }
+
+      if (iAmControl){
+        const guessRow = document.createElement('div');
+        guessRow.className = 'guess-row';
+        const guessInput = document.createElement('input');
+        guessInput.className = 'text-input';
+        guessInput.placeholder = 'Type a guess\u2026';
+        guessRow.appendChild(guessInput);
+        const guessBtn = document.createElement('button');
+        guessBtn.className = 'primary-btn';
+        guessBtn.style.marginTop = '0';
+        guessBtn.textContent = 'Guess';
+        guessBtn.addEventListener('click', () => {
+          const text = guessInput.value.trim();
+          if (!text) return;
+          if (isHost) handleGuessOnline(text);
+          else joinConn.send({ type:'guess', text });
+        });
+        guessRow.appendChild(guessBtn);
+        body.appendChild(guessRow);
+      } else {
+        const waitMsg = document.createElement('p');
+        waitMsg.style.color = 'var(--muted)'; waitMsg.style.fontSize = '13px'; waitMsg.style.textAlign = 'center';
+        waitMsg.textContent = 'Waiting for ' + controlPl.name + '\u2026';
+        body.appendChild(waitMsg);
+      }
+      return;
+    }
+
+    if (r.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + escapeHtml(r.roundWinnerName || 'Round over') + '</h3>' +
+        '<div class="total-banner">' + r.boardTotal + ' points</div>';
+      const board = document.createElement('div');
+      board.className = 'board';
+      r.answers.slice().sort((a,b)=>b.points-a.points).forEach((a,i) => {
+        const row = document.createElement('div');
+        row.className = 'board-row revealed';
+        row.innerHTML = '<span><span class="rank-num">' + (i+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
+        board.appendChild(row);
+      });
+      card.appendChild(board);
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip';
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
+      if (isHost){
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Next question \u2192';
+        btn.addEventListener('click', () => advanceOnlineRound());
+        card.appendChild(btn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='14px';
+        p.textContent = 'Waiting for the host to continue\u2026';
+        card.appendChild(p);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('feud-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'state'){
+          if (!screens.game.classList.contains('active')) showScreen('game');
+          renderOnline(msg.game, msg.players, myId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+})();
+</script>
+</body>
+</html>

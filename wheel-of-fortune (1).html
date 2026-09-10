@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Fortune</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body h4 { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; margin:18px 0 6px; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { margin:0 0 10px; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .hud-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.current-turn { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+  .score-chip .round-pot { font-family:'JetBrains Mono',monospace; color:var(--teal); font-size:11px; margin-left:6px; }
+
+  .category-banner { text-align:center; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  .category-banner b { color:var(--brass-bright); }
+
+  .puzzle-board { background:#0d3b3a; border:4px solid #0a2e2d; border-radius:12px; padding:26px 16px; margin-bottom:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:6px 4px; }
+  .board-row { width:100%; display:flex; justify-content:center; flex-wrap:wrap; gap:4px; }
+  .board-tile { width:34px; height:42px; background:#fff; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; color:#12151c; }
+  .board-tile.blank { background:#0a2e2d; border:2px solid #1a5654; }
+  .board-tile.space { background:transparent; width:16px; }
+  .board-tile.punct { background:transparent; color:var(--paper); width:20px; font-size:24px; }
+
+  .letter-grid { display:grid; grid-template-columns:repeat(9,1fr); gap:6px; margin-bottom:16px; }
+  .letter-btn { aspect-ratio:1; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; cursor:pointer; }
+  .letter-btn:hover:not(:disabled) { border-color:var(--brass); }
+  .letter-btn.vowel { color:var(--teal); }
+  .letter-btn:disabled { opacity:0.25; cursor:not-allowed; }
+  .letter-btn.used-hit { background:rgba(79,209,197,0.15); }
+  .letter-btn.used-miss { background:rgba(226,99,122,0.12); }
+
+  .miss-flash { text-align:center; color:var(--rose); font-size:13px; margin-bottom:10px; min-height:18px; }
+
+  .solve-row { display:flex; gap:8px; margin-top:6px; }
+  .solve-row input { flex:1; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+  .round-end-card { text-align:center; padding:30px 24px; }
+  .round-end-card .the-phrase { font-family:'Space Grotesk',sans-serif; font-size:26px; color:var(--brass-bright); margin:10px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Wheel of Fortune</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Guess letters to fill the board, or solve the puzzle outright. No wheel spinning &mdash; just the puzzle.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>Goal</h4>
+        <p>Guess the hidden word or phrase before your opponent does, by calling out letters or attempting to solve the whole thing.</p>
+        <h4>Playing</h4>
+        <ul>
+          <li>On your turn, pick any letter that hasn't been guessed yet.</li>
+          <li>If it's in the puzzle, every occurrence is revealed and you score points for it &mdash; and you go again.</li>
+          <li>If it's not in the puzzle, your turn ends and play passes to the next player.</li>
+          <li>Instead of guessing a letter, you can attempt to solve the whole puzzle at any time. Get it right and you win the round; get it wrong and your turn passes.</li>
+        </ul>
+        <h4>Scoring</h4>
+        <ul>
+          <li>Each consonant you reveal is worth <b>100 points</b> per occurrence on the board.</li>
+          <li>Each vowel (A, E, I, O, U) is worth <b>50 points</b> per occurrence.</li>
+          <li>Solving the puzzle outright adds a <b>350 point</b> bonus on top of whatever you've already revealed this round.</li>
+          <li>Points you reveal only count if you're the one who ends up solving that round &mdash; if someone else solves it, your partial reveals for that round don't carry over.</li>
+        </ul>
+        <h4>Modes</h4>
+        <p>Play solo just to solve puzzles for fun, pass-and-play locally with 2&ndash;4 people sharing one screen, or host/join an online room.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <div class="mode-grid">
+        <button class="mode-card" id="pickSolo"><h3>Play solo</h3><p>Solve puzzles by yourself, just for fun.</p></button>
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;4 players share one screen and take turns.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;4)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Category</label>
+      <div class="choice-row" id="categoryChoice"></div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Category</label>
+      <div class="choice-row" id="hostCategoryChoice"></div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start puzzle &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const CATEGORIES = {
+    "Phrase": ["Break The Ice","Piece Of Cake","Once In A Blue Moon","Spill The Beans","Bite The Bullet","Hit The Nail On The Head","Back To Square One","The Last Straw","Barking Up The Wrong Tree","Cost An Arm And A Leg","Let The Cat Out Of The Bag","Jumping To Conclusions","Under The Weather","Best Of Both Worlds","Cut To The Chase","Actions Speak Louder Than Words","Better Late Than Never","Curiosity Killed The Cat","Easier Said Than Done","Every Cloud Has A Silver Lining","Practice Makes Perfect","The Early Bird Catches The Worm","When Pigs Fly","You Cant Judge A Book By Its Cover"],
+    "Place": ["Grand Canyon","Eiffel Tower","Great Wall Of China","Niagara Falls","Statue Of Liberty","Golden Gate Bridge","Times Square","Central Park","Mount Everest","Great Barrier Reef","Amazon Rainforest","Sahara Desert","Yellowstone National Park","Hollywood Sign","Empire State Building","Sydney Opera House","Leaning Tower Of Pisa","Machu Picchu","Taj Mahal","Mount Rushmore"],
+    "Food & Drink": ["Peanut Butter And Jelly","Macaroni And Cheese","Fish And Chips","Spaghetti And Meatballs","Bacon And Eggs","Milk And Cookies","Salt And Pepper","Bread And Butter","Soup And Salad","Chicken Noodle Soup","Chocolate Chip Cookie","Ice Cream Sundae","Apple Pie","Birthday Cake","Hot Chocolate","French Toast","Grilled Cheese Sandwich","Strawberry Shortcake","Mashed Potatoes"],
+    "Occupation": ["Airline Pilot","Police Officer","Firefighter","Veterinarian","Software Engineer","Graphic Designer","Elementary School Teacher","Professional Athlete","News Anchor","Flight Attendant","Personal Trainer","Wedding Photographer","Restaurant Chef","Movie Director","Race Car Driver"],
+    "Movie Title": ["The Lion King","Finding Nemo","Jurassic Park","Back To The Future","The Wizard Of Oz","Home Alone","The Sound Of Music","Beauty And The Beast","Toy Story","Star Wars","The Princess Bride","Forrest Gump","Jaws","E.T. The Extra Terrestrial","Cast Away"],
+    "Thing": ["Rubber Duck","Umbrella Stand","Coffee Maker","Wireless Headphones","Rocking Chair","Grandfather Clock","Fire Extinguisher","Swiss Army Knife","Weather Vane","Wind Chime","Paper Airplane","Treasure Chest","Magnifying Glass","Snow Globe","Jigsaw Puzzle"]
+  };
+  const CATEGORY_NAMES = Object.keys(CATEGORIES);
+  const VOWELS = ['A','E','I','O','U'];
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function pickPhrase(category){
+    const catName = (category === 'Random' || !category) ? CATEGORY_NAMES[Math.floor(Math.random()*CATEGORY_NAMES.length)] : category;
+    const list = CATEGORIES[catName];
+    const phrase = list[Math.floor(Math.random()*list.length)];
+    return { phrase: phrase.toUpperCase(), category: catName };
+  }
+  function normalizeGuess(s){
+    return s.toUpperCase().replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
+
+  function populateCategoryChoice(containerId){
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const names = ['Random'].concat(CATEGORY_NAMES);
+    names.forEach((name,i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn' + (i===0?' active':'');
+      btn.textContent = name === 'Random' ? 'Random category' : name;
+      btn.dataset.val = name;
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+      el.appendChild(btn);
+    });
+  }
+  populateCategoryChoice('categoryChoice');
+  populateCategoryChoice('hostCategoryChoice');
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 4) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove(); localPlayerCount--;
+    });
+    row.appendChild(input); row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // Shared puzzle engine
+  // ============================================================
+  function guessLetter(phrase, guessedSet, letter){
+    letter = letter.toUpperCase();
+    if (guessedSet.has(letter)) return { alreadyGuessed: true };
+    guessedSet.add(letter);
+    let occurrences = 0;
+    for (const ch of phrase) if (ch === letter) occurrences++;
+    const isVowel = VOWELS.includes(letter);
+    const perLetter = isVowel ? 50 : 100;
+    const hit = occurrences > 0;
+    return { hit, occurrences, isVowel, points: hit ? occurrences * perLetter : 0, alreadyGuessed: false };
+  }
+  function isSolved(phrase, guessedSet){
+    for (const ch of phrase){
+      if (/[A-Z]/.test(ch) && !guessedSet.has(ch)) return false;
+    }
+    return true;
+  }
+  function renderBoardHTML(phrase, guessedSet, revealAll){
+    const words = phrase.split(' ');
+    let html = '';
+    words.forEach((word, wi) => {
+      html += '<div class="board-row">';
+      for (const ch of word){
+        if (/[A-Z0-9]/.test(ch)){
+          const shown = revealAll || guessedSet.has(ch);
+          html += '<div class="board-tile' + (shown?'':' blank') + '">' + (shown?ch:'') + '</div>';
+        } else {
+          html += '<div class="board-tile punct">' + escapeHtml(ch) + '</div>';
+        }
+      }
+      html += '</div>';
+      if (wi < words.length-1) html += '<div class="board-tile space"></div>';
+    });
+    return html;
+  }
+  function buildLetterGrid(guessedSet, onGuess, disabled){
+    const grid = document.createElement('div');
+    grid.className = 'letter-grid';
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      const isVowel = VOWELS.includes(letter);
+      const used = guessedSet.has(letter);
+      btn.className = 'letter-btn' + (isVowel?' vowel':'');
+      btn.textContent = letter;
+      btn.disabled = used || disabled;
+      if (used){
+        let hit = false;
+        // caller marks hit/miss via data attr passed separately if needed; kept simple here
+      }
+      btn.addEventListener('click', () => onGuess(letter));
+      grid.appendChild(btn);
+    });
+    return grid;
+  }
+
+  // ============================================================
+  // SOLO + LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let localState = null;
+
+  function newPuzzleState(category){
+    const picked = pickPhrase(category);
+    return {
+      phrase: picked.phrase,
+      category: picked.category,
+      guessedSet: new Set(),
+      roundPots: {}, // playerId -> accumulated points this round
+      lastMiss: null
+    };
+  }
+
+  document.getElementById('pickSolo').addEventListener('click', () => {
+    mode = 'solo';
+    localState = {
+      players: [{ id: uid(), name: 'You', score: 0 }],
+      currentIndex: 0,
+      category: 'Random',
+      puzzle: null,
+      phase: 'playing',
+      solo: true
+    };
+    localState.puzzle = newPuzzleState(localState.category);
+    showScreen('game');
+    renderLocal();
+  });
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const category = document.querySelector('#categoryChoice .choice-btn.active').dataset.val;
+    mode = 'local';
+    localState = {
+      players: names.map(n => ({ id: uid(), name: n, score: 0 })),
+      currentIndex: 0,
+      category,
+      puzzle: null,
+      phase: 'playing',
+      solo: false
+    };
+    localState.puzzle = newPuzzleState(category);
+    showScreen('game');
+    renderLocal();
+  });
+
+  function currentPlayer(){ return localState.players[localState.currentIndex]; }
+  function advanceTurn(){ localState.currentIndex = (localState.currentIndex + 1) % localState.players.length; }
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const st = localState;
+    const p = st.puzzle;
+
+    if (st.phase === 'playing'){
+      const catBanner = document.createElement('div');
+      catBanner.className = 'category-banner';
+      catBanner.innerHTML = 'Category: <b>' + escapeHtml(p.category) + '</b>';
+      body.appendChild(catBanner);
+
+      const board = document.createElement('div');
+      board.className = 'puzzle-board';
+      board.innerHTML = renderBoardHTML(p.phrase, p.guessedSet, false);
+      body.appendChild(board);
+
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        st.players.forEach((pl,i) => {
+          const chip = document.createElement('span');
+          chip.className = 'score-chip' + (i===st.currentIndex?' current-turn':'');
+          const pot = p.roundPots[pl.id] || 0;
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>' + (pot>0?'<span class="round-pot">+'+pot+' this round</span>':'');
+          scoreboard.appendChild(chip);
+        });
+        body.appendChild(scoreboard);
+
+        const hud = document.createElement('div');
+        hud.className = 'hud-row';
+        hud.innerHTML = '<div class="hud-chip">' + escapeHtml(currentPlayer().name) + '\u2019s turn</div>';
+        body.appendChild(hud);
+      } else {
+        const hud = document.createElement('div');
+        hud.className = 'hud-row';
+        hud.innerHTML = '<div class="hud-chip">Score: <b style="color:var(--brass-bright);">' + st.players[0].score + '</b></div>' +
+          '<div class="hud-chip">This round: <b style="color:var(--teal);">' + (p.roundPots[st.players[0].id]||0) + '</b></div>';
+        body.appendChild(hud);
+      }
+
+      const missFlash = document.createElement('div');
+      missFlash.className = 'miss-flash';
+      missFlash.textContent = p.lastMiss ? ('"' + p.lastMiss + '" is not in the puzzle.') : '';
+      body.appendChild(missFlash);
+
+      const grid = buildLetterGrid(p.guessedSet, (letter) => handleLetterGuessLocal(letter), false);
+      body.appendChild(grid);
+
+      const solveRow = document.createElement('div');
+      solveRow.className = 'solve-row';
+      const solveInput = document.createElement('input');
+      solveInput.className = 'text-input';
+      solveInput.placeholder = 'Solve the puzzle\u2026';
+      solveRow.appendChild(solveInput);
+      const solveBtn = document.createElement('button');
+      solveBtn.className = 'primary-btn';
+      solveBtn.style.marginTop = '0';
+      solveBtn.textContent = 'Solve';
+      solveBtn.addEventListener('click', () => {
+        const guess = solveInput.value.trim();
+        if (!guess) return;
+        handleSolveAttemptLocal(guess);
+      });
+      solveRow.appendChild(solveBtn);
+      body.appendChild(solveRow);
+      return;
+    }
+
+    if (st.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (st.roundWinner ? escapeHtml(st.roundWinner.name) + ' solved it!' : 'Round over') + '</h3>' +
+        '<div class="the-phrase">' + escapeHtml(p.phrase) + '</div>';
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        scoreboard.style.justifyContent = 'center';
+        st.players.forEach(pl => {
+          const chip = document.createElement('span');
+          chip.className = 'score-chip';
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          scoreboard.appendChild(chip);
+        });
+        card.appendChild(scoreboard);
+      } else {
+        const scoreLine = document.createElement('p');
+        scoreLine.style.color = 'var(--brass-bright)'; scoreLine.style.fontWeight = '600';
+        scoreLine.textContent = 'Total score: ' + st.players[0].score;
+        card.appendChild(scoreLine);
+      }
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Next puzzle \u2192';
+      btn.addEventListener('click', () => {
+        st.puzzle = newPuzzleState(st.category);
+        st.phase = 'playing';
+        if (!st.solo) advanceTurn();
+        renderLocal();
+      });
+      card.appendChild(btn);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  function handleLetterGuessLocal(letter){
+    const st = localState;
+    const p = st.puzzle;
+    const result = guessLetter(p.phrase, p.guessedSet, letter);
+    if (result.alreadyGuessed) return;
+    p.lastMiss = null;
+    const pl = currentPlayer();
+    if (result.hit){
+      p.roundPots[pl.id] = (p.roundPots[pl.id]||0) + result.points;
+      if (isSolved(p.phrase, p.guessedSet)){
+        pl.score += (p.roundPots[pl.id]||0);
+        st.roundWinner = pl;
+        st.phase = 'roundEnd';
+      }
+      // correct guess: same player continues
+    } else {
+      p.lastMiss = letter;
+      if (!st.solo) advanceTurn();
+    }
+    renderLocal();
+  }
+  function handleSolveAttemptLocal(guessText){
+    const st = localState;
+    const p = st.puzzle;
+    const pl = currentPlayer();
+    if (normalizeGuess(guessText) === normalizeGuess(p.phrase)){
+      pl.score += (p.roundPots[pl.id]||0) + 350;
+      st.roundWinner = pl;
+      st.phase = 'roundEnd';
+    } else {
+      p.lastMiss = 'Not quite';
+      if (!st.solo) advanceTurn();
+    }
+    renderLocal();
+  }
+
+  // ============================================================
+  // HOST / JOIN (online)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = []; // [{id,name,score,conn}]
+  let hostCategory = 'Random';
+  let onlineGame = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostCategory = document.querySelector('#hostCategoryChoice .choice-btn.active').dataset.val;
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('wheel-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+    } else if (msg.type === 'guessLetter'){
+      if (onlineGame && onlineGame.order[onlineGame.currentIndex] === conn.__playerId) handleLetterGuessOnline(msg.letter);
+    } else if (msg.type === 'solveAttempt'){
+      if (onlineGame && onlineGame.order[onlineGame.currentIndex] === conn.__playerId) handleSolveAttemptOnline(msg.guess);
+    } else if (msg.type === 'nextPuzzle'){
+      startOnlinePuzzle();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    showScreen('game');
+    startOnlinePuzzle();
+  });
+
+  function startOnlinePuzzle(){
+    const p = newPuzzleState(hostCategory);
+    onlineGame = {
+      order: hostPlayers.map(pl=>pl.id),
+      currentIndex: 0,
+      phrase: p.phrase,
+      category: p.category,
+      guessedLetters: [], // array for JSON transport
+      roundPots: {},
+      lastMiss: null,
+      phase: 'playing',
+      roundWinnerId: null
+    };
+    broadcastOnlineState();
+  }
+  function onlineGuessedSet(){ return new Set(onlineGame.guessedLetters); }
+  function handleLetterGuessOnline(letter){
+    const g = onlineGame;
+    const set = onlineGuessedSet();
+    const result = guessLetter(g.phrase, set, letter);
+    g.guessedLetters = Array.from(set);
+    if (result.alreadyGuessed) return;
+    g.lastMiss = null;
+    const currentId = g.order[g.currentIndex];
+    if (result.hit){
+      g.roundPots[currentId] = (g.roundPots[currentId]||0) + result.points;
+      if (isSolved(g.phrase, set)){
+        const pl = hostPlayers.find(p=>p.id===currentId);
+        if (pl) pl.score += (g.roundPots[currentId]||0);
+        g.roundWinnerId = currentId;
+        g.phase = 'roundEnd';
+      }
+    } else {
+      g.lastMiss = letter;
+      g.currentIndex = (g.currentIndex + 1) % g.order.length;
+    }
+    broadcastOnlineState();
+  }
+  function handleSolveAttemptOnline(guessText){
+    const g = onlineGame;
+    const currentId = g.order[g.currentIndex];
+    if (normalizeGuess(guessText) === normalizeGuess(g.phrase)){
+      const pl = hostPlayers.find(p=>p.id===currentId);
+      if (pl) pl.score += (g.roundPots[currentId]||0) + 350;
+      g.roundWinnerId = currentId;
+      g.phase = 'roundEnd';
+    } else {
+      g.lastMiss = 'Not quite';
+      g.currentIndex = (g.currentIndex + 1) % g.order.length;
+    }
+    broadcastOnlineState();
+  }
+  function broadcastOnlineState(){
+    const payload = { type:'state', game: onlineGame, players: hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score})) };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send(payload); });
+    renderOnline(onlineGame, hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score})), myId, true);
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const iAmCurrent = g.order[g.currentIndex] === viewerId;
+    const currentPl = players.find(p=>p.id===g.order[g.currentIndex]) || {name:'\u2026'};
+    const guessedSet = new Set(g.guessedLetters);
+
+    if (g.phase === 'playing'){
+      const catBanner = document.createElement('div');
+      catBanner.className = 'category-banner';
+      catBanner.innerHTML = 'Category: <b>' + escapeHtml(g.category) + '</b>';
+      body.appendChild(catBanner);
+
+      const board = document.createElement('div');
+      board.className = 'puzzle-board';
+      board.innerHTML = renderBoardHTML(g.phrase, guessedSet, false);
+      body.appendChild(board);
+
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (pl.id===g.order[g.currentIndex]?' current-turn':'');
+        const pot = g.roundPots[pl.id] || 0;
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>' + (pot>0?'<span class="round-pot">+'+pot+' this round</span>':'');
+        scoreboard.appendChild(chip);
+      });
+      body.appendChild(scoreboard);
+
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + (iAmCurrent ? 'Your turn' : escapeHtml(currentPl.name) + '\u2019s turn') + '</div>';
+      body.appendChild(hud);
+
+      const missFlash = document.createElement('div');
+      missFlash.className = 'miss-flash';
+      missFlash.textContent = g.lastMiss ? ('"' + g.lastMiss + '" is not in the puzzle.') : '';
+      body.appendChild(missFlash);
+
+      const grid = buildLetterGrid(guessedSet, (letter) => {
+        if (!iAmCurrent) return;
+        if (isHost) handleLetterGuessOnline(letter);
+        else joinConn.send({ type:'guessLetter', letter });
+      }, !iAmCurrent);
+      body.appendChild(grid);
+
+      if (iAmCurrent){
+        const solveRow = document.createElement('div');
+        solveRow.className = 'solve-row';
+        const solveInput = document.createElement('input');
+        solveInput.className = 'text-input';
+        solveInput.placeholder = 'Solve the puzzle\u2026';
+        solveRow.appendChild(solveInput);
+        const solveBtn = document.createElement('button');
+        solveBtn.className = 'primary-btn';
+        solveBtn.style.marginTop = '0';
+        solveBtn.textContent = 'Solve';
+        solveBtn.addEventListener('click', () => {
+          const guess = solveInput.value.trim();
+          if (!guess) return;
+          if (isHost) handleSolveAttemptOnline(guess);
+          else joinConn.send({ type:'solveAttempt', guess });
+        });
+        solveRow.appendChild(solveBtn);
+        body.appendChild(solveRow);
+      }
+      return;
+    }
+
+    if (g.phase === 'roundEnd'){
+      const winner = players.find(p=>p.id===g.roundWinnerId);
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (winner ? escapeHtml(winner.name) + ' solved it!' : 'Round over') + '</h3>' +
+        '<div class="the-phrase">' + escapeHtml(g.phrase) + '</div>';
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip';
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
+      if (isHost){
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Next puzzle \u2192';
+        btn.addEventListener('click', () => startOnlinePuzzle());
+        card.appendChild(btn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='14px';
+        p.textContent = 'Waiting for the host to start the next puzzle\u2026';
+        card.appendChild(p);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('wheel-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'state'){
+          if (!screens.game.classList.contains('active')) showScreen('game');
+          renderOnline(msg.game, msg.players, myId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+})();
+</script>
+</body>
+</html>

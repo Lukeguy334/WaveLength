@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$100,000 Pyramid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body h4 { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; margin:18px 0 6px; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { margin:0 0 10px; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+  .modal-body .rule-callout { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13.5px; color:var(--muted); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .hud-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .hud-chip { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .timer-chip .num { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--brass-bright); }
+  .timer-chip.low .num { color:var(--rose); }
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.active-giver { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+
+  .category-title { text-align:center; font-family:'Space Grotesk',sans-serif; font-size:24px; color:var(--brass-bright); margin-bottom:16px; }
+  .answer-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .answer-item { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:10px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-size:16px; font-weight:600; }
+  .answer-item:hover { border-color:var(--brass); }
+  .answer-item.gotten { background:rgba(79,209,197,0.12); border-color:var(--teal); color:var(--teal); text-decoration:line-through; cursor:default; }
+  .answer-item .check { font-size:18px; }
+
+  .round-end-card { text-align:center; padding:30px 24px; }
+  .round-end-card .the-score { font-family:'Space Grotesk',sans-serif; font-size:30px; color:var(--brass-bright); margin:10px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>$100,000 Pyramid</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Give clues, get your partner to name everything on the list before time runs out.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>Goal</h4>
+        <p>The clue-giver sees a category and a list of 6 answers. Using spoken clues &mdash; never the answer itself or a "rhymes with" hint &mdash; they try to get their partner (and anyone else listening) to say all 6 before time runs out.</p>
+        <h4>Playing</h4>
+        <ul>
+          <li>Pass the device to the clue-giver. They see the category and all 6 answers privately, and keep holding the device (facing themselves) for the whole round &mdash; the guesser never looks at the screen.</li>
+          <li>Once the timer starts, they give one clue at a time for any answer on the list, in any order.</li>
+          <li>The moment someone guesses one correctly, the clue-giver taps that item to mark it off and moves to the next.</li>
+          <li>Stuck on one? Skip it and come back &mdash; nothing has to go in order.</li>
+        </ul>
+        <div class="rule-callout"><b>Some categories are themed</b> (like "Things a shower curtain would say") &mdash; the answers are creative phrases that fit the theme, not literal facts. Play it loose and have fun with the clues.</div>
+        <h4>Scoring</h4>
+        <p>Each item you get before time runs out is worth a point. Whoever's been clue-giver rotates each round, and scores add up across rounds.</p>
+        <h4>Modes</h4>
+        <p>Play solo to practice giving clues against the clock, pass-and-play locally with 2&ndash;8 people, or host/join an online room.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <div class="mode-grid">
+        <button class="mode-card" id="pickSolo"><h3>Play solo</h3><p>Practice giving clues against the clock.</p></button>
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;8 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Time per round</label>
+      <div class="choice-row" id="timeChoice">
+        <button class="choice-btn" data-val="30">30s</button>
+        <button class="choice-btn active" data-val="60">60s</button>
+        <button class="choice-btn" data-val="90">90s</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Time per round</label>
+      <div class="choice-row" id="hostTimeChoice">
+        <button class="choice-btn" data-val="30">30s</button>
+        <button class="choice-btn active" data-val="60">60s</button>
+        <button class="choice-btn" data-val="90">90s</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const CATEGORIES = [
+    { title: 'Things A Shower Curtain Would Say', answers: ['Stop Splashing Me', 'I\'m Getting Moldy', 'Don\'t Peek', 'Pull Me Closed', 'I Need New Rings', 'Quit Dripping On Me'] },
+    { title: 'Things A Pillow Would Say', answers: ['I Get Drooled On', 'Fluff Me Up', 'I\'m Losing My Stuffing', 'Turn Me Over', 'I Support Your Head', 'Wash My Case Sometime'] },
+    { title: 'Things An Umbrella Would Say', answers: ['I Only Come Out When It Rains', 'Don\'t Leave Me On The Bus', 'I Flip Inside Out In Wind', 'I Live In The Closet', 'Open Me Up', 'I Block The Sun Too'] },
+    { title: 'Things A GPS Would Say', answers: ['Recalculating', 'Turn Left Ahead', 'You Have Arrived', 'Make A U-Turn', 'Rerouting', 'You\'ve Reached Your Destination'] },
+    { title: 'Things A Vending Machine Would Say', answers: ['Exact Change Only', 'Item Did Not Drop', 'Please Try Again', 'Out Of Order', 'Insert Bill Here', 'Enjoy Your Snack'] },
+    { title: 'Things A Referee Would Say', answers: ['That\'s A Foul', 'Play Ball', 'Time Out', 'You\'re Ejected', 'Good No Call', 'Get In Position'] },
+    { title: 'Things That Are Round', answers: ['Basketball', 'Pizza', 'The Moon', 'A Clock Face', 'A Wheel', 'A Coin'] },
+    { title: 'Things That Are Sticky', answers: ['Honey', 'Tape', 'Glue', 'Syrup', 'Gum', 'Flypaper'] },
+    { title: 'Things You Do Before Bed', answers: ['Brush Your Teeth', 'Set An Alarm', 'Turn Off The Lights', 'Read A Book', 'Lock The Door', 'Change Into Pajamas'] },
+    { title: 'Things In A Kitchen', answers: ['Refrigerator', 'Stove', 'Sink', 'Cutting Board', 'Toaster', 'Frying Pan'] },
+    { title: 'Things That Are Cold', answers: ['Ice Cream', 'Snow', 'A Popsicle', 'An Ice Cube', 'A Glacier', 'The North Pole'] },
+    { title: 'Things That Are Hot', answers: ['The Sun', 'Lava', 'A Campfire', 'Coffee', 'A Sauna', 'Fresh Pizza'] },
+    { title: 'Things You Find At The Beach', answers: ['Sand', 'Seashells', 'A Lifeguard', 'A Beach Towel', 'Waves', 'Sunscreen'] },
+    { title: 'Types Of Dances', answers: ['The Waltz', 'Tango', 'Ballet', 'The Breakdance', 'Salsa', 'The Tap Dance'] },
+    { title: 'Words That Can Follow \'FIRE\'', answers: ['Firefighter', 'Fireplace', 'Firework', 'Firefly', 'Fire Alarm', 'Fire Escape'] },
+    { title: 'Words That Can Follow \'SNOW\'', answers: ['Snowman', 'Snowflake', 'Snowball', 'Snowstorm', 'Snowplow', 'Snowboard'] },
+    { title: 'Words That Can Precede \'BALL\'', answers: ['Basketball', 'Baseball', 'Football', 'Snowball', 'Meatball', 'Eyeball'] },
+    { title: 'Things That Come In Pairs', answers: ['Shoes', 'Socks', 'Gloves', 'Earrings', 'Chopsticks', 'Salt And Pepper Shakers'] },
+    { title: 'Things That Are Loud', answers: ['A Rock Concert', 'A Jet Engine', 'A Fire Alarm', 'Thunder', 'A Jackhammer', 'A Crying Baby'] },
+    { title: 'Things That Are Quiet', answers: ['A Library', 'A Whisper', 'A Sleeping Baby', 'Falling Snow', 'A Graveyard', 'Meditation'] },
+    { title: 'Things You Wear On Your Feet', answers: ['Sneakers', 'Socks', 'Sandals', 'Boots', 'Flip-Flops', 'High Heels'] },
+    { title: 'Things That Fly', answers: ['An Airplane', 'A Bird', 'A Kite', 'A Butterfly', 'A Helicopter', 'A Drone'] },
+    { title: 'Things You\'d Find In A Toolbox', answers: ['A Hammer', 'A Screwdriver', 'A Wrench', 'Nails', 'Tape Measure', 'Pliers'] },
+    { title: 'Things That Are Yellow', answers: ['A Banana', 'The Sun', 'A School Bus', 'Lemons', 'Corn', 'A Rubber Duck'] },
+    { title: 'Things That Are Green', answers: ['Grass', 'A Frog', 'Broccoli', 'A Shamrock', 'A Cactus', 'Money'] },
+    { title: 'Things In A First Aid Kit', answers: ['Bandages', 'Antiseptic', 'Gauze', 'Tweezers', 'Pain Relievers', 'Scissors'] },
+    { title: 'Things Superheroes Wear', answers: ['A Cape', 'A Mask', 'Tights', 'Boots', 'A Utility Belt', 'A Symbol On The Chest'] },
+    { title: 'Things You Do At A Birthday Party', answers: ['Blow Out Candles', 'Open Presents', 'Sing Happy Birthday', 'Eat Cake', 'Play Games', 'Wear A Party Hat'] },
+    { title: 'Things That Are Slippery', answers: ['Ice', 'A Banana Peel', 'Wet Soap', 'An Eel', 'Oil', 'A Water Slide'] },
+    { title: 'Things You\'d Find In A Classroom', answers: ['A Chalkboard', 'Desks', 'A Teacher', 'Textbooks', 'A Backpack', 'Chalk'] },
+    { title: 'Things A Pirate Would Say', answers: ['Arrr', 'Walk The Plank', 'Shiver Me Timbers', 'X Marks The Spot', 'Ahoy Matey', 'Batten Down The Hatches'] },
+    { title: 'Things A Cowboy Would Say', answers: ['Yeehaw', 'Giddy Up', 'Round \'Em Up', 'Howdy Partner', 'Head \'Em Off At The Pass', 'Saddle Up'] },
+    { title: 'Things You\'d Find In Space', answers: ['A Planet', 'A Star', 'An Astronaut', 'A Rocket', 'The Moon', 'A Comet'] },
+    { title: 'Things That Are Sharp', answers: ['A Knife', 'A Needle', 'Scissors', 'A Thumbtack', 'A Cactus Spine', 'Broken Glass'] },
+    { title: 'Things You Do At The Gym', answers: ['Lift Weights', 'Run On A Treadmill', 'Stretch', 'Do Push-Ups', 'Use A Locker', 'Drink Water'] },
+    { title: 'Things That Melt', answers: ['Ice Cream', 'Snow', 'Butter', 'Chocolate', 'A Candle', 'An Ice Cube'] },
+    { title: 'Things You\'d Find In A Doctor\'s Office', answers: ['A Stethoscope', 'A Scale', 'An Eye Chart', 'A Waiting Room', 'Tongue Depressors', 'A Blood Pressure Cuff'] },
+    { title: 'Things That Bounce', answers: ['A Basketball', 'A Trampoline', 'A Rubber Ball', 'A Kangaroo', 'A Pogo Stick', 'A Yo-Yo'] },
+    { title: 'Words That Can Follow \'SUN\'', answers: ['Sunflower', 'Sunrise', 'Sunburn', 'Sunglasses', 'Sunscreen', 'Sunset'] },
+    { title: 'Things You\'d Bring On A Camping Trip', answers: ['A Tent', 'A Flashlight', 'A Sleeping Bag', 'Bug Spray', 'A Cooler', 'Marshmallows'] },
+  ];
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function pickCategory(excludeTitle){
+    let pool = CATEGORIES.filter(c => c.title !== excludeTitle);
+    if (!pool.length) pool = CATEGORIES;
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
+
+  ['timeChoice','hostTimeChoice'].forEach(id => {
+    document.querySelectorAll('#'+id+' .choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#'+id+' .choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 8) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove(); localPlayerCount--;
+    });
+    row.appendChild(input); row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ============================================================
+  // SOLO + LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let localState = null;
+
+  function newRound(excludeTitle, timeLimit){
+    const cat = pickCategory(excludeTitle);
+    return { category: cat.title, answers: cat.answers.slice(), gotten: Array(6).fill(false), timeLeft: timeLimit };
+  }
+
+  document.getElementById('pickSolo').addEventListener('click', () => {
+    mode = 'solo';
+    localState = {
+      players: [{ id: uid(), name: 'You', score: 0 }],
+      currentIndex: 0,
+      timeLimit: 60,
+      round: null,
+      phase: 'wordShown',
+      solo: true
+    };
+    localState.round = newRound(null, 60);
+    showScreen('game');
+    renderLocal();
+  });
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const timeLimit = parseInt(document.querySelector('#timeChoice .choice-btn.active').dataset.val, 10);
+    mode = 'local';
+    localState = {
+      players: names.map(n => ({ id: uid(), name: n, score: 0 })),
+      currentIndex: 0,
+      timeLimit,
+      round: null,
+      phase: 'reveal',
+      solo: false
+    };
+    localState.round = newRound(null, timeLimit);
+    showScreen('game');
+    renderLocal();
+  });
+
+  let localTimer = null;
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const st = localState;
+    const giver = st.players[st.currentIndex];
+    const r = st.round;
+
+    if (st.phase === 'reveal'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83c\udfc6</div><h2>Pass the device to<br>' + escapeHtml(giver.name) + '</h2><p>Everyone else look away!</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm " + giver.name + ' \u2014 show me my list';
+      btn.addEventListener('click', () => { st.phase = 'wordShown'; renderLocal(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'wordShown'){
+      const card = document.createElement('div');
+      card.className = 'panel';
+      card.innerHTML = '<div class="category-title">' + escapeHtml(r.category) + '</div>';
+      const list = document.createElement('div');
+      list.className = 'answer-list';
+      r.answers.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'answer-item';
+        item.innerHTML = '<span>' + escapeHtml(a) + '</span>';
+        list.appendChild(item);
+      });
+      card.appendChild(list);
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Talk it out \u2192';
+      btn.addEventListener('click', () => { st.phase = 'getReady'; renderLocal(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'getReady'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcac</div><h2>Get ready</h2><p>Plan your clues, make sure your partner\u2019s paying attention \u2014 the clock hasn\u2019t started. Start it whenever you\u2019re ready.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Start the timer \u2192';
+      btn.addEventListener('click', () => {
+        st.phase = 'playing';
+        r.timeLeft = st.timeLimit;
+        renderLocal();
+        startLocalTimer();
+      });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'playing'){
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + escapeHtml(giver.name) + ' is giving clues</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + r.timeLeft + '</span>s</div>' +
+        '<div class="hud-chip">' + r.gotten.filter(Boolean).length + ' / 6 gotten</div>';
+      body.appendChild(hud);
+
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        st.players.forEach((pl,i) => {
+          const chip = document.createElement('span');
+          chip.className = 'score-chip' + (i===st.currentIndex?' active-giver':'');
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          scoreboard.appendChild(chip);
+        });
+        body.appendChild(scoreboard);
+      }
+
+      const catTitle = document.createElement('div');
+      catTitle.className = 'category-title';
+      catTitle.textContent = r.category;
+      body.appendChild(catTitle);
+
+      const list = document.createElement('div');
+      list.className = 'answer-list';
+      r.answers.forEach((a, idx) => {
+        const item = document.createElement('div');
+        item.className = 'answer-item' + (r.gotten[idx]?' gotten':'');
+        item.innerHTML = '<span>' + escapeHtml(a) + '</span>' + (r.gotten[idx]?'<span class="check">\u2713</span>':'');
+        if (!r.gotten[idx]){
+          item.addEventListener('click', () => {
+            r.gotten[idx] = true;
+            giver.score += 1;
+            if (r.gotten.every(Boolean)){
+              endLocalRound();
+            } else {
+              renderLocal();
+            }
+          });
+        }
+        list.appendChild(item);
+      });
+      body.appendChild(list);
+
+      const endBtn = document.createElement('button');
+      endBtn.className = 'secondary-btn';
+      endBtn.style.marginLeft = '0';
+      endBtn.textContent = 'End round early';
+      endBtn.addEventListener('click', endLocalRound);
+      body.appendChild(endBtn);
+      return;
+    }
+
+    if (st.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      const gottenCount = r.gotten.filter(Boolean).length;
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">Round over</h3>' +
+        '<div class="the-score">' + gottenCount + ' / 6</div>' +
+        '<p style="color:var(--muted);">' + escapeHtml(r.category) + '</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = st.solo ? 'Next round \u2192' : 'Next player \u2192';
+      btn.addEventListener('click', () => {
+        const prevCategory = r.category;
+        if (!st.solo) st.currentIndex = (st.currentIndex + 1) % st.players.length;
+        st.round = newRound(prevCategory, st.timeLimit);
+        st.phase = st.solo ? 'wordShown' : 'reveal';
+        renderLocal();
+      });
+      card.appendChild(btn);
+      if (!st.solo){
+        const scoresBtn = document.createElement('button');
+        scoresBtn.className = 'secondary-btn';
+        scoresBtn.textContent = 'See scores';
+        scoresBtn.addEventListener('click', () => { st.phase = 'gameEnd'; renderLocal(); });
+        card.appendChild(scoresBtn);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'gameEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel';
+      let html = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Scores so far</h3>';
+      st.players.slice().sort((a,b)=>b.score-a.score).forEach((pl,i) => {
+        html += '<div class="score-chip' + (i===0?' active-giver':'') + '" style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(pl.name) + '</span><span class="pts">' + pl.score + '</span></div>';
+      });
+      card.innerHTML = html;
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Keep playing \u2192';
+      btn.addEventListener('click', () => {
+        st.round = newRound(null, st.timeLimit);
+        st.phase = 'reveal';
+        renderLocal();
+      });
+      card.appendChild(btn);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+  function startLocalTimer(){
+    if (localTimer) clearInterval(localTimer);
+    localTimer = setInterval(() => {
+      if (localState.phase !== 'playing'){ clearInterval(localTimer); return; }
+      localState.round.timeLeft--;
+      const numEl = document.getElementById('timeLeftNum');
+      const chipEl = document.getElementById('timerChip');
+      if (numEl) numEl.textContent = localState.round.timeLeft;
+      if (chipEl) chipEl.classList.toggle('low', localState.round.timeLeft <= 10);
+      if (localState.round.timeLeft <= 0){
+        clearInterval(localTimer);
+        endLocalRound();
+      }
+    }, 1000);
+  }
+  function endLocalRound(){
+    if (localTimer) clearInterval(localTimer);
+    localState.phase = 'roundEnd';
+    renderLocal();
+  }
+
+  // ============================================================
+  // HOST / JOIN (online)
+  // ============================================================
+  let myId = null, myName = '';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let hostTimeLimit = 60;
+  let onlineGame = null;
+  let onlineTimer = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostTimeLimit = parseInt(document.querySelector('#hostTimeChoice .choice-btn.active').dataset.val, 10);
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('pyramid-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+    } else if (msg.type === 'markGotten'){
+      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) markGottenOnline(msg.idx);
+    } else if (msg.type === 'endRound'){
+      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) endOnlineRound();
+    } else if (msg.type === 'startTimer'){
+      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) beginOnlineTimer();
+    } else if (msg.type === 'nextRound'){
+      advanceOnlineRound();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    showScreen('game');
+    startOnlineRound(null);
+  });
+
+  function startOnlineRound(excludeTitle){
+    const cat = pickCategory(excludeTitle);
+    onlineGame = {
+      order: hostPlayers.map(p=>p.id),
+      giverIndex: 0,
+      category: cat.title,
+      answers: cat.answers.slice(),
+      gotten: Array(6).fill(false),
+      timeLimit: hostTimeLimit,
+      timeLeft: hostTimeLimit,
+      phase: 'getReady', // getReady -> playing -> roundEnd
+      roundGottenCount: 0
+    };
+    broadcastOnlineState();
+  }
+  function beginOnlineTimer(){
+    if (onlineGame.phase !== 'getReady') return;
+    onlineGame.phase = 'playing';
+    onlineGame.timeLeft = onlineGame.timeLimit;
+    broadcastOnlineState();
+    startOnlineTimer();
+  }
+  function markGottenOnline(idx){
+    const g = onlineGame;
+    if (g.phase !== 'playing' || g.gotten[idx]) return;
+    g.gotten[idx] = true;
+    const giverId = g.order[g.giverIndex];
+    const pl = hostPlayers.find(p=>p.id===giverId);
+    if (pl) pl.score += 1;
+    if (g.gotten.every(Boolean)) endOnlineRound();
+    else broadcastOnlineState();
+  }
+  function endOnlineRound(){
+    if (onlineTimer) clearInterval(onlineTimer);
+    onlineGame.phase = 'roundEnd';
+    broadcastOnlineState();
+  }
+  function advanceOnlineRound(){
+    const prevCategory = onlineGame.category;
+    onlineGame.giverIndex = (onlineGame.giverIndex + 1) % onlineGame.order.length;
+    const cat = pickCategory(prevCategory);
+    onlineGame.category = cat.title;
+    onlineGame.answers = cat.answers.slice();
+    onlineGame.gotten = Array(6).fill(false);
+    onlineGame.timeLeft = onlineGame.timeLimit;
+    onlineGame.phase = 'getReady';
+    broadcastOnlineState();
+  }
+  function startOnlineTimer(){
+    if (onlineTimer) clearInterval(onlineTimer);
+    onlineTimer = setInterval(() => {
+      if (onlineGame.phase !== 'playing'){ clearInterval(onlineTimer); return; }
+      onlineGame.timeLeft--;
+      if (onlineGame.timeLeft <= 0){
+        clearInterval(onlineTimer);
+        endOnlineRound();
+      } else {
+        broadcastTimerOnly();
+      }
+    }, 1000);
+  }
+  function broadcastTimerOnly(){
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'timer', timeLeft: onlineGame.timeLeft }); });
+    const numEl = document.getElementById('timeLeftNum');
+    if (numEl) numEl.textContent = onlineGame.timeLeft;
+  }
+  function redactedGameFor(viewerId){
+    const g = onlineGame;
+    const isGiver = g.order[g.giverIndex] === viewerId;
+    return {
+      order: g.order, giverIndex: g.giverIndex, category: g.category,
+      answers: isGiver ? g.answers : g.answers.map((a,i) => g.gotten[i] ? a : null),
+      gotten: g.gotten, timeLimit: g.timeLimit, timeLeft: g.timeLeft, phase: g.phase
+    };
+  }
+  function broadcastOnlineState(){
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'state', game: redactedGameFor(p.id), players }); });
+    renderOnline(redactedGameFor(myId), players, myId, true);
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const isGiver = g.order[g.giverIndex] === viewerId;
+    const giverPl = players.find(p=>p.id===g.order[g.giverIndex]) || {name:'\u2026'};
+
+    if (g.phase === 'getReady'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      if (isGiver){
+        card.innerHTML = '<div class="category-title">' + escapeHtml(g.category) + '</div>';
+        const list = document.createElement('div');
+        list.className = 'answer-list';
+        g.answers.forEach(a => {
+          const item = document.createElement('div');
+          item.className = 'answer-item';
+          item.innerHTML = '<span>' + escapeHtml(a) + '</span>';
+          list.appendChild(item);
+        });
+        card.appendChild(list);
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Start the timer \u2192';
+        btn.addEventListener('click', () => {
+          if (isHost) beginOnlineTimer();
+          else joinConn.send({ type:'startTimer' });
+        });
+        card.appendChild(btn);
+      } else {
+        card.innerHTML = '<div class="to-icon">\ud83d\udcac</div><h2>Get ready</h2><p>' + escapeHtml(giverPl.name) + ' is looking over their list. The timer starts when they\u2019re ready.</p>';
+      }
+      body.appendChild(card);
+      return;
+    }
+
+    if (g.phase === 'playing'){
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + (isGiver ? 'You\u2019re' : escapeHtml(giverPl.name) + ' is') + ' giving clues</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + g.timeLeft + '</span>s</div>' +
+        '<div class="hud-chip">' + g.gotten.filter(Boolean).length + ' / 6 gotten</div>';
+      body.appendChild(hud);
+
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (pl.id===g.order[g.giverIndex]?' active-giver':'');
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      body.appendChild(scoreboard);
+
+      const catTitle = document.createElement('div');
+      catTitle.className = 'category-title';
+      catTitle.textContent = g.category;
+      body.appendChild(catTitle);
+
+      const list = document.createElement('div');
+      list.className = 'answer-list';
+      g.answers.forEach((a, idx) => {
+        const item = document.createElement('div');
+        const known = a !== null;
+        item.className = 'answer-item' + (g.gotten[idx]?' gotten':'');
+        item.innerHTML = '<span>' + (known ? escapeHtml(a) : '\u2014') + '</span>' + (g.gotten[idx]?'<span class="check">\u2713</span>':'');
+        if (isGiver && !g.gotten[idx]){
+          item.addEventListener('click', () => {
+            if (isHost) markGottenOnline(idx);
+            else joinConn.send({ type:'markGotten', idx });
+          });
+        }
+        list.appendChild(item);
+      });
+      body.appendChild(list);
+
+      if (isGiver){
+        const endBtn = document.createElement('button');
+        endBtn.className = 'secondary-btn';
+        endBtn.style.marginLeft = '0';
+        endBtn.textContent = 'End round early';
+        endBtn.addEventListener('click', () => {
+          if (isHost) endOnlineRound();
+          else joinConn.send({ type:'endRound' });
+        });
+        body.appendChild(endBtn);
+      }
+      return;
+    }
+
+    if (g.phase === 'roundEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      const gottenCount = g.gotten.filter(Boolean).length;
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">Round over</h3>' +
+        '<div class="the-score">' + gottenCount + ' / 6</div>' +
+        '<p style="color:var(--muted);">' + escapeHtml(g.category) + '</p>';
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      players.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip';
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
+      if (isHost){
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Next player \u2192';
+        btn.addEventListener('click', () => advanceOnlineRound());
+        card.appendChild(btn);
+      } else {
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px'; p.style.marginTop='14px';
+        p.textContent = 'Waiting for the host to continue\u2026';
+        card.appendChild(p);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('pyramid-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'state'){
+          if (!screens.game.classList.contains('active')) showScreen('game');
+          renderOnline(msg.game, msg.players, myId, false);
+        } else if (msg.type === 'timer'){
+          const numEl = document.getElementById('timeLeftNum');
+          if (numEl) numEl.textContent = msg.timeLeft;
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+})();
+</script>
+</body>
+</html>
