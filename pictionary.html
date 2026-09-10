@@ -38,7 +38,7 @@
   button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
   button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
   .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
-
+ 
   .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
   .player-row-input input { flex:1; }
   .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
@@ -200,7 +200,7 @@
       </div>
     </div>
   </div>
-
+ 
   <div id="setupHost" class="hidden">
     <div class="panel" id="hostConfigPanel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
@@ -252,7 +252,7 @@
       <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
     </div>
   </div>
-
+ 
   <div id="setupJoin" class="hidden">
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
@@ -2823,7 +2823,8 @@ hard: ['Imposter Syndrome','Fear of Missing Out','Writer’s Block','Creative Bu
       else screens[k].classList.toggle('hidden', k!==name);
     });
   }
-  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesBtn').addEventListener('click', () =>
+  document.getElementById('rulesModal').classList.remove('hidden'));
   document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
   document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
 
@@ -2864,7 +2865,7 @@ hard: ['Imposter Syndrome','Fear of Missing Out','Writer’s Block','Creative Bu
   populateCategoryChoice('hostCategoryChoice');
 
   function wireWordSourceToggle(sourceChoiceId, difficultyBlockId, categoryBlockId){
-    document.querySelectorAll('#'+sourceChoiceId+' .choice-btn').forEach(btn => {
+     document.querySelectorAll('#'+sourceChoiceId+' .choice-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const isCategory = btn.dataset.val === 'category';
         document.getElementById(difficultyBlockId).classList.toggle('hidden', isCategory);
@@ -3177,7 +3178,6 @@ hard: ['Imposter Syndrome','Fear of Missing Out','Writer’s Block','Creative Bu
       skipWordBtn.title = "Get a new word without revealing this one. Timer restarts.";
       skipWordBtn.addEventListener('click', skipWordLocal);
       actionRow.appendChild(skipWordBtn);
-      body.appendChild(actionRow);
       return;
     }
 
@@ -3469,7 +3469,7 @@ hard: ['Imposter Syndrome','Fear of Missing Out','Writer’s Block','Creative Bu
   }
 
   // ---------------- JOIN ----------------
-  let joinTimeout = null;
+let joinTimeout = null;
   document.getElementById('joinConnect').addEventListener('click', () => {
     const name = document.getElementById('joinName').value.trim() || 'Player';
     const code = document.getElementById('joinCode').value.trim().toUpperCase();
@@ -3732,3 +3732,5 @@ hard: ['Imposter Syndrome','Fear of Missing Out','Writer’s Block','Creative Bu
 </script>
 </body>
 </html>
+
+
