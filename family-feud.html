@@ -125,9 +125,9 @@
         <h4>Main game</h4>
         <ul>
           <li>A question is shown with a hidden board of ranked answers.</li>
-          <li>The player in control types guesses one at a time. A match reveals that answer's spot and points, and they keep guessing.</li>
-          <li>A guess that doesn't match any remaining answer is a strike.</li>
-          <li>After 3 strikes, if any answers are still hidden, control passes to the other player for one single steal attempt &mdash; get it right and they take all the points on the board; get it wrong and the original player banks the points instead.</li>
+          <li>The player in control types a guess, then passes the device to the other player to judge it against the real hidden board &mdash; a real person decides if it's close enough, so "broken" can reasonably count for "it was defective."</li>
+          <li>A match reveals that answer's spot and points, and the same player keeps guessing. No match is a strike.</li>
+          <li>After 3 strikes, if any answers are still hidden, control passes to the other player for one single steal attempt, judged the same way &mdash; get it right and they take all the points on the board; get it wrong and the original player banks the points instead.</li>
         </ul>
         <h4>Fast Money</h4>
         <ul>
@@ -202,11 +202,18 @@
   <div id="setupFastMoney" class="hidden">
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Fast Money</h3>
-      <p style="color:var(--muted);font-size:13px;">5 random questions. Play solo for a personal best, or pass the device to a second player who can't repeat your answers.</p>
+      <p style="color:var(--muted);font-size:13px;">5 random questions, race the clock. Player 1 gets 50 seconds, Player 2 gets 60.</p>
       <label class="field-label">Players</label>
       <div class="choice-row" id="fmPlayerChoice">
         <button class="choice-btn active" data-val="1">Just me</button>
         <button class="choice-btn" data-val="2">Two players</button>
+      </div>
+      <div id="fmModeBlock" class="hidden">
+        <label class="field-label">Mode</label>
+        <div class="choice-row" id="fmModeChoice">
+          <button class="choice-btn active" data-val="coop">Cooperative (combine to 200, no repeats)</button>
+          <button class="choice-btn" data-val="vs">Vs Mode (both 50s, repeats OK, compare scores)</button>
+        </div>
       </div>
       <div>
         <button class="primary-btn" id="fmStart">Start &rarr;</button>
@@ -249,12 +256,38 @@
     { q: 'Name a reason someone would go to the emergency room', answers: [{text:'Broken bone', points:30}, {text:'Chest pain', points:24}, {text:'Severe allergic reaction', points:20}, {text:'Deep cut', points:16}, {text:'High fever', points:10}] },
     { q: 'Name something you\'d take on a road trip', answers: [{text:'Snacks', points:30}, {text:'A phone charger', points:24}, {text:'Music or a playlist', points:20}, {text:'A map or GPS', points:16}, {text:'Pillows', points:10}] },
     { q: 'Name a popular New Year\'s resolution', answers: [{text:'Exercise more', points:34}, {text:'Eat healthier', points:26}, {text:'Save money', points:18}, {text:'Quit a bad habit', points:12}, {text:'Read more', points:10}] },
+    { q: 'Name something you might see at a wedding', answers: [{text:'The bride', points:30}, {text:'A wedding cake', points:24}, {text:'Flowers', points:20}, {text:'A DJ', points:16}, {text:'Guests crying', points:10}] },
+    { q: 'Name a reason someone might not answer their phone', answers: [{text:'Driving', points:32}, {text:'In a meeting', points:26}, {text:'Phone is dead', points:20}, {text:'Didn\'t hear it', points:14}, {text:'Screening the call', points:8}] },
+    { q: 'Name something you\'d find in a hotel room', answers: [{text:'A bed', points:28}, {text:'A TV', points:24}, {text:'Towels', points:20}, {text:'A mini fridge', points:16}, {text:'A hairdryer', points:12}] },
+    { q: 'Name a popular pizza topping', answers: [{text:'Pepperoni', points:34}, {text:'Cheese', points:26}, {text:'Mushrooms', points:18}, {text:'Sausage', points:14}, {text:'Olives', points:8}] },
+    { q: 'Name something people do at the gym', answers: [{text:'Lift weights', points:30}, {text:'Run on a treadmill', points:26}, {text:'Stretch', points:18}, {text:'Take a class', points:16}, {text:'Use a locker room', points:10}] },
+    { q: 'Name something that\'s hard to put down once you start', answers: [{text:'A good book', points:28}, {text:'A video game', points:24}, {text:'Your phone', points:22}, {text:'A bag of chips', points:16}, {text:'A TV show', points:10}] },
+    { q: 'Name a reason someone might cancel plans last minute', answers: [{text:'Got sick', points:32}, {text:'Something came up at work', points:24}, {text:'Too tired', points:20}, {text:'Car trouble', points:14}, {text:'Just didn\'t feel like it', points:10}] },
+    { q: 'Name something you\'d pack for a beach vacation', answers: [{text:'Sunscreen', points:30}, {text:'A swimsuit', points:26}, {text:'Sunglasses', points:18}, {text:'A beach towel', points:16}, {text:'Flip-flops', points:10}] },
+    { q: 'Name a common excuse for being messy', answers: [{text:'I\'ve been busy', points:30}, {text:'I\'ll clean it later', points:24}, {text:'I know where everything is', points:20}, {text:'It\'s organized chaos', points:16}, {text:'I was going to do it today', points:10}] },
+    { q: 'Name something you might find under a couch cushion', answers: [{text:'Loose change', points:30}, {text:'A remote control', points:24}, {text:'Crumbs', points:20}, {text:'A phone', points:16}, {text:'A missing sock', points:10}] },
+    { q: 'Name a reason someone might be nervous before a job interview', answers: [{text:'Fear of messing up', points:32}, {text:'Not knowing what to expect', points:24}, {text:'Wanting the job badly', points:18}, {text:'Meeting new people', points:16}, {text:'Public speaking anxiety', points:10}] },
+    { q: 'Name something you do to pass time in a waiting room', answers: [{text:'Scroll your phone', points:32}, {text:'Read a magazine', points:24}, {text:'People watch', points:18}, {text:'Fidget', points:16}, {text:'Fall asleep', points:10}] },
+    { q: 'Name a food that\'s better the next day', answers: [{text:'Pizza', points:28}, {text:'Pasta', points:24}, {text:'Chili', points:20}, {text:'Lasagna', points:16}, {text:'Curry', points:12}] },
+    { q: 'Name something people do to celebrate a promotion', answers: [{text:'Go out to dinner', points:30}, {text:'Tell family and friends', points:24}, {text:'Treat themselves', points:20}, {text:'Have drinks with coworkers', points:16}, {text:'Post about it online', points:10}] },
+    { q: 'Name a reason someone would take a sick day when they\'re not actually sick', answers: [{text:'Needed a mental break', points:34}, {text:'Too tired to go in', points:26}, {text:'Personal errands', points:18}, {text:'Bad week, needed rest', points:14}, {text:'No real reason at all', points:8}] },
+    { q: 'Name something you\'d see at a farmers market', answers: [{text:'Fresh vegetables', points:30}, {text:'Fruit', points:24}, {text:'Homemade jam', points:18}, {text:'Flowers', points:16}, {text:'Baked goods', points:12}] },
+    { q: 'Name a household item that\'s always hard to find when you need it', answers: [{text:'Scissors', points:28}, {text:'Tape', points:24}, {text:'A phone charger', points:20}, {text:'The remote', points:16}, {text:'A specific tool', points:12}] },
+    { q: 'Name something people do on a lazy Sunday', answers: [{text:'Sleep in', points:32}, {text:'Watch TV', points:24}, {text:'Order takeout', points:18}, {text:'Do nothing', points:16}, {text:'Nap', points:10}] },
+    { q: 'Name a reason a flight might get delayed', answers: [{text:'Bad weather', points:34}, {text:'Mechanical issue', points:26}, {text:'Air traffic', points:18}, {text:'Crew running behind', points:14}, {text:'Late passengers', points:8}] },
+    { q: 'Name something you\'d bring to a job interview', answers: [{text:'A resume', points:32}, {text:'A pen', points:22}, {text:'Confidence', points:18}, {text:'Questions to ask', points:16}, {text:'A portfolio', points:12}] },
+    { q: 'Name a common New Year\'s Eve tradition', answers: [{text:'Watching the ball drop', points:30}, {text:'Making resolutions', points:24}, {text:'A midnight kiss', points:20}, {text:'Fireworks', points:16}, {text:'Champagne toast', points:10}] },
+    { q: 'Name something you might forget when leaving the house', answers: [{text:'Your keys', points:30}, {text:'Your phone', points:26}, {text:'Your wallet', points:20}, {text:'Your umbrella', points:14}, {text:'Turning off the stove', points:10}] },
+    { q: 'Name a reason someone might go vegetarian or vegan', answers: [{text:'Health reasons', points:30}, {text:'Animal welfare', points:26}, {text:'Environmental concerns', points:20}, {text:'A doctor recommended it', points:14}, {text:'Just wanted to try it', points:10}] },
+    { q: 'Name something you\'d find in a garage', answers: [{text:'A car', points:28}, {text:'Tools', points:24}, {text:'Boxes of stuff', points:20}, {text:'A lawnmower', points:16}, {text:'Bikes', points:12}] },
+    { q: 'Name a reason someone might not finish a meal at a restaurant', answers: [{text:'Portion was too big', points:32}, {text:'Wasn\'t hungry', points:22}, {text:'Saving room for dessert', points:20}, {text:'Didn\'t like it', points:16}, {text:'Got full fast', points:10}] },
   ];
 
   const STOPWORDS = new Set(['a','an','the','your','you','to','in','on','of','for','with','at','something',
     'someone','some','and','or','do','does','doing','go','goes','going','get','gets','getting',
     'take','takes','taking','make','makes','making','have','has','having','be','is','are','was','were',
-    'it','its','more','off','out','up','down','back','away','than','that','this','they','them']);
+    'it','its','more','off','out','up','down','back','away','than','that','this','they','them',
+    'i','me','my','ve','re','ll','d','m','s','been','im','youre','theyre','hes','shes','were','well']);
   function normalizeText(s){
     return s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
   }
@@ -296,9 +329,13 @@
     if (!pool.length) pool = QUESTIONS;
     return pool[Math.floor(Math.random()*pool.length)];
   }
+  function shuffleArray(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
   function pickQuestionsUnique(n){
-    const shuffled = QUESTIONS.slice().sort(() => Math.random()-0.5);
-    return shuffled.slice(0, n);
+    return shuffleArray(QUESTIONS).slice(0, n);
   }
 
   // ---------------- Screen navigation ----------------
@@ -330,6 +367,13 @@
   document.querySelectorAll('#fmPlayerChoice .choice-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#fmPlayerChoice .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('fmModeBlock').classList.toggle('hidden', btn.dataset.val !== '2');
+    });
+  });
+  document.querySelectorAll('#fmModeChoice .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#fmModeChoice .choice-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
@@ -372,8 +416,10 @@
       answers: q.answers.map(a => ({ text:a.text, points:a.points, revealed:false })),
       strikes: 0,
       boardTotal: 0,
-      phase: 'guessing', // guessing -> steal -> roundEnd
-      lastResult: null
+      phase: 'guessing', // guessing -> judging -> (guessing|steal|roundEnd)
+      lastResult: null,
+      pendingGuess: null,
+      judgePassed: false
     };
   }
 
@@ -407,6 +453,13 @@
 
   function currentPlayer(){ return localState.players[localState.currentIndex]; }
   function otherPlayerIndex(){ return (localState.currentIndex + 1) % localState.players.length; }
+  function guesserIndexFor(r){
+    return r.isStealAttempt ? otherPlayerIndex() : localState.currentIndex;
+  }
+  function judgeIndexFor(r){
+    // whoever is NOT currently guessing judges; for steal, the original player judges the stealer
+    return r.isStealAttempt ? localState.currentIndex : otherPlayerIndex();
+  }
 
   function renderLocal(){
     const body = document.getElementById('gameBody');
@@ -489,10 +542,57 @@
       guessBtn.addEventListener('click', () => {
         const text = guessInput.value.trim();
         if (!text) return;
-        handleGuessLocal(text);
+        submitGuessLocal(text);
       });
       guessRow.appendChild(guessBtn);
       body.appendChild(guessRow);
+      return;
+    }
+
+    if (r.phase === 'judging'){
+      const guesserPl = st.players[guesserIndexFor(r)];
+      const judgePl = st.solo ? guesserPl : st.players[judgeIndexFor(r)];
+
+      if (!st.solo && !r.judgePassed){
+        const card = document.createElement('div');
+        card.className = 'panel pass-card';
+        card.innerHTML = '<div class="to-icon">\u2696\ufe0f</div><h2>Pass to<br>' + escapeHtml(judgePl.name) + '</h2><p>' + escapeHtml(guesserPl.name) + ' guessed: <b style="color:var(--brass-bright);">\u201c' + escapeHtml(r.pendingGuess) + '\u201d</b><br>You\u2019ll see the hidden board to make the call.</p>';
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = "I'm " + judgePl.name + ' \u2014 show me the board';
+        btn.addEventListener('click', () => { r.judgePassed = true; renderLocal(); });
+        card.appendChild(btn);
+        body.appendChild(card);
+        return;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'panel';
+      card.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">' + (st.solo ? 'Does this match anything?' : escapeHtml(judgePl.name) + ', does this match anything?') + '</h3>' +
+        '<p style="color:var(--muted);font-size:14px;">' + escapeHtml(guesserPl.name) + ' said: <b style="color:var(--brass-bright);">\u201c' + escapeHtml(r.pendingGuess) + '\u201d</b></p>' +
+        '<div class="question-title" style="font-size:16px;">' + escapeHtml(r.question) + '</div>';
+      const board = document.createElement('div');
+      board.className = 'board';
+      const sortedJ = r.answers.map((a,i)=>({...a,idx:i})).sort((a,b)=>b.points-a.points);
+      sortedJ.forEach(a => {
+        const row = document.createElement('div');
+        const isHidden = !a.revealed;
+        row.className = 'board-row' + (a.revealed?' revealed':'') + (isHidden?' judge-clickable':'');
+        row.style.cursor = isHidden ? 'pointer' : 'default';
+        row.innerHTML = '<span><span class="rank-num">' + (sortedJ.indexOf(a)+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
+        if (isHidden){
+          row.addEventListener('click', () => resolveJudgmentLocal(a.idx));
+        }
+        board.appendChild(row);
+      });
+      card.appendChild(board);
+      const noMatchBtn = document.createElement('button');
+      noMatchBtn.className = 'secondary-btn';
+      noMatchBtn.style.marginLeft = '0';
+      noMatchBtn.textContent = "Doesn't match anything (strike)";
+      noMatchBtn.addEventListener('click', () => resolveJudgmentLocal(-1));
+      card.appendChild(noMatchBtn);
+      body.appendChild(card);
       return;
     }
 
@@ -547,25 +647,40 @@
     }
   }
 
-  function handleGuessLocal(guessText){
+  function submitGuessLocal(guessText){
     const st = localState;
     const r = st.round;
-    const hiddenAnswers = r.answers.filter(a => !a.revealed);
-    const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
+    r.pendingGuess = guessText;
+    r.judgePassed = false;
+    r.lastResult = null;
+    r.isStealAttempt = (r.phase === 'steal');
+    r.phase = 'judging';
+    renderLocal();
+  }
 
-    if (r.phase === 'guessing'){
-      if (match){
-        match.revealed = true;
-        r.boardTotal += match.points;
-        r.lastResult = { hit:true, guess:guessText };
+  function resolveJudgmentLocal(matchedIdx){
+    const st = localState;
+    const r = st.round;
+    const wasSteal = r.isStealAttempt;
+    const guesser = st.players[guesserIndexFor(r)];
+    const hit = matchedIdx >= 0;
+
+    if (!wasSteal){
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        r.boardTotal += ans.points;
+        r.lastResult = { hit:true, guess:r.pendingGuess };
         if (r.answers.every(a=>a.revealed)){
-          currentPlayer().score += r.boardTotal;
-          r.roundWinnerName = currentPlayer().name + ' cleared the board!';
+          guesser.score += r.boardTotal;
+          r.roundWinnerName = guesser.name + ' cleared the board!';
           r.phase = 'roundEnd';
+        } else {
+          r.phase = 'guessing';
         }
       } else {
         r.strikes++;
-        r.lastResult = { hit:false, guess:guessText };
+        r.lastResult = { hit:false, guess:r.pendingGuess };
         if (r.strikes >= 3){
           if (st.solo){
             r.roundWinnerName = 'Out of strikes';
@@ -574,20 +689,24 @@
             r.phase = 'steal';
             r.lastResult = null;
           }
+        } else {
+          r.phase = 'guessing';
         }
       }
-    } else if (r.phase === 'steal'){
-      const stealer = st.players[otherPlayerIndex()];
-      if (match){
-        match.revealed = true;
-        stealer.score += r.boardTotal;
-        r.roundWinnerName = stealer.name + ' stole it!';
+    } else {
+      // steal attempt resolution
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = guesser.name + ' stole it!';
       } else {
         currentPlayer().score += r.boardTotal;
         r.roundWinnerName = currentPlayer().name + ' keeps the board';
       }
       r.phase = 'roundEnd';
     }
+    r.pendingGuess = null;
     renderLocal();
   }
 
@@ -596,20 +715,24 @@
   // ============================================================
   document.getElementById('fmStart').addEventListener('click', () => {
     const numPlayers = parseInt(document.querySelector('#fmPlayerChoice .choice-btn.active').dataset.val, 10);
+    const vsMode = numPlayers === 2 && document.querySelector('#fmModeChoice .choice-btn.active').dataset.val === 'vs';
     const qs = pickQuestionsUnique(5);
     mode = 'fastmoney';
     localState = {
       fastMoney: true,
       numPlayers,
+      vsMode,
       questions: qs,
       p1Answers: Array(5).fill(''),
       p2Answers: Array(5).fill(''),
       phase: numPlayers === 2 ? 'p1-pass' : 'p1-answering',
       currentQ: 0,
+      timeLeft: 50,
       grading: { p1: Array(5).fill(null), p2: Array(5).fill(null) } // each: {matchIdx, points} or null
     };
     showScreen('game');
     renderFastMoney();
+    if (numPlayers === 1) startFmTimer();
   });
 
   function renderFastMoney(){
@@ -620,11 +743,11 @@
     if (st.phase === 'p1-pass'){
       const card = document.createElement('div');
       card.className = 'panel pass-card';
-      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 1</h2><p>Answer fast &mdash; first thing that comes to mind for each question. Player 2 shouldn\u2019t be watching.</p>';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 1</h2><p>Answer fast &mdash; first thing that comes to mind for each question. You\u2019ve got 50 seconds for all 5. Player 2 shouldn\u2019t be watching.</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
       btn.textContent = "I'm ready \u2192";
-      btn.addEventListener('click', () => { st.phase = 'p1-answering'; st.currentQ = 0; renderFastMoney(); });
+      btn.addEventListener('click', () => { st.phase = 'p1-answering'; st.currentQ = 0; st.timeLeft = 50; renderFastMoney(); startFmTimer(); });
       card.appendChild(btn);
       body.appendChild(card);
       return;
@@ -637,21 +760,35 @@
       const card = document.createElement('div');
       card.className = 'panel';
       const playerLabel = st.numPlayers === 1 ? '' : (isP1?'Player 1 \u2014 ':'Player 2 \u2014 ');
-      card.innerHTML = '<div class="hud-chip" style="display:inline-block;margin-bottom:14px;">' + playerLabel + 'Question ' + (st.currentQ+1) + ' of 5</div>' +
+      card.innerHTML = '<div class="hud-row" style="margin-bottom:14px;"><div class="hud-chip">' + playerLabel + 'Question ' + (st.currentQ+1) + ' of 5</div>' +
+        '<div class="hud-chip timer-chip" id="fmTimerChip">Time <span class="num" id="fmTimeLeftNum">' + st.timeLeft + '</span>s</div></div>' +
         '<div class="question-title">' + escapeHtml(q.q) + '</div>';
       const input = document.createElement('input');
       input.className = 'text-input';
       input.placeholder = 'Your answer\u2026';
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') nextBtn.click(); });
       card.appendChild(input);
+      const tryAgainMsg = document.createElement('div');
+      tryAgainMsg.style.color = 'var(--rose)';
+      tryAgainMsg.style.fontSize = '13px';
+      tryAgainMsg.style.marginTop = '8px';
+      tryAgainMsg.style.display = 'none';
+      tryAgainMsg.textContent = 'Try again \u2014 Player 1 already said something like that.';
+      card.appendChild(tryAgainMsg);
       const nextBtn = document.createElement('button');
       nextBtn.className = 'primary-btn';
       nextBtn.textContent = st.currentQ < 4 ? 'Next \u2192' : 'Done \u2192';
-      nextBtn.addEventListener('click', () => {
-        answers[st.currentQ] = input.value.trim();
+      function checkDuplicateAndAdvance(){
+        const val = input.value.trim();
+        if (!isP1 && !st.vsMode && val && matchesAnswer(val, st.p1Answers[st.currentQ] || '') && (st.p1Answers[st.currentQ]||'').trim()){
+          tryAgainMsg.style.display = 'block';
+          return;
+        }
+        tryAgainMsg.style.display = 'none';
+        answers[st.currentQ] = val;
         if (st.currentQ < 4){
           st.currentQ++;
         } else {
+          stopFmTimer();
           if (isP1 && st.numPlayers === 2){
             st.phase = 'p2-pass';
           } else {
@@ -659,7 +796,10 @@
           }
         }
         renderFastMoney();
-      });
+      }
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkDuplicateAndAdvance(); });
+      input.addEventListener('input', () => { tryAgainMsg.style.display = 'none'; });
+      nextBtn.addEventListener('click', checkDuplicateAndAdvance);
       card.appendChild(nextBtn);
       body.appendChild(card);
       setTimeout(() => input.focus(), 50);
@@ -669,11 +809,12 @@
     if (st.phase === 'p2-pass'){
       const card = document.createElement('div');
       card.className = 'panel pass-card';
-      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 2</h2><p>Same 5 questions. If you give the exact same answer as Player 1, it scores zero &mdash; try to think of something different.</p>';
+      const repeatNote = st.vsMode ? 'Same 5 questions, you\u2019ve got 50 seconds too \u2014 repeats are totally fine, just try to beat Player 1\u2019s score.' : 'Same 5 questions, but you\u2019ve got 60 seconds since you have to think around Player 1\u2019s answers. If you repeat one of theirs exactly, you\u2019ll be asked to try again.';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 2</h2><p>' + repeatNote + '</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
       btn.textContent = "I'm ready \u2192";
-      btn.addEventListener('click', () => { st.phase = 'p2-answering'; st.currentQ = 0; renderFastMoney(); });
+      btn.addEventListener('click', () => { st.phase = 'p2-answering'; st.currentQ = 0; st.timeLeft = st.vsMode ? 50 : 60; renderFastMoney(); startFmTimer(); });
       card.appendChild(btn);
       body.appendChild(card);
       return;
@@ -722,9 +863,14 @@
       const totalBanner = document.createElement('div');
       totalBanner.className = 'total-banner';
       totalBanner.style.marginTop = '16px';
-      totalBanner.textContent = st.numPlayers===2
-        ? ('Combined: ' + combined + ' / 200' + (combined>=200?' \u2014 You won the game!':''))
-        : ('Total: ' + p1Total);
+      if (st.numPlayers === 2 && st.vsMode){
+        const winnerText = p1Total === p2Total ? 'It\u2019s a tie!' : (p1Total > p2Total ? 'Player 1 wins!' : 'Player 2 wins!');
+        totalBanner.textContent = 'Player 1: ' + p1Total + '  \u00b7  Player 2: ' + p2Total + '  \u2014  ' + winnerText;
+      } else if (st.numPlayers === 2){
+        totalBanner.textContent = 'Combined: ' + combined + ' / 200' + (combined>=200?' \u2014 You won the game!':'');
+      } else {
+        totalBanner.textContent = 'Total: ' + p1Total;
+      }
       card.appendChild(totalBanner);
 
       const lobbyBtn = document.createElement('button');
@@ -766,6 +912,12 @@
     });
     peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
   });
+  function onlineGuesserIndex(g){
+    return g.round.isStealAttempt ? (g.currentIndex+1)%g.order.length : g.currentIndex;
+  }
+  function onlineJudgeIndex(g){
+    return g.round.isStealAttempt ? g.currentIndex : (g.currentIndex+1)%g.order.length;
+  }
   function handleHostMessage(conn, msg){
     if (msg.type === 'joinName'){
       const id = uid();
@@ -774,8 +926,11 @@
       conn.send({ type:'joined', yourId: id });
       renderHostPlayerList();
     } else if (msg.type === 'guess'){
-      const controlId = onlineGame.round.phase==='steal' ? onlineGame.order[(onlineGame.currentIndex+1)%onlineGame.order.length] : onlineGame.order[onlineGame.currentIndex];
-      if (controlId === conn.__playerId) handleGuessOnline(msg.text);
+      const controlId = onlineGame.order[onlineGuesserIndex(onlineGame)];
+      if (controlId === conn.__playerId) submitGuessOnline(msg.text);
+    } else if (msg.type === 'judgeDecision'){
+      const judgeId = onlineGame.order[onlineJudgeIndex(onlineGame)];
+      if (judgeId === conn.__playerId) resolveJudgmentOnline(msg.matchedIdx);
     } else if (msg.type === 'nextQuestion'){
       advanceOnlineRound();
     }
@@ -802,43 +957,59 @@
     onlineGame.round = newRoundData(prevQ);
     broadcastOnlineState();
   }
-  function handleGuessOnline(guessText){
+  function submitGuessOnline(guessText){
     const g = onlineGame;
     const r = g.round;
-    const hiddenAnswers = r.answers.filter(a => !a.revealed);
-    const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
-    const controlPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+    r.pendingGuess = guessText;
+    r.isStealAttempt = (r.phase === 'steal');
+    r.lastResult = null;
+    r.phase = 'judging';
+    broadcastOnlineState();
+  }
+  function resolveJudgmentOnline(matchedIdx){
+    const g = onlineGame;
+    const r = g.round;
+    const wasSteal = r.isStealAttempt;
+    const guesser = hostPlayers.find(p=>p.id===g.order[onlineGuesserIndex(g)]);
+    const originalPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+    const hit = matchedIdx >= 0;
 
-    if (r.phase === 'guessing'){
-      if (match){
-        match.revealed = true;
-        r.boardTotal += match.points;
-        r.lastResult = { hit:true, guess:guessText };
+    if (!wasSteal){
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        r.boardTotal += ans.points;
+        r.lastResult = { hit:true, guess:r.pendingGuess };
         if (r.answers.every(a=>a.revealed)){
-          controlPlayer.score += r.boardTotal;
-          r.roundWinnerName = controlPlayer.name + ' cleared the board!';
+          guesser.score += r.boardTotal;
+          r.roundWinnerName = guesser.name + ' cleared the board!';
           r.phase = 'roundEnd';
+        } else {
+          r.phase = 'guessing';
         }
       } else {
         r.strikes++;
-        r.lastResult = { hit:false, guess:guessText };
+        r.lastResult = { hit:false, guess:r.pendingGuess };
         if (r.strikes >= 3){
           r.phase = 'steal';
           r.lastResult = null;
+        } else {
+          r.phase = 'guessing';
         }
       }
-    } else if (r.phase === 'steal'){
-      const stealer = hostPlayers.find(p=>p.id===g.order[(g.currentIndex+1)%g.order.length]);
-      if (match){
-        match.revealed = true;
-        stealer.score += r.boardTotal;
-        r.roundWinnerName = stealer.name + ' stole it!';
+    } else {
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = guesser.name + ' stole it!';
       } else {
-        controlPlayer.score += r.boardTotal;
-        r.roundWinnerName = controlPlayer.name + ' keeps the board';
+        originalPlayer.score += r.boardTotal;
+        r.roundWinnerName = originalPlayer.name + ' keeps the board';
       }
       r.phase = 'roundEnd';
     }
+    r.pendingGuess = null;
     broadcastOnlineState();
   }
   function broadcastOnlineState(){
@@ -927,7 +1098,7 @@
         guessBtn.addEventListener('click', () => {
           const text = guessInput.value.trim();
           if (!text) return;
-          if (isHost) handleGuessOnline(text);
+          if (isHost) submitGuessOnline(text);
           else joinConn.send({ type:'guess', text });
         });
         guessRow.appendChild(guessBtn);
@@ -938,6 +1109,56 @@
         waitMsg.textContent = 'Waiting for ' + controlPl.name + '\u2026';
         body.appendChild(waitMsg);
       }
+      return;
+    }
+
+    if (r.phase === 'judging'){
+      const guesserPl = players.find(p=>p.id===g.order[onlineGuesserIndex(g)]) || {name:'\u2026'};
+      const judgeId = g.order[onlineJudgeIndex(g)];
+      const judgePl = players.find(p=>p.id===judgeId) || {name:'\u2026'};
+      const iAmJudge = judgeId === viewerId;
+
+      if (!iAmJudge){
+        const card = document.createElement('div');
+        card.className = 'panel pass-card';
+        card.innerHTML = '<div class="to-icon">\u2696\ufe0f</div><h2>Waiting on ' + escapeHtml(judgePl.name) + '</h2><p>' + escapeHtml(guesserPl.name) + ' guessed: <b style="color:var(--brass-bright);">\u201c' + escapeHtml(r.pendingGuess) + '\u201d</b><br>' + escapeHtml(judgePl.name) + ' is checking it against the board.</p>';
+        body.appendChild(card);
+        return;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'panel';
+      card.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Does this match anything?</h3>' +
+        '<p style="color:var(--muted);font-size:14px;">' + escapeHtml(guesserPl.name) + ' said: <b style="color:var(--brass-bright);">\u201c' + escapeHtml(r.pendingGuess) + '\u201d</b></p>' +
+        '<div class="question-title" style="font-size:16px;">' + escapeHtml(r.question) + '</div>';
+      const board = document.createElement('div');
+      board.className = 'board';
+      const sortedJ = r.answers.map((a,i)=>({...a,idx:i})).sort((a,b)=>b.points-a.points);
+      sortedJ.forEach(a => {
+        const row = document.createElement('div');
+        const isHidden = !a.revealed;
+        row.className = 'board-row' + (a.revealed?' revealed':'');
+        row.style.cursor = isHidden ? 'pointer' : 'default';
+        row.innerHTML = '<span><span class="rank-num">' + (sortedJ.indexOf(a)+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
+        if (isHidden){
+          row.addEventListener('click', () => {
+            if (isHost) resolveJudgmentOnline(a.idx);
+            else joinConn.send({ type:'judgeDecision', matchedIdx: a.idx });
+          });
+        }
+        board.appendChild(row);
+      });
+      card.appendChild(board);
+      const noMatchBtn = document.createElement('button');
+      noMatchBtn.className = 'secondary-btn';
+      noMatchBtn.style.marginLeft = '0';
+      noMatchBtn.textContent = "Doesn't match anything (strike)";
+      noMatchBtn.addEventListener('click', () => {
+        if (isHost) resolveJudgmentOnline(-1);
+        else joinConn.send({ type:'judgeDecision', matchedIdx: -1 });
+      });
+      card.appendChild(noMatchBtn);
+      body.appendChild(card);
       return;
     }
 
@@ -1028,6 +1249,46 @@
     });
     peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
   });
+
+  let fmTimer = null;
+  function startFmTimer(){
+    if (fmTimer) clearInterval(fmTimer);
+    fmTimer = setInterval(() => {
+      const st = localState;
+      if (!st || !st.fastMoney || (st.phase !== 'p1-answering' && st.phase !== 'p2-answering')){
+        clearInterval(fmTimer);
+        return;
+      }
+      st.timeLeft--;
+      const numEl = document.getElementById('fmTimeLeftNum');
+      const chipEl = document.getElementById('fmTimerChip');
+      if (numEl) numEl.textContent = st.timeLeft;
+      if (chipEl) chipEl.classList.toggle('low', st.timeLeft <= 10);
+      if (st.timeLeft <= 0){
+        clearInterval(fmTimer);
+        fmTimeUpLocal();
+      }
+    }, 1000);
+  }
+  function stopFmTimer(){
+    if (fmTimer) clearInterval(fmTimer);
+  }
+  function fmTimeUpLocal(){
+    const st = localState;
+    const isP1 = st.phase === 'p1-answering';
+    // save whatever's currently typed for the current question, if anything
+    const input = document.querySelector('#gameBody input.text-input');
+    if (input){
+      const answers = isP1 ? st.p1Answers : st.p2Answers;
+      answers[st.currentQ] = input.value.trim();
+    }
+    if (isP1 && st.numPlayers === 2){
+      st.phase = 'p2-pass';
+    } else {
+      st.phase = 'grading';
+    }
+    renderFastMoney();
+  }
 
 })();
 </script>
