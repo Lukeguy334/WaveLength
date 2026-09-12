@@ -88,6 +88,8 @@
   .board-row.hidden-row .pts-val { visibility:hidden; }
   .board-row.revealed { background:rgba(79,209,197,0.15); border-color:var(--teal); color:var(--teal); }
   .board-row.revealed .pts-val { color:var(--teal); visibility:visible; }
+  .board-row.revealed-other { background:rgba(135,145,161,0.08); border-color:var(--muted); color:var(--muted); }
+  .board-row.revealed-other .pts-val { color:var(--muted); visibility:visible; }
 
   .strikes-row { display:flex; justify-content:center; gap:10px; margin-bottom:16px; }
   .strike-x { width:40px; height:40px; border-radius:8px; border:2px solid var(--panel-line); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:var(--panel-line); }
@@ -202,7 +204,7 @@
   <div id="setupFastMoney" class="hidden">
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Fast Money</h3>
-      <p style="color:var(--muted);font-size:13px;">5 random questions, race the clock. Player 1 gets 50 seconds, Player 2 gets 60.</p>
+      <p style="color:var(--muted);font-size:13px;">5 random questions, race the clock. Player 1 gets 45 seconds, Player 2 gets 50.</p>
       <label class="field-label">Players</label>
       <div class="choice-row" id="fmPlayerChoice">
         <button class="choice-btn active" data-val="1">Just me</button>
@@ -212,7 +214,7 @@
         <label class="field-label">Mode</label>
         <div class="choice-row" id="fmModeChoice">
           <button class="choice-btn active" data-val="coop">Cooperative (combine to 200, no repeats)</button>
-          <button class="choice-btn" data-val="vs">Vs Mode (both 50s, repeats OK, compare scores)</button>
+          <button class="choice-btn" data-val="vs">Vs Mode (both 45s, repeats OK, compare scores)</button>
         </div>
       </div>
       <div>
@@ -231,63 +233,178 @@
 <script>
 (function(){
   const QUESTIONS = [
-    { q: 'Name something you do before going to bed', answers: [{text:'Brush your teeth', points:35}, {text:'Set an alarm', points:25}, {text:'Turn off the lights', points:20}, {text:'Read a book', points:12}, {text:'Lock the doors', points:8}] },
-    { q: 'Name something you might find in a junk drawer', answers: [{text:'Batteries', points:30}, {text:'Rubber bands', points:22}, {text:'Old receipts', points:18}, {text:'Tape', points:16}, {text:'Spare keys', points:14}] },
-    { q: 'Name a reason someone would be late to work', answers: [{text:'Traffic', points:38}, {text:'Overslept', points:30}, {text:'Car trouble', points:16}, {text:'Forgot something at home', points:10}, {text:'Bad weather', points:6}] },
-    { q: 'Name something people do to relax after a long day', answers: [{text:'Watch TV', points:34}, {text:'Take a bath', points:22}, {text:'Take a nap', points:20}, {text:'Read', points:14}, {text:'Exercise', points:10}] },
-    { q: 'Name something you\'d bring to a picnic', answers: [{text:'Sandwiches', points:28}, {text:'A blanket', points:24}, {text:'Drinks', points:20}, {text:'Fruit', points:16}, {text:'Chips', points:12}] },
-    { q: 'Name a job where you have to wear a uniform', answers: [{text:'Police officer', points:30}, {text:'Firefighter', points:24}, {text:'Nurse', points:20}, {text:'Soldier', points:14}, {text:'Chef', points:12}] },
-    { q: 'Name something that gets more annoying the louder it is', answers: [{text:'A crying baby', points:32}, {text:'A car alarm', points:26}, {text:'A barking dog', points:20}, {text:'A leaf blower', points:14}, {text:'Someone chewing', points:8}] },
-    { q: 'Name a household chore nobody likes doing', answers: [{text:'Cleaning the bathroom', points:30}, {text:'Doing the dishes', points:24}, {text:'Taking out the trash', points:18}, {text:'Vacuuming', points:16}, {text:'Folding laundry', points:12}] },
-    { q: 'Name something you might forget to pack for a trip', answers: [{text:'Phone charger', points:30}, {text:'Toothbrush', points:24}, {text:'Socks', points:18}, {text:'Sunscreen', points:16}, {text:'Medication', points:12}] },
-    { q: 'Name a reason someone might call in sick to work', answers: [{text:'Actually sick', points:36}, {text:'Needed a mental health day', points:26}, {text:'Family emergency', points:18}, {text:'Overslept', points:12}, {text:'Just didn\'t want to go', points:8}] },
-    { q: 'Name something you do when you\'re bored', answers: [{text:'Scroll your phone', points:34}, {text:'Watch TV', points:26}, {text:'Nap', points:18}, {text:'Snack', points:12}, {text:'Clean', points:10}] },
-    { q: 'Name something people collect as a hobby', answers: [{text:'Stamps', points:26}, {text:'Coins', points:24}, {text:'Trading cards', points:20}, {text:'Vinyl records', points:16}, {text:'Action figures', points:14}] },
-    { q: 'Name a food people eat with their hands', answers: [{text:'Pizza', points:30}, {text:'A sandwich', points:24}, {text:'Fries', points:20}, {text:'Chicken wings', points:16}, {text:'Tacos', points:10}] },
-    { q: 'Name something you\'d find on a office desk', answers: [{text:'A computer', points:30}, {text:'A stapler', points:22}, {text:'Pens', points:20}, {text:'A coffee mug', points:16}, {text:'Sticky notes', points:12}] },
-    { q: 'Name an animal people keep as an exotic pet', answers: [{text:'A snake', points:28}, {text:'A lizard', points:22}, {text:'A tarantula', points:20}, {text:'A parrot', points:18}, {text:'A hedgehog', points:12}] },
-    { q: 'Name something you do at the beach', answers: [{text:'Swim', points:32}, {text:'Build a sandcastle', points:24}, {text:'Sunbathe', points:20}, {text:'Play volleyball', points:14}, {text:'Collect shells', points:10}] },
-    { q: 'Name a place you\'d go on a first date', answers: [{text:'A restaurant', points:34}, {text:'The movies', points:24}, {text:'A coffee shop', points:18}, {text:'A park', points:14}, {text:'Mini golf', points:10}] },
-    { q: 'Name something that\'s hard to do quietly', answers: [{text:'Sneeze', points:30}, {text:'Eat chips', points:24}, {text:'Open a candy wrapper', points:20}, {text:'Walk in heels', points:16}, {text:'Yawn', points:10}] },
-    { q: 'Name a reason someone might return an item they bought', answers: [{text:'It didn\'t fit', points:32}, {text:'Changed their mind', points:26}, {text:'It was defective', points:20}, {text:'Found it cheaper elsewhere', points:14}, {text:'Wrong color or size', points:8}] },
-    { q: 'Name something you\'d do with a tax refund', answers: [{text:'Save it', points:28}, {text:'Pay off debt', points:24}, {text:'Go on vacation', points:20}, {text:'Buy something big', points:16}, {text:'Treat themselves', points:12}] },
-    { q: 'Name a game people play at a party', answers: [{text:'Charades', points:26}, {text:'Truth or Dare', points:22}, {text:'Twister', points:20}, {text:'Cards Against Humanity', points:18}, {text:'Musical Chairs', points:14}] },
-    { q: 'Name something you might do on a rainy day', answers: [{text:'Watch movies', points:32}, {text:'Read a book', points:24}, {text:'Nap', points:20}, {text:'Bake something', points:14}, {text:'Play board games', points:10}] },
-    { q: 'Name a reason someone would go to the emergency room', answers: [{text:'Broken bone', points:30}, {text:'Chest pain', points:24}, {text:'Severe allergic reaction', points:20}, {text:'Deep cut', points:16}, {text:'High fever', points:10}] },
-    { q: 'Name something you\'d take on a road trip', answers: [{text:'Snacks', points:30}, {text:'A phone charger', points:24}, {text:'Music or a playlist', points:20}, {text:'A map or GPS', points:16}, {text:'Pillows', points:10}] },
-    { q: 'Name a popular New Year\'s resolution', answers: [{text:'Exercise more', points:34}, {text:'Eat healthier', points:26}, {text:'Save money', points:18}, {text:'Quit a bad habit', points:12}, {text:'Read more', points:10}] },
-    { q: 'Name something you might see at a wedding', answers: [{text:'The bride', points:30}, {text:'A wedding cake', points:24}, {text:'Flowers', points:20}, {text:'A DJ', points:16}, {text:'Guests crying', points:10}] },
-    { q: 'Name a reason someone might not answer their phone', answers: [{text:'Driving', points:32}, {text:'In a meeting', points:26}, {text:'Phone is dead', points:20}, {text:'Didn\'t hear it', points:14}, {text:'Screening the call', points:8}] },
-    { q: 'Name something you\'d find in a hotel room', answers: [{text:'A bed', points:28}, {text:'A TV', points:24}, {text:'Towels', points:20}, {text:'A mini fridge', points:16}, {text:'A hairdryer', points:12}] },
-    { q: 'Name a popular pizza topping', answers: [{text:'Pepperoni', points:34}, {text:'Cheese', points:26}, {text:'Mushrooms', points:18}, {text:'Sausage', points:14}, {text:'Olives', points:8}] },
-    { q: 'Name something people do at the gym', answers: [{text:'Lift weights', points:30}, {text:'Run on a treadmill', points:26}, {text:'Stretch', points:18}, {text:'Take a class', points:16}, {text:'Use a locker room', points:10}] },
-    { q: 'Name something that\'s hard to put down once you start', answers: [{text:'A good book', points:28}, {text:'A video game', points:24}, {text:'Your phone', points:22}, {text:'A bag of chips', points:16}, {text:'A TV show', points:10}] },
-    { q: 'Name a reason someone might cancel plans last minute', answers: [{text:'Got sick', points:32}, {text:'Something came up at work', points:24}, {text:'Too tired', points:20}, {text:'Car trouble', points:14}, {text:'Just didn\'t feel like it', points:10}] },
-    { q: 'Name something you\'d pack for a beach vacation', answers: [{text:'Sunscreen', points:30}, {text:'A swimsuit', points:26}, {text:'Sunglasses', points:18}, {text:'A beach towel', points:16}, {text:'Flip-flops', points:10}] },
-    { q: 'Name a common excuse for being messy', answers: [{text:'I\'ve been busy', points:30}, {text:'I\'ll clean it later', points:24}, {text:'I know where everything is', points:20}, {text:'It\'s organized chaos', points:16}, {text:'I was going to do it today', points:10}] },
-    { q: 'Name something you might find under a couch cushion', answers: [{text:'Loose change', points:30}, {text:'A remote control', points:24}, {text:'Crumbs', points:20}, {text:'A phone', points:16}, {text:'A missing sock', points:10}] },
-    { q: 'Name a reason someone might be nervous before a job interview', answers: [{text:'Fear of messing up', points:32}, {text:'Not knowing what to expect', points:24}, {text:'Wanting the job badly', points:18}, {text:'Meeting new people', points:16}, {text:'Public speaking anxiety', points:10}] },
-    { q: 'Name something you do to pass time in a waiting room', answers: [{text:'Scroll your phone', points:32}, {text:'Read a magazine', points:24}, {text:'People watch', points:18}, {text:'Fidget', points:16}, {text:'Fall asleep', points:10}] },
-    { q: 'Name a food that\'s better the next day', answers: [{text:'Pizza', points:28}, {text:'Pasta', points:24}, {text:'Chili', points:20}, {text:'Lasagna', points:16}, {text:'Curry', points:12}] },
-    { q: 'Name something people do to celebrate a promotion', answers: [{text:'Go out to dinner', points:30}, {text:'Tell family and friends', points:24}, {text:'Treat themselves', points:20}, {text:'Have drinks with coworkers', points:16}, {text:'Post about it online', points:10}] },
-    { q: 'Name a reason someone would take a sick day when they\'re not actually sick', answers: [{text:'Needed a mental break', points:34}, {text:'Too tired to go in', points:26}, {text:'Personal errands', points:18}, {text:'Bad week, needed rest', points:14}, {text:'No real reason at all', points:8}] },
-    { q: 'Name something you\'d see at a farmers market', answers: [{text:'Fresh vegetables', points:30}, {text:'Fruit', points:24}, {text:'Homemade jam', points:18}, {text:'Flowers', points:16}, {text:'Baked goods', points:12}] },
-    { q: 'Name a household item that\'s always hard to find when you need it', answers: [{text:'Scissors', points:28}, {text:'Tape', points:24}, {text:'A phone charger', points:20}, {text:'The remote', points:16}, {text:'A specific tool', points:12}] },
-    { q: 'Name something people do on a lazy Sunday', answers: [{text:'Sleep in', points:32}, {text:'Watch TV', points:24}, {text:'Order takeout', points:18}, {text:'Do nothing', points:16}, {text:'Nap', points:10}] },
-    { q: 'Name a reason a flight might get delayed', answers: [{text:'Bad weather', points:34}, {text:'Mechanical issue', points:26}, {text:'Air traffic', points:18}, {text:'Crew running behind', points:14}, {text:'Late passengers', points:8}] },
-    { q: 'Name something you\'d bring to a job interview', answers: [{text:'A resume', points:32}, {text:'A pen', points:22}, {text:'Confidence', points:18}, {text:'Questions to ask', points:16}, {text:'A portfolio', points:12}] },
-    { q: 'Name a common New Year\'s Eve tradition', answers: [{text:'Watching the ball drop', points:30}, {text:'Making resolutions', points:24}, {text:'A midnight kiss', points:20}, {text:'Fireworks', points:16}, {text:'Champagne toast', points:10}] },
-    { q: 'Name something you might forget when leaving the house', answers: [{text:'Your keys', points:30}, {text:'Your phone', points:26}, {text:'Your wallet', points:20}, {text:'Your umbrella', points:14}, {text:'Turning off the stove', points:10}] },
-    { q: 'Name a reason someone might go vegetarian or vegan', answers: [{text:'Health reasons', points:30}, {text:'Animal welfare', points:26}, {text:'Environmental concerns', points:20}, {text:'A doctor recommended it', points:14}, {text:'Just wanted to try it', points:10}] },
-    { q: 'Name something you\'d find in a garage', answers: [{text:'A car', points:28}, {text:'Tools', points:24}, {text:'Boxes of stuff', points:20}, {text:'A lawnmower', points:16}, {text:'Bikes', points:12}] },
-    { q: 'Name a reason someone might not finish a meal at a restaurant', answers: [{text:'Portion was too big', points:32}, {text:'Wasn\'t hungry', points:22}, {text:'Saving room for dessert', points:20}, {text:'Didn\'t like it', points:16}, {text:'Got full fast', points:10}] },
+    { q: 'Name something you do before going to bed', answers: [{text:'Brush your teeth', points:52}, {text:'Set an alarm', points:20}, {text:'Turn off the lights', points:13}, {text:'Read a book', points:9}, {text:'Lock the doors', points:6}] },
+    { q: 'Name something you might find in a junk drawer', answers: [{text:'Batteries', points:43}, {text:'Rubber bands', points:24}, {text:'Old receipts', points:15}, {text:'Tape', points:10}, {text:'Spare keys', points:7}] },
+    { q: 'Name a reason someone would be late to work', answers: [{text:'Traffic', points:42}, {text:'Overslept', points:24}, {text:'Car trouble', points:16}, {text:'Forgot something at home', points:10}, {text:'Bad weather', points:8}] },
+    { q: 'Name something people do to relax after a long day', answers: [{text:'Watch TV', points:53}, {text:'Take a bath', points:20}, {text:'Take a nap', points:13}, {text:'Read', points:8}, {text:'Exercise', points:6}] },
+    { q: 'Name something you\'d bring to a picnic', answers: [{text:'Sandwiches', points:46}, {text:'A blanket', points:23}, {text:'Drinks', points:15}, {text:'Fruit', points:10}, {text:'Chips', points:7}] },
+    { q: 'Name a job where you have to wear a uniform', answers: [{text:'Police officer', points:45}, {text:'Firefighter', points:23}, {text:'Nurse', points:15}, {text:'Soldier', points:10}, {text:'Chef', points:7}] },
+    { q: 'Name something that gets more annoying the louder it is', answers: [{text:'A crying baby', points:45}, {text:'A car alarm', points:23}, {text:'A barking dog', points:15}, {text:'A leaf blower', points:10}, {text:'Someone chewing', points:7}] },
+    { q: 'Name a household chore nobody likes doing', answers: [{text:'Cleaning the bathroom', points:44}, {text:'Doing the dishes', points:24}, {text:'Taking out the trash', points:15}, {text:'Vacuuming', points:10}, {text:'Folding laundry', points:7}] },
+    { q: 'Name something you might forget to pack for a trip', answers: [{text:'Phone charger', points:53}, {text:'Toothbrush', points:20}, {text:'Socks', points:13}, {text:'Sunscreen', points:8}, {text:'Medication', points:6}] },
+    { q: 'Name a reason someone might call in sick to work', answers: [{text:'Actually sick', points:43}, {text:'Needed a mental health day', points:24}, {text:'Family emergency', points:15}, {text:'Overslept', points:10}, {text:'Just didn\'t want to go', points:7}] },
+    { q: 'Name something you do when you\'re bored', answers: [{text:'Scroll your phone', points:52}, {text:'Watch TV', points:20}, {text:'Nap', points:13}, {text:'Snack', points:9}, {text:'Clean', points:6}] },
+    { q: 'Name something people collect as a hobby', answers: [{text:'Stamps', points:53}, {text:'Coins', points:20}, {text:'Trading cards', points:13}, {text:'Vinyl records', points:8}, {text:'Action figures', points:6}] },
+    { q: 'Name a food people eat with their hands', answers: [{text:'Pizza', points:50}, {text:'A sandwich', points:21}, {text:'Fries', points:14}, {text:'Chicken wings', points:9}, {text:'Tacos', points:6}] },
+    { q: 'Name something you\'d find on a office desk', answers: [{text:'A computer', points:43}, {text:'A stapler', points:24}, {text:'Pens', points:15}, {text:'A coffee mug', points:10}, {text:'Sticky notes', points:7}] },
+    { q: 'Name an animal people keep as an exotic pet', answers: [{text:'A snake', points:51}, {text:'A lizard', points:21}, {text:'A tarantula', points:13}, {text:'A parrot', points:9}, {text:'A hedgehog', points:6}] },
+    { q: 'Name something you do at the beach', answers: [{text:'Swim', points:48}, {text:'Build a sandcastle', points:22}, {text:'Sunbathe', points:14}, {text:'Play volleyball', points:9}, {text:'Collect shells', points:7}] },
+    { q: 'Name a place you\'d go on a first date', answers: [{text:'A restaurant', points:42}, {text:'The movies', points:24}, {text:'A coffee shop', points:16}, {text:'A park', points:10}, {text:'Mini golf', points:8}] },
+    { q: 'Name something that\'s hard to do quietly', answers: [{text:'Sneeze', points:42}, {text:'Eat chips', points:24}, {text:'Open a candy wrapper', points:16}, {text:'Walk in heels', points:10}, {text:'Yawn', points:8}] },
+    { q: 'Name a reason someone might return an item they bought', answers: [{text:'It didn\'t fit', points:43}, {text:'Changed their mind', points:24}, {text:'It was defective', points:15}, {text:'Found it cheaper elsewhere', points:10}, {text:'Wrong color or size', points:7}] },
+    { q: 'Name something you\'d do with a tax refund', answers: [{text:'Save it', points:45}, {text:'Pay off debt', points:23}, {text:'Go on vacation', points:15}, {text:'Buy something big', points:10}, {text:'Treat themselves', points:7}] },
+    { q: 'Name a game people play at a party', answers: [{text:'Charades', points:45}, {text:'Truth or Dare', points:23}, {text:'Twister', points:15}, {text:'Cards Against Humanity', points:10}, {text:'Musical Chairs', points:7}] },
+    { q: 'Name something you might do on a rainy day', answers: [{text:'Watch movies', points:50}, {text:'Read a book', points:21}, {text:'Nap', points:14}, {text:'Bake something', points:9}, {text:'Play board games', points:6}] },
+    { q: 'Name a reason someone would go to the emergency room', answers: [{text:'Broken bone', points:51}, {text:'Chest pain', points:21}, {text:'Severe allergic reaction', points:13}, {text:'Deep cut', points:9}, {text:'High fever', points:6}] },
+    { q: 'Name something you\'d take on a road trip', answers: [{text:'Snacks', points:42}, {text:'A phone charger', points:24}, {text:'Music or a playlist', points:16}, {text:'A map or GPS', points:10}, {text:'Pillows', points:8}] },
+    { q: 'Name a popular New Year\'s resolution', answers: [{text:'Exercise more', points:50}, {text:'Eat healthier', points:21}, {text:'Save money', points:14}, {text:'Quit a bad habit', points:9}, {text:'Read more', points:6}] },
+    { q: 'Name something you might see at a wedding', answers: [{text:'The bride', points:45}, {text:'A wedding cake', points:23}, {text:'Flowers', points:15}, {text:'A DJ', points:10}, {text:'Guests crying', points:7}] },
+    { q: 'Name a reason someone might not answer their phone', answers: [{text:'Driving', points:53}, {text:'In a meeting', points:20}, {text:'Phone is dead', points:13}, {text:'Didn\'t hear it', points:8}, {text:'Screening the call', points:6}] },
+    { q: 'Name something you\'d find in a hotel room', answers: [{text:'A bed', points:52}, {text:'A TV', points:20}, {text:'Towels', points:13}, {text:'A mini fridge', points:9}, {text:'A hairdryer', points:6}] },
+    { q: 'Name a popular pizza topping', answers: [{text:'Pepperoni', points:53}, {text:'Cheese', points:20}, {text:'Mushrooms', points:13}, {text:'Sausage', points:8}, {text:'Olives', points:6}] },
+    { q: 'Name something people do at the gym', answers: [{text:'Lift weights', points:50}, {text:'Run on a treadmill', points:21}, {text:'Stretch', points:14}, {text:'Take a class', points:9}, {text:'Use a locker room', points:6}] },
+    { q: 'Name something that\'s hard to put down once you start', answers: [{text:'A good book', points:48}, {text:'A video game', points:22}, {text:'Your phone', points:14}, {text:'A bag of chips', points:9}, {text:'A TV show', points:7}] },
+    { q: 'Name a reason someone might cancel plans last minute', answers: [{text:'Got sick', points:45}, {text:'Something came up at work', points:23}, {text:'Too tired', points:15}, {text:'Car trouble', points:10}, {text:'Just didn\'t feel like it', points:7}] },
+    { q: 'Name something you\'d pack for a beach vacation', answers: [{text:'Sunscreen', points:49}, {text:'A swimsuit', points:21}, {text:'Sunglasses', points:14}, {text:'A beach towel', points:9}, {text:'Flip-flops', points:7}] },
+    { q: 'Name a common excuse for being messy', answers: [{text:'I\'ve been busy', points:51}, {text:'I\'ll clean it later', points:21}, {text:'I know where everything is', points:13}, {text:'It\'s organized chaos', points:9}, {text:'I was going to do it today', points:6}] },
+    { q: 'Name something you might find under a couch cushion', answers: [{text:'Loose change', points:46}, {text:'A remote control', points:23}, {text:'Crumbs', points:15}, {text:'A phone', points:10}, {text:'A missing sock', points:7}] },
+    { q: 'Name a reason someone might be nervous before a job interview', answers: [{text:'Fear of messing up', points:54}, {text:'Not knowing what to expect', points:19}, {text:'Wanting the job badly', points:12}, {text:'Meeting new people', points:8}, {text:'Public speaking anxiety', points:6}] },
+    { q: 'Name something you do to pass time in a waiting room', answers: [{text:'Scroll your phone', points:55}, {text:'Read a magazine', points:19}, {text:'People watch', points:12}, {text:'Fidget', points:8}, {text:'Fall asleep', points:6}] },
+    { q: 'Name a food that\'s better the next day', answers: [{text:'Pizza', points:42}, {text:'Pasta', points:24}, {text:'Chili', points:16}, {text:'Lasagna', points:10}, {text:'Curry', points:8}] },
+    { q: 'Name something people do to celebrate a promotion', answers: [{text:'Go out to dinner', points:54}, {text:'Tell family and friends', points:19}, {text:'Treat themselves', points:12}, {text:'Have drinks with coworkers', points:8}, {text:'Post about it online', points:6}] },
+    { q: 'Name a reason someone would take a sick day when they\'re not actually sick', answers: [{text:'Needed a mental break', points:54}, {text:'Too tired to go in', points:19}, {text:'Personal errands', points:12}, {text:'Bad week, needed rest', points:8}, {text:'No real reason at all', points:6}] },
+    { q: 'Name something you\'d see at a farmers market', answers: [{text:'Fresh vegetables', points:44}, {text:'Fruit', points:24}, {text:'Homemade jam', points:15}, {text:'Flowers', points:10}, {text:'Baked goods', points:7}] },
+    { q: 'Name a household item that\'s always hard to find when you need it', answers: [{text:'Scissors', points:53}, {text:'Tape', points:20}, {text:'A phone charger', points:13}, {text:'The remote', points:8}, {text:'A specific tool', points:6}] },
+    { q: 'Name something people do on a lazy Sunday', answers: [{text:'Sleep in', points:48}, {text:'Watch TV', points:22}, {text:'Order takeout', points:14}, {text:'Do nothing', points:9}, {text:'Nap', points:7}] },
+    { q: 'Name a reason a flight might get delayed', answers: [{text:'Bad weather', points:47}, {text:'Mechanical issue', points:22}, {text:'Air traffic', points:14}, {text:'Crew running behind', points:10}, {text:'Late passengers', points:7}] },
+    { q: 'Name something you\'d bring to a job interview', answers: [{text:'A resume', points:46}, {text:'A pen', points:23}, {text:'Confidence', points:15}, {text:'Questions to ask', points:10}, {text:'A portfolio', points:7}] },
+    { q: 'Name a common New Year\'s Eve tradition', answers: [{text:'Watching the ball drop', points:44}, {text:'Making resolutions', points:24}, {text:'A midnight kiss', points:15}, {text:'Fireworks', points:10}, {text:'Champagne toast', points:7}] },
+    { q: 'Name something you might forget when leaving the house', answers: [{text:'Your keys', points:45}, {text:'Your phone', points:23}, {text:'Your wallet', points:15}, {text:'Your umbrella', points:10}, {text:'Turning off the stove', points:7}] },
+    { q: 'Name a reason someone might go vegetarian or vegan', answers: [{text:'Health reasons', points:54}, {text:'Animal welfare', points:19}, {text:'Environmental concerns', points:12}, {text:'A doctor recommended it', points:8}, {text:'Just wanted to try it', points:6}] },
+    { q: 'Name something you\'d find in a garage', answers: [{text:'A car', points:47}, {text:'Tools', points:22}, {text:'Boxes of stuff', points:14}, {text:'A lawnmower', points:10}, {text:'Bikes', points:7}] },
+    { q: 'Name a reason someone might not finish a meal at a restaurant', answers: [{text:'Portion was too big', points:43}, {text:'Wasn\'t hungry', points:24}, {text:'Saving room for dessert', points:15}, {text:'Didn\'t like it', points:10}, {text:'Got full fast', points:7}] },
+    { q: 'Name something you do when you\'re stuck in traffic', answers: [{text:'Listen to music', points:49}, {text:'Honk the horn', points:21}, {text:'Check your phone', points:14}, {text:'Complain out loud', points:9}, {text:'Take a different route next time', points:7}] },
+    { q: 'Name a reason someone might be late paying a bill', answers: [{text:'Forgot about it', points:55}, {text:'Short on cash that month', points:19}, {text:'Lost the bill', points:12}, {text:'Waiting on a paycheck', points:8}, {text:'Didn\'t realize it was due', points:6}] },
+    { q: 'Name something you\'d find in a teenager\'s bedroom', answers: [{text:'Dirty laundry', points:50}, {text:'Video games', points:21}, {text:'Posters', points:14}, {text:'Phone charger', points:9}, {text:'Headphones', points:6}] },
+    { q: 'Name a popular ice cream flavor', answers: [{text:'Chocolate', points:55}, {text:'Vanilla', points:19}, {text:'Strawberry', points:12}, {text:'Cookies and cream', points:8}, {text:'Mint', points:6}] },
+    { q: 'Name something you do to get ready for a job interview', answers: [{text:'Practice answers', points:54}, {text:'Pick out an outfit', points:19}, {text:'Research the company', points:12}, {text:'Print your resume', points:8}, {text:'Get a good night\'s sleep', points:6}] },
+    { q: 'Name a reason someone might skip breakfast', answers: [{text:'Running late', points:49}, {text:'Not hungry', points:21}, {text:'Trying to lose weight', points:14}, {text:'Forgot to eat', points:9}, {text:'No food in the house', points:7}] },
+    { q: 'Name something people do while waiting in line', answers: [{text:'Check their phone', points:49}, {text:'Look around', points:21}, {text:'Talk to someone', points:14}, {text:'Sigh impatiently', points:9}, {text:'Count how many people are ahead', points:7}] },
+    { q: 'Name a household chore kids hate doing', answers: [{text:'Cleaning their room', points:50}, {text:'Doing dishes', points:21}, {text:'Taking out the trash', points:14}, {text:'Making their bed', points:9}, {text:'Folding laundry', points:6}] },
+    { q: 'Name something you might see at a carnival', answers: [{text:'A Ferris wheel', points:55}, {text:'Cotton candy', points:19}, {text:'Game booths', points:12}, {text:'A roller coaster', points:8}, {text:'Clowns', points:6}] },
+    { q: 'Name a reason someone might not answer the door', answers: [{text:'Not expecting anyone', points:51}, {text:'In the shower', points:21}, {text:'Don\'t recognize the knock', points:13}, {text:'Avoiding someone', points:9}, {text:'Didn\'t hear it', points:6}] },
+    { q: 'Name something you do on a first day of a new job', answers: [{text:'Meet coworkers', points:45}, {text:'Fill out paperwork', points:23}, {text:'Try to make a good impression', points:15}, {text:'Learn where things are', points:10}, {text:'Feel nervous', points:7}] },
+    { q: 'Name a popular type of sandwich', answers: [{text:'Grilled cheese', points:44}, {text:'Turkey sandwich', points:24}, {text:'BLT', points:15}, {text:'Peanut butter and jelly', points:10}, {text:'Tuna salad', points:7}] },
+    { q: 'Name something you do before a big test', answers: [{text:'Study', points:54}, {text:'Get a good night\'s sleep', points:19}, {text:'Cram last minute', points:12}, {text:'Eat a good breakfast', points:8}, {text:'Pray or hope for the best', points:6}] },
+    { q: 'Name a reason someone might get a speeding ticket', answers: [{text:'Running late', points:50}, {text:'Not paying attention', points:21}, {text:'Didn\'t see the speed limit sign', points:14}, {text:'Racing someone', points:9}, {text:'Following traffic flow', points:6}] },
+    { q: 'Name something you do to relax on vacation', answers: [{text:'Sleep in', points:49}, {text:'Lay on the beach', points:21}, {text:'Read a book', points:14}, {text:'Try local food', points:9}, {text:'Do nothing at all', points:7}] },
+    { q: 'Name a common New Year\'s Eve food', answers: [{text:'Champagne', points:52}, {text:'Black-eyed peas', points:20}, {text:'Appetizers', points:13}, {text:'Pizza', points:9}, {text:'Finger foods', points:6}] },
+    { q: 'Name something you might forget on a grocery run', answers: [{text:'Reusable bags', points:51}, {text:'Your list', points:21}, {text:'Milk', points:13}, {text:'Your wallet', points:9}, {text:'Coupons', points:6}] },
+    { q: 'Name a reason someone might change careers', answers: [{text:'Wanted better pay', points:54}, {text:'Burned out', points:19}, {text:'Found a new passion', points:12}, {text:'Got laid off', points:8}, {text:'Wanted a better schedule', points:6}] },
+    { q: 'Name something you\'d see in a doctor\'s waiting room', answers: [{text:'Old magazines', points:44}, {text:'Other patients', points:24}, {text:'A receptionist', points:15}, {text:'A fish tank', points:10}, {text:'A TV playing the news', points:7}] },
+    { q: 'Name a popular birthday party game', answers: [{text:'Pin the Tail on the Donkey', points:43}, {text:'Musical Chairs', points:24}, {text:'Pi\u00f1ata', points:15}, {text:'Freeze Dance', points:10}, {text:'Scavenger Hunt', points:7}] },
+    { q: 'Name something people do to stay cool in the summer', answers: [{text:'Turn on the AC', points:49}, {text:'Go swimming', points:21}, {text:'Drink cold water', points:14}, {text:'Use a fan', points:9}, {text:'Stay in the shade', points:7}] },
+    { q: 'Name a reason someone might not trust a stranger', answers: [{text:'They seem shady', points:46}, {text:'Bad first impression', points:23}, {text:'Past experience', points:15}, {text:'Gut feeling', points:10}, {text:'They\'re asking for money', points:7}] },
+    { q: 'Name something you\'d bring to a potluck', answers: [{text:'A casserole', points:44}, {text:'Dessert', points:24}, {text:'A salad', points:15}, {text:'Chips and dip', points:10}, {text:'Drinks', points:7}] },
+    { q: 'Name a common excuse for not exercising', answers: [{text:'No time', points:43}, {text:'Too tired', points:24}, {text:'Bad weather', points:15}, {text:'Not motivated', points:10}, {text:'Already sore', points:7}] },
+    { q: 'Name something people do before falling asleep', answers: [{text:'Scroll their phone', points:50}, {text:'Read a book', points:21}, {text:'Set an alarm', points:14}, {text:'Say goodnight', points:9}, {text:'Turn off the lights', points:6}] },
+    { q: 'Name a reason a meeting might run late', answers: [{text:'Someone showed up late', points:54}, {text:'Got off topic', points:19}, {text:'Technical issues', points:12}, {text:'Too much on the agenda', points:8}, {text:'People kept talking', points:6}] },
+    { q: 'Name a reason someone might be nervous on a first date', answers: [{text:'Fear of awkward silence', points:53}, {text:'Wanting to make a good impression', points:20}, {text:'Not knowing what to wear', points:13}, {text:'Meeting someone new', points:8}, {text:'Fear of rejection', points:6}] },
+    { q: 'Name something you\'d pack for a camping trip', answers: [{text:'A tent', points:52}, {text:'A flashlight', points:20}, {text:'Bug spray', points:13}, {text:'Marshmallows', points:9}, {text:'A sleeping bag', points:6}] },
+    { q: 'Name a reason someone might get fired', answers: [{text:'Poor performance', points:42}, {text:'Being late too often', points:24}, {text:'Breaking company policy', points:16}, {text:'Budget cuts', points:10}, {text:'Conflict with a coworker', points:8}] },
+    { q: 'Name something people do to celebrate finishing a big project', answers: [{text:'Go out to eat', points:51}, {text:'Take a day off', points:21}, {text:'Treat themselves', points:13}, {text:'Tell everyone', points:9}, {text:'Relax at home', points:6}] },
+    { q: 'Name a popular type of exercise', answers: [{text:'Running', points:48}, {text:'Yoga', points:22}, {text:'Weightlifting', points:14}, {text:'Swimming', points:9}, {text:'Cycling', points:7}] },
+    { q: 'Name something you\'d find in a school backpack', answers: [{text:'Notebooks', points:49}, {text:'Pencils', points:21}, {text:'A laptop', points:14}, {text:'A water bottle', points:9}, {text:'Textbooks', points:7}] },
+    { q: 'Name a reason someone might cancel a gym membership', answers: [{text:'Too expensive', points:52}, {text:'Not going enough', points:20}, {text:'Moved away', points:13}, {text:'Found a different gym', points:9}, {text:'Lost motivation', points:6}] },
+    { q: 'Name something you might do during a power outage', answers: [{text:'Light candles', points:53}, {text:'Use your phone flashlight', points:20}, {text:'Wait it out', points:13}, {text:'Check the breaker box', points:8}, {text:'Play board games', points:6}] },
+    { q: 'Name a popular pizza topping combo', answers: [{text:'Pepperoni', points:51}, {text:'Mushroom and olive', points:21}, {text:'Sausage and pepper', points:13}, {text:'Bacon and pineapple', points:9}, {text:'Extra cheese', points:6}] },
+    { q: 'Name something you\'d do if you won the lottery', answers: [{text:'Pay off debt', points:52}, {text:'Buy a house', points:20}, {text:'Quit your job', points:13}, {text:'Travel the world', points:9}, {text:'Help family', points:6}] },
+    { q: 'Name a reason someone might be running late to a wedding', answers: [{text:'Traffic', points:44}, {text:'Hair and makeup took too long', points:24}, {text:'Got lost', points:15}, {text:'Outfit malfunction', points:10}, {text:'Overslept', points:7}] },
+    { q: 'Name something you do when you can\'t sleep', answers: [{text:'Scroll your phone', points:51}, {text:'Count sheep', points:21}, {text:'Get up for water', points:13}, {text:'Read', points:9}, {text:'Watch TV', points:6}] },
+    { q: 'Name a common reason for a roommate conflict', answers: [{text:'Not cleaning up', points:42}, {text:'Loud noise', points:24}, {text:'Not paying rent on time', points:16}, {text:'Having guests over too much', points:10}, {text:'Using each other\'s stuff', points:8}] },
+    { q: 'Name a reason someone might not finish a book', answers: [{text:'Got boring', points:55}, {text:'Ran out of time', points:19}, {text:'Started a different book', points:12}, {text:'Too long', points:8}, {text:'Lost interest', points:6}] },
+    { q: 'Name something you\'d see at an airport', answers: [{text:'Luggage carousel', points:50}, {text:'Security checkpoint', points:21}, {text:'Flight departure board', points:14}, {text:'A gift shop', points:9}, {text:'People rushing', points:6}] },
+    { q: 'Name a popular breakfast food', answers: [{text:'Eggs', points:43}, {text:'Pancakes', points:24}, {text:'Cereal', points:15}, {text:'Bacon', points:10}, {text:'Toast', points:7}] },
+    { q: 'Name something you might do if your car breaks down', answers: [{text:'Call for a tow', points:42}, {text:'Check under the hood', points:24}, {text:'Call a friend', points:16}, {text:'Turn on hazard lights', points:10}, {text:'Wait for help', points:8}] },
+    { q: 'Name a reason someone might not like their job', answers: [{text:'Bad boss', points:42}, {text:'Low pay', points:24}, {text:'Boring work', points:16}, {text:'Long hours', points:10}, {text:'No room to grow', points:8}] },
+    { q: 'Name something you\'d find in a first aid kit', answers: [{text:'Band-Aids', points:45}, {text:'Gauze', points:23}, {text:'Antiseptic wipes', points:15}, {text:'Tweezers', points:10}, {text:'Pain relievers', points:7}] },
+    { q: 'Name a popular Halloween costume', answers: [{text:'Witch', points:45}, {text:'Vampire', points:23}, {text:'Superhero', points:15}, {text:'Ghost', points:10}, {text:'Zombie', points:7}] },
+    { q: 'Name something people do to celebrate an anniversary', answers: [{text:'Go out to dinner', points:51}, {text:'Exchange gifts', points:21}, {text:'Take a trip', points:13}, {text:'Renew vows', points:9}, {text:'Reminisce together', points:6}] },
+    { q: 'Name a reason someone might be stressed at work', answers: [{text:'Too much workload', points:42}, {text:'Tight deadlines', points:24}, {text:'Difficult coworkers', points:16}, {text:'Job insecurity', points:10}, {text:'Long hours', points:8}] },
+    { q: 'Name something you might see on a road trip', answers: [{text:'Gas stations', points:54}, {text:'Rest stops', points:19}, {text:'Fast food signs', points:12}, {text:'Other cars', points:8}, {text:'Scenic views', points:6}] },
+    { q: 'Name a common reason to call in a plumber', answers: [{text:'A leaky pipe', points:49}, {text:'Clogged drain', points:21}, {text:'Broken water heater', points:14}, {text:'Running toilet', points:9}, {text:'Low water pressure', points:7}] },
+    { q: 'Name something you\'d do to prepare for a hurricane', answers: [{text:'Board up windows', points:47}, {text:'Stock up on water', points:22}, {text:'Buy batteries', points:14}, {text:'Fill up the car with gas', points:10}, {text:'Charge devices', points:7}] },
+    { q: 'Name a reason someone might switch phone carriers', answers: [{text:'Better price', points:49}, {text:'Slow response times', points:21}, {text:'Better coverage', points:14}, {text:'Wanted a new phone deal', points:9}, {text:'Poor customer service', points:7}] },
+    { q: 'Name something you\'d find in a college dorm room', answers: [{text:'A mini fridge', points:51}, {text:'Textbooks', points:21}, {text:'A laptop', points:13}, {text:'Posters', points:9}, {text:'A microwave', points:6}] },
+    { q: 'Name a popular type of music', answers: [{text:'Pop', points:55}, {text:'Rock', points:19}, {text:'Hip hop', points:12}, {text:'Country', points:8}, {text:'Jazz', points:6}] },
+    { q: 'Name something you might do at a spa', answers: [{text:'Get a massage', points:45}, {text:'Get a manicure', points:23}, {text:'Relax in a hot tub', points:15}, {text:'Get a facial', points:10}, {text:'Take a nap', points:7}] },
+    { q: 'Name something you\'d bring to the beach', answers: [{text:'Sunscreen', points:45}, {text:'A towel', points:23}, {text:'Sunglasses', points:15}, {text:'A cooler', points:10}, {text:'A beach umbrella', points:7}] },
+    { q: 'Name a common reason for a flight delay', answers: [{text:'Weather', points:52}, {text:'Mechanical issues', points:20}, {text:'Late crew arrival', points:13}, {text:'Air traffic', points:9}, {text:'Late passengers boarding', points:6}] },
+    { q: 'Name something you might do to celebrate a graduation', answers: [{text:'Throw a party', points:46}, {text:'Take pictures', points:23}, {text:'Give gifts', points:15}, {text:'Go out to eat', points:10}, {text:'Travel', points:7}] },
+    { q: 'Name a reason someone might not recycle', answers: [{text:'Too much effort', points:49}, {text:'Don\'t know the rules', points:21}, {text:'No bins available', points:14}, {text:'Forget to do it', points:9}, {text:'Don\'t think it matters', points:7}] },
+    { q: 'Name something you\'d find at a hardware store', answers: [{text:'Nails and screws', points:42}, {text:'Paint', points:24}, {text:'Tools', points:16}, {text:'Light bulbs', points:10}, {text:'Lumber', points:8}] },
+    { q: 'Name a popular soda brand', answers: [{text:'Coca-Cola', points:52}, {text:'Pepsi', points:20}, {text:'Sprite', points:13}, {text:'Dr Pepper', points:9}, {text:'Mountain Dew', points:6}] },
+    { q: 'Name something you do when you get a compliment', answers: [{text:'Say thank you', points:43}, {text:'Blush', points:24}, {text:'Return the compliment', points:15}, {text:'Feel awkward', points:10}, {text:'Smile', points:7}] },
+    { q: 'Name a reason someone might get a tattoo', answers: [{text:'To honor someone', points:49}, {text:'Just liked the design', points:21}, {text:'Peer pressure', points:14}, {text:'A milestone', points:9}, {text:'Self expression', points:7}] },
+    { q: 'Name something you\'d see in a busy kitchen at a restaurant', answers: [{text:'Chefs cooking', points:52}, {text:'Pots and pans', points:20}, {text:'Orders being called out', points:13}, {text:'Steam', points:9}, {text:'Plates being plated', points:6}] },
+    { q: 'Name a reason someone might move to a new city', answers: [{text:'New job', points:46}, {text:'Lower cost of living', points:23}, {text:'Closer to family', points:15}, {text:'Fresh start', points:10}, {text:'Better weather', points:7}] },
+    { q: 'Name something you\'d do to comfort a crying friend', answers: [{text:'Give them a hug', points:48}, {text:'Listen to them', points:22}, {text:'Bring them food', points:14}, {text:'Sit with them', points:9}, {text:'Offer advice', points:7}] },
+    { q: 'Name a popular fast food item', answers: [{text:'French fries', points:50}, {text:'A burger', points:21}, {text:'Chicken nuggets', points:14}, {text:'A milkshake', points:9}, {text:'Tacos', points:6}] },
+    { q: 'Name something you might see at a wedding reception', answers: [{text:'A dance floor', points:55}, {text:'A DJ', points:19}, {text:'A wedding cake', points:12}, {text:'Toasts', points:8}, {text:'Table centerpieces', points:6}] },
+    { q: 'Name something you\'d find in a toolbox', answers: [{text:'A hammer', points:53}, {text:'A screwdriver', points:20}, {text:'A wrench', points:13}, {text:'Nails', points:8}, {text:'Tape measure', points:6}] },
+    { q: 'Name a reason someone might get a divorce', answers: [{text:'Grew apart', points:46}, {text:'Communication issues', points:23}, {text:'Infidelity', points:15}, {text:'Financial problems', points:10}, {text:'Different priorities', points:7}] },
+    { q: 'Name something you do when it\'s cold outside', answers: [{text:'Wear a jacket', points:47}, {text:'Turn up the heat', points:22}, {text:'Drink hot chocolate', points:14}, {text:'Stay inside', points:10}, {text:'Layer up', points:7}] },
+    { q: 'Name a popular dog breed', answers: [{text:'Labrador', points:54}, {text:'Golden Retriever', points:19}, {text:'German Shepherd', points:12}, {text:'Bulldog', points:8}, {text:'Poodle', points:6}] },
+    { q: 'Name something you might see at a construction site', answers: [{text:'A crane', points:45}, {text:'Hard hats', points:23}, {text:'Bulldozers', points:15}, {text:'Scaffolding', points:10}, {text:'Caution tape', points:7}] },
+    { q: 'Name a reason someone might quit a diet', answers: [{text:'Cravings got too strong', points:50}, {text:'Lost motivation', points:21}, {text:'Special occasion', points:14}, {text:'Too restrictive', points:9}, {text:'Slow results', points:6}] },
+    { q: 'Name something you\'d find in a purse', answers: [{text:'Wallet', points:46}, {text:'Keys', points:23}, {text:'Phone', points:15}, {text:'Makeup', points:10}, {text:'Tissues', points:7}] },
+    { q: 'Name a reason a package might be delivered late', answers: [{text:'Weather delay', points:42}, {text:'Wrong address', points:24}, {text:'High shipping volume', points:16}, {text:'Lost in transit', points:10}, {text:'Delivery driver ran out of time', points:8}] },
+    { q: 'Name something people do at a sleepover', answers: [{text:'Watch movies', points:43}, {text:'Stay up late', points:24}, {text:'Tell stories', points:15}, {text:'Eat snacks', points:10}, {text:'Play games', points:7}] },
+    { q: 'Name something you\'d see in a movie theater', answers: [{text:'Popcorn', points:51}, {text:'A big screen', points:21}, {text:'Comfy seats', points:13}, {text:'Previews', points:9}, {text:'Concession stand', points:6}] },
+    { q: 'Name a reason someone might return to school as an adult', answers: [{text:'Career change', points:54}, {text:'Never finished a degree', points:19}, {text:'Wanted a promotion', points:12}, {text:'Personal goal', points:8}, {text:'Better job prospects', points:6}] },
+    { q: 'Name something you\'d find in a garden', answers: [{text:'Flowers', points:43}, {text:'Vegetables', points:24}, {text:'A hose', points:15}, {text:'Weeds', points:10}, {text:'A shovel', points:7}] },
+    { q: 'Name a popular type of cheese', answers: [{text:'Cheddar', points:48}, {text:'Mozzarella', points:22}, {text:'Swiss', points:14}, {text:'Parmesan', points:9}, {text:'Provolone', points:7}] },
+    { q: 'Name something you might do to prepare for winter', answers: [{text:'Buy a coat', points:43}, {text:'Winterize your car', points:24}, {text:'Stock up on firewood', points:15}, {text:'Get the heater checked', points:10}, {text:'Buy salt for the driveway', points:7}] },
+    { q: 'Name something you\'d see at a baseball game', answers: [{text:'Hot dogs', points:46}, {text:'A scoreboard', points:23}, {text:'Peanuts', points:15}, {text:'The national anthem', points:10}, {text:'A mascot', points:7}] },
+    { q: 'Name a reason someone might not want kids', answers: [{text:'Financial reasons', points:48}, {text:'Wants freedom', points:22}, {text:'Not ready', points:14}, {text:'Career focused', points:9}, {text:'Doesn\'t like children', points:7}] },
+    { q: 'Name a popular vacation destination', answers: [{text:'Hawaii', points:43}, {text:'Disney World', points:24}, {text:'The beach', points:15}, {text:'Europe', points:10}, {text:'Las Vegas', points:7}] },
+    { q: 'Name something you\'d do if you smelled smoke in your house', answers: [{text:'Check the kitchen', points:42}, {text:'Call the fire department', points:24}, {text:'Evacuate', points:16}, {text:'Look for the source', points:10}, {text:'Use an extinguisher', points:8}] },
+    { q: 'Name a reason someone might not want to retire', answers: [{text:'Enjoys working', points:55}, {text:'Needs the income', points:19}, {text:'Not ready to stop', points:12}, {text:'Would get bored', points:8}, {text:'Likes the routine', points:6}] },
+    { q: 'Name something you\'d see at a zoo', answers: [{text:'Lions', points:52}, {text:'Elephants', points:20}, {text:'A gift shop', points:13}, {text:'Monkeys', points:9}, {text:'Snack stands', points:6}] },
+    { q: 'Name a common New Year\'s resolution', answers: [{text:'Exercise more', points:42}, {text:'Eat healthier', points:24}, {text:'Save money', points:16}, {text:'Read more', points:10}, {text:'Quit a bad habit', points:8}] },
+    { q: 'Name something you might do if you got a flat tire', answers: [{text:'Call for help', points:45}, {text:'Change it yourself', points:23}, {text:'Pull over safely', points:15}, {text:'Check the spare', points:10}, {text:'Call roadside assistance', points:7}] },
+    { q: 'Name a reason someone might be nervous about a doctor\'s appointment', answers: [{text:'Fear of bad news', points:45}, {text:'Don\'t like needles', points:23}, {text:'Waiting room anxiety', points:15}, {text:'Fear of a diagnosis', points:10}, {text:'Dislike of exams', points:7}] },
+    { q: 'Name something you\'d find in a fridge', answers: [{text:'Milk', points:42}, {text:'Eggs', points:24}, {text:'Leftovers', points:16}, {text:'Condiments', points:10}, {text:'Vegetables', points:8}] },
+    { q: 'Name a popular type of pasta', answers: [{text:'Spaghetti', points:49}, {text:'Penne', points:21}, {text:'Fettuccine', points:14}, {text:'Macaroni', points:9}, {text:'Lasagna', points:7}] },
+    { q: 'Name something you might do to relax after work', answers: [{text:'Watch TV', points:48}, {text:'Take a bath', points:22}, {text:'Cook dinner', points:14}, {text:'Exercise', points:9}, {text:'Nap', points:7}] },
+    { q: 'Name a reason someone might be late to school', answers: [{text:'Missed the bus', points:53}, {text:'Overslept', points:20}, {text:'Traffic', points:13}, {text:'Forgot something at home', points:8}, {text:'Slow morning routine', points:6}] },
+    { q: 'Name something you\'d see at a wedding', answers: [{text:'A bride and groom', points:48}, {text:'Flowers', points:22}, {text:'A cake', points:14}, {text:'Guests', points:9}, {text:'Rings', points:7}] },
+    { q: 'Name a reason someone might avoid social media', answers: [{text:'Too much drama', points:48}, {text:'Privacy concerns', points:22}, {text:'Waste of time', points:14}, {text:'Mental health reasons', points:9}, {text:'Prefers real interaction', points:7}] },
+    { q: 'Name something you\'d bring on a hike', answers: [{text:'Water', points:43}, {text:'Snacks', points:24}, {text:'A map', points:15}, {text:'Good shoes', points:10}, {text:'Bug spray', points:7}] },
+    { q: 'Name something you might do to celebrate a promotion', answers: [{text:'Go out to dinner', points:52}, {text:'Treat yourself', points:20}, {text:'Tell friends and family', points:13}, {text:'Post about it', points:9}, {text:'Take a day off', points:6}] },
+    { q: 'Name a reason someone might not vote', answers: [{text:'Too busy', points:45}, {text:'Doesn\'t believe it matters', points:23}, {text:'Didn\'t register', points:15}, {text:'Not interested in politics', points:10}, {text:'Missed the deadline', points:7}] },
+    { q: 'Name something you\'d see at a coffee shop', answers: [{text:'A barista', points:54}, {text:'A menu board', points:19}, {text:'Pastries', points:12}, {text:'Wi-Fi', points:8}, {text:'People on laptops', points:6}] },
+    { q: 'Name a reason someone might be excited for the weekend', answers: [{text:'No work', points:52}, {text:'Time to relax', points:20}, {text:'Plans with friends', points:13}, {text:'Sleeping in', points:9}, {text:'Catching up on chores', points:6}] },
+    { q: 'Name something you\'d find in a toolbox at home', answers: [{text:'A hammer', points:46}, {text:'A tape measure', points:23}, {text:'Screwdrivers', points:15}, {text:'A level', points:10}, {text:'Pliers', points:7}] },
+    { q: 'Name a popular ice cream topping', answers: [{text:'Sprinkles', points:47}, {text:'Hot fudge', points:22}, {text:'Whipped cream', points:14}, {text:'Nuts', points:10}, {text:'A cherry', points:7}] },
+    { q: 'Name something you might do if you got a paper cut', answers: [{text:'Put on a Band-Aid', points:43}, {text:'Suck on it', points:24}, {text:'Wash it', points:15}, {text:'Apply pressure', points:10}, {text:'Complain about it', points:7}] },
+    { q: 'Name a reason someone might not answer a text right away', answers: [{text:'Busy', points:46}, {text:'Didn\'t see it', points:23}, {text:'Forgot to reply', points:15}, {text:'Thinking of a response', points:10}, {text:'Phone was on silent', points:7}] },
+    { q: 'Name something you\'d see at a farmers\' market besides food', answers: [{text:'Handmade crafts', points:47}, {text:'Live music', points:22}, {text:'Flowers', points:14}, {text:'Face painting', points:10}, {text:'Local artists', points:7}] },
+    { q: 'Name a popular condiment', answers: [{text:'Ketchup', points:42}, {text:'Mustard', points:24}, {text:'Mayonnaise', points:16}, {text:'Ranch', points:10}, {text:'Hot sauce', points:8}] },
+    { q: 'Name something you might do before guests arrive at your house', answers: [{text:'Clean up', points:48}, {text:'Light a candle', points:22}, {text:'Cook food', points:14}, {text:'Set the table', points:9}, {text:'Tidy the living room', points:7}] },
+    { q: 'Name a reason someone might be late returning a library book', answers: [{text:'Forgot about it', points:54}, {text:'Still reading it', points:19}, {text:'Lost track of time', points:12}, {text:'Misplaced it', points:8}, {text:'Busy schedule', points:6}] },
+    { q: 'Name something you\'d find at a gas station', answers: [{text:'Snacks', points:43}, {text:'Fuel pumps', points:24}, {text:'A cashier', points:15}, {text:'Drinks', points:10}, {text:'Car supplies', points:7}] },
+    { q: 'Name a reason someone might start a garden', answers: [{text:'Enjoys gardening', points:44}, {text:'Wants fresh vegetables', points:24}, {text:'Stress relief', points:15}, {text:'To save money', points:10}, {text:'Enjoys being outside', points:7}] },
+    { q: 'Name something you\'d do if the power went out at night', answers: [{text:'Find a flashlight', points:45}, {text:'Light candles', points:23}, {text:'Check the breaker', points:15}, {text:'Wait it out', points:10}, {text:'Call the power company', points:7}] },
   ];
 
   const STOPWORDS = new Set(['a','an','the','your','you','to','in','on','of','for','with','at','something',
     'someone','some','and','or','do','does','doing','go','goes','going','get','gets','getting',
     'take','takes','taking','make','makes','making','have','has','having','be','is','are','was','were',
     'it','its','more','off','out','up','down','back','away','than','that','this','they','them',
-    'i','me','my','ve','re','ll','d','m','s','been','im','youre','theyre','hes','shes','were','well']);
+    'i','me','my','ve','re','ll','d','m','s','been','im','youre','theyre','hes','shes','were','well',
+    'their','his','her','want','wanted','wants','better','fear','fears','afraid','not','dont','doesnt',
+    'too','buy','buys','enjoy','enjoys','enjoying','call','calls','calling','don','t']);
   function normalizeText(s){
     return s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
   }
@@ -603,9 +720,11 @@
         '<div class="total-banner">' + r.boardTotal + ' points</div>';
       const board = document.createElement('div');
       board.className = 'board';
-      r.answers.slice().sort((a,b)=>b.points-a.points).forEach((a,i) => {
+      const isSteal = r.stealAnswerIdx !== undefined && r.stealAnswerIdx !== null;
+      r.answers.map((a,i)=>({...a, origIdx:i})).sort((a,b)=>b.points-a.points).forEach((a,i) => {
         const row = document.createElement('div');
-        row.className = 'board-row revealed';
+        const isWinningCredit = isSteal ? (a.origIdx === r.stealAnswerIdx) : a.revealed;
+        row.className = 'board-row ' + (isWinningCredit ? 'revealed' : 'revealed-other');
         row.innerHTML = '<span><span class="rank-num">' + (i+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
         board.appendChild(row);
       });
@@ -650,37 +769,27 @@
   function submitGuessLocal(guessText){
     const st = localState;
     const r = st.round;
-    r.pendingGuess = guessText;
-    r.judgePassed = false;
-    r.lastResult = null;
-    r.isStealAttempt = (r.phase === 'steal');
-    r.phase = 'judging';
-    renderLocal();
-  }
 
-  function resolveJudgmentLocal(matchedIdx){
-    const st = localState;
-    const r = st.round;
-    const wasSteal = r.isStealAttempt;
-    const guesser = st.players[guesserIndexFor(r)];
-    const hit = matchedIdx >= 0;
-
-    if (!wasSteal){
-      if (hit){
-        const ans = r.answers[matchedIdx];
-        ans.revealed = true;
-        r.boardTotal += ans.points;
-        r.lastResult = { hit:true, guess:r.pendingGuess };
+    if (r.phase === 'guessing'){
+      // Normal guesses are auto-matched so the opponent is never exposed to the board -
+      // that exposure is exactly what would make a later steal unfair.
+      const guesser = st.players[localState.currentIndex];
+      const hiddenAnswers = r.answers.filter(a => !a.revealed);
+      const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
+      if (match){
+        const idx = r.answers.indexOf(match);
+        r.answers[idx].revealed = true;
+        r.boardTotal += match.points;
+        r.lastResult = { hit:true, guess:guessText };
         if (r.answers.every(a=>a.revealed)){
           guesser.score += r.boardTotal;
           r.roundWinnerName = guesser.name + ' cleared the board!';
+          r.allRevealedCount = true;
           r.phase = 'roundEnd';
-        } else {
-          r.phase = 'guessing';
         }
       } else {
         r.strikes++;
-        r.lastResult = { hit:false, guess:r.pendingGuess };
+        r.lastResult = { hit:false, guess:guessText };
         if (r.strikes >= 3){
           if (st.solo){
             r.roundWinnerName = 'Out of strikes';
@@ -689,23 +798,41 @@
             r.phase = 'steal';
             r.lastResult = null;
           }
-        } else {
-          r.phase = 'guessing';
         }
       }
-    } else {
-      // steal attempt resolution
-      if (hit){
-        const ans = r.answers[matchedIdx];
-        ans.revealed = true;
-        guesser.score += r.boardTotal;
-        r.roundWinnerName = guesser.name + ' stole it!';
-      } else {
-        currentPlayer().score += r.boardTotal;
-        r.roundWinnerName = currentPlayer().name + ' keeps the board';
-      }
-      r.phase = 'roundEnd';
+      renderLocal();
+      return;
     }
+
+    // Steal attempts are peer-judged: the original player (who's been blind all round,
+    // since normal guesses never revealed the board to anyone) reviews this one guess.
+    r.pendingGuess = guessText;
+    r.judgePassed = false;
+    r.lastResult = null;
+    r.isStealAttempt = true;
+    r.phase = 'judging';
+    renderLocal();
+  }
+
+  function resolveJudgmentLocal(matchedIdx){
+    const st = localState;
+    const r = st.round;
+    const stealer = st.players[otherPlayerIndex()];
+    const originalPlayer = st.players[localState.currentIndex];
+    const hit = matchedIdx >= 0;
+
+    if (hit){
+      const ans = r.answers[matchedIdx];
+      ans.revealed = true;
+      r.stealAnswerIdx = matchedIdx;
+      r.boardTotal += ans.points;
+      stealer.score += r.boardTotal;
+      r.roundWinnerName = stealer.name + ' stole it!';
+    } else {
+      originalPlayer.score += r.boardTotal;
+      r.roundWinnerName = originalPlayer.name + ' keeps the board';
+    }
+    r.phase = 'roundEnd';
     r.pendingGuess = null;
     renderLocal();
   }
@@ -727,7 +854,7 @@
       p2Answers: Array(5).fill(''),
       phase: numPlayers === 2 ? 'p1-pass' : 'p1-answering',
       currentQ: 0,
-      timeLeft: 50,
+      timeLeft: 45,
       grading: { p1: Array(5).fill(null), p2: Array(5).fill(null) } // each: {matchIdx, points} or null
     };
     showScreen('game');
@@ -743,11 +870,11 @@
     if (st.phase === 'p1-pass'){
       const card = document.createElement('div');
       card.className = 'panel pass-card';
-      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 1</h2><p>Answer fast &mdash; first thing that comes to mind for each question. You\u2019ve got 50 seconds for all 5. Player 2 shouldn\u2019t be watching.</p>';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 1</h2><p>Answer fast &mdash; first thing that comes to mind for each question. You\u2019ve got 45 seconds for all 5. Player 2 shouldn\u2019t be watching.</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
       btn.textContent = "I'm ready \u2192";
-      btn.addEventListener('click', () => { st.phase = 'p1-answering'; st.currentQ = 0; st.timeLeft = 50; renderFastMoney(); startFmTimer(); });
+      btn.addEventListener('click', () => { st.phase = 'p1-answering'; st.currentQ = 0; st.timeLeft = 45; renderFastMoney(); startFmTimer(); });
       card.appendChild(btn);
       body.appendChild(card);
       return;
@@ -809,12 +936,12 @@
     if (st.phase === 'p2-pass'){
       const card = document.createElement('div');
       card.className = 'panel pass-card';
-      const repeatNote = st.vsMode ? 'Same 5 questions, you\u2019ve got 50 seconds too \u2014 repeats are totally fine, just try to beat Player 1\u2019s score.' : 'Same 5 questions, but you\u2019ve got 60 seconds since you have to think around Player 1\u2019s answers. If you repeat one of theirs exactly, you\u2019ll be asked to try again.';
+      const repeatNote = st.vsMode ? 'Same 5 questions, you\u2019ve got 45 seconds too \u2014 repeats are totally fine, just try to beat Player 1\u2019s score.' : 'Same 5 questions, but you\u2019ve got 50 seconds since you have to think around Player 1\u2019s answers. If you repeat one of theirs exactly, you\u2019ll be asked to try again.';
       card.innerHTML = '<div class="to-icon">\ud83d\udcb0</div><h2>Player 2</h2><p>' + repeatNote + '</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
       btn.textContent = "I'm ready \u2192";
-      btn.addEventListener('click', () => { st.phase = 'p2-answering'; st.currentQ = 0; st.timeLeft = st.vsMode ? 50 : 60; renderFastMoney(); startFmTimer(); });
+      btn.addEventListener('click', () => { st.phase = 'p2-answering'; st.currentQ = 0; st.timeLeft = st.vsMode ? 45 : 50; renderFastMoney(); startFmTimer(); });
       card.appendChild(btn);
       body.appendChild(card);
       return;
@@ -960,8 +1087,37 @@
   function submitGuessOnline(guessText){
     const g = onlineGame;
     const r = g.round;
+
+    if (r.phase === 'guessing'){
+      const guesser = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+      const hiddenAnswers = r.answers.filter(a => !a.revealed);
+      const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
+      if (match){
+        const idx = r.answers.indexOf(match);
+        r.answers[idx].revealed = true;
+        r.boardTotal += match.points;
+        r.lastResult = { hit:true, guess:guessText };
+        if (r.answers.every(a=>a.revealed)){
+          guesser.score += r.boardTotal;
+          r.roundWinnerName = guesser.name + ' cleared the board!';
+          r.phase = 'roundEnd';
+        }
+      } else {
+        r.strikes++;
+        r.lastResult = { hit:false, guess:guessText };
+        if (r.strikes >= 3){
+          r.phase = 'steal';
+          r.lastResult = null;
+        }
+      }
+      broadcastOnlineState();
+      return;
+    }
+
+    // Steal: peer-judged by the original player, who's been blind all round since
+    // normal guesses are auto-matched and never reveal the board to anyone.
     r.pendingGuess = guessText;
-    r.isStealAttempt = (r.phase === 'steal');
+    r.isStealAttempt = true;
     r.lastResult = null;
     r.phase = 'judging';
     broadcastOnlineState();
@@ -969,46 +1125,22 @@
   function resolveJudgmentOnline(matchedIdx){
     const g = onlineGame;
     const r = g.round;
-    const wasSteal = r.isStealAttempt;
-    const guesser = hostPlayers.find(p=>p.id===g.order[onlineGuesserIndex(g)]);
+    const stealer = hostPlayers.find(p=>p.id===g.order[onlineGuesserIndex(g)]);
     const originalPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
     const hit = matchedIdx >= 0;
 
-    if (!wasSteal){
-      if (hit){
-        const ans = r.answers[matchedIdx];
-        ans.revealed = true;
-        r.boardTotal += ans.points;
-        r.lastResult = { hit:true, guess:r.pendingGuess };
-        if (r.answers.every(a=>a.revealed)){
-          guesser.score += r.boardTotal;
-          r.roundWinnerName = guesser.name + ' cleared the board!';
-          r.phase = 'roundEnd';
-        } else {
-          r.phase = 'guessing';
-        }
-      } else {
-        r.strikes++;
-        r.lastResult = { hit:false, guess:r.pendingGuess };
-        if (r.strikes >= 3){
-          r.phase = 'steal';
-          r.lastResult = null;
-        } else {
-          r.phase = 'guessing';
-        }
-      }
+    if (hit){
+      const ans = r.answers[matchedIdx];
+      ans.revealed = true;
+      r.stealAnswerIdx = matchedIdx;
+      r.boardTotal += ans.points;
+      stealer.score += r.boardTotal;
+      r.roundWinnerName = stealer.name + ' stole it!';
     } else {
-      if (hit){
-        const ans = r.answers[matchedIdx];
-        ans.revealed = true;
-        guesser.score += r.boardTotal;
-        r.roundWinnerName = guesser.name + ' stole it!';
-      } else {
-        originalPlayer.score += r.boardTotal;
-        r.roundWinnerName = originalPlayer.name + ' keeps the board';
-      }
-      r.phase = 'roundEnd';
+      originalPlayer.score += r.boardTotal;
+      r.roundWinnerName = originalPlayer.name + ' keeps the board';
     }
+    r.phase = 'roundEnd';
     r.pendingGuess = null;
     broadcastOnlineState();
   }
@@ -1169,9 +1301,11 @@
         '<div class="total-banner">' + r.boardTotal + ' points</div>';
       const board = document.createElement('div');
       board.className = 'board';
-      r.answers.slice().sort((a,b)=>b.points-a.points).forEach((a,i) => {
+      const isSteal = r.stealAnswerIdx !== undefined && r.stealAnswerIdx !== null;
+      r.answers.map((a,i)=>({...a, origIdx:i})).sort((a,b)=>b.points-a.points).forEach((a,i) => {
         const row = document.createElement('div');
-        row.className = 'board-row revealed';
+        const isWinningCredit = isSteal ? (a.origIdx === r.stealAnswerIdx) : a.revealed;
+        row.className = 'board-row ' + (isWinningCredit ? 'revealed' : 'revealed-other');
         row.innerHTML = '<span><span class="rank-num">' + (i+1) + '.</span>' + escapeHtml(a.text) + '</span><span class="pts-val">' + a.points + '</span>';
         board.appendChild(row);
       });
