@@ -216,18 +216,10 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data/imposter-words.js"></script>
 <script>
 (function(){
-  const CATEGORIES = {
-    'Food & Drink': ['Pizza','Sushi','Tacos','Pancakes','Ice Cream','Coffee','Spaghetti','Burger','Popcorn','Watermelon','Hot Sauce','Birthday Cake','Lemonade','Bacon','Cereal'],
-    'Places': ['Beach','Airport','Library','Hospital','Amusement Park','Desert Island','Haunted House','Ski Resort','Zoo','Subway','Farm','Castle','Space Station','Volcano','Campsite'],
-    'Jobs': ['Firefighter','Dentist','Chef','Pilot','Teacher','Lifeguard','Detective','Farmer','Astronaut','Plumber','Photographer','Librarian','Referee','Tattoo Artist','Zookeeper'],
-    'Animals': ['Elephant','Penguin','Octopus','Kangaroo','Shark','Flamingo','Gorilla','Hedgehog','Peacock','Chameleon','Sloth','Rhino','Owl','Jellyfish','Platypus'],
-    'Everyday Objects': ['Umbrella','Backpack','Toothbrush','Flashlight','Mirror','Alarm Clock','Sunglasses','Blender','Stapler','Pillow','Candle','Wallet','Headphones','Ladder','Thermometer'],
-    'Sports & Games': ['Basketball','Bowling','Chess','Surfing','Archery','Gymnastics','Dodgeball','Golf','Boxing','Skateboarding','Fencing','Darts','Rock Climbing','Curling','Tug of War'],
-    'Nature & Weather': ['Thunderstorm','Rainbow','Avalanche','Waterfall','Blizzard','Sunrise','Earthquake','Tornado','Glacier','Tide Pool','Fog','Wildfire','Quicksand','Meteor Shower','Drought'],
-    'Fantasy & Fiction': ['Dragon','Wizard','Pirate Ship','Time Machine','Vampire','Genie','Robot','Mermaid','Ghost','Superhero','Alien','Zombie','Fairy','Knight','Werewolf']
-  };
+const CATEGORIES = window.IMPOSTER_CATEGORIES;;
   const CATEGORY_NAMES = Object.keys(CATEGORIES);
 
   function pickWord(categoryName){
