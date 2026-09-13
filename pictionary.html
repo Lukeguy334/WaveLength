@@ -1052,7 +1052,7 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
     } else if (msg.type === 'guess'){
       handleGuess(conn.__playerId, msg.text);
     } else if (msg.type === 'gotIt'){
-      if (game.drawerId === conn.__playerId || conn.__playerId === myId) endOnlineRound(true);
+      if (game.drawerId === conn.__playerId) endOnlineRound(true, msg.guesserId);
     } else if (msg.type === 'giveUp'){
       if (game.drawerId === conn.__playerId) endOnlineRound(false);
     } else if (msg.type === 'startTimer'){
@@ -1148,6 +1148,39 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
     game.phase = 'getReady';
     clearCanvas();
     broadcastGameState();
+  }
+  function renderGotItPicker(body){
+    body.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Who got it?</h3><p style="color:var(--muted);font-size:13px;margin:0 0 6px;">Pick whoever called it out, or credit everyone if it was a group effort.</p>';
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    (game.players||[]).filter(p => p.id !== game.drawerId).forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => {
+        if (mode === 'host') endOnlineRound(true, p.id);
+        else joinConn.send({ type:'gotIt', guesserId: p.id });
+      });
+      row.appendChild(btn);
+    });
+    panel.appendChild(row);
+    const everyoneBtn = document.createElement('button');
+    everyoneBtn.className = 'secondary-btn';
+    everyoneBtn.textContent = 'Everyone gets credit';
+    everyoneBtn.addEventListener('click', () => {
+      if (mode === 'host') endOnlineRound(true);
+      else joinConn.send({ type:'gotIt' });
+    });
+    panel.appendChild(everyoneBtn);
+    const backBtn = document.createElement('button');
+    backBtn.className = 'secondary-btn';
+    backBtn.textContent = 'Back';
+    backBtn.addEventListener('click', () => renderOnline());
+    panel.appendChild(backBtn);
+    body.appendChild(panel);
   }
   function handleGuess(playerId, text){
     const correct = text.trim().toLowerCase() === game.word.toLowerCase();
@@ -1379,6 +1412,13 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
         if (iAmDrawer){
           const actionRow = document.createElement('div');
           actionRow.style.marginTop = '14px';
+          const gotItBtn = document.createElement('button');
+          gotItBtn.className = 'primary-btn';
+          gotItBtn.textContent = 'Someone got it! \u2192';
+          gotItBtn.addEventListener('click', () => {
+            renderGotItPicker(body);
+          });
+          actionRow.appendChild(gotItBtn);
           const giveUpBtn = document.createElement('button');
           giveUpBtn.className = 'secondary-btn';
           giveUpBtn.textContent = 'Reveal & skip';
