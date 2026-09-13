@@ -266,4 +266,5 @@
     { q: 'Name something people do when they have a headache', answers: [{text:'Take a pain reliever', points:36}, {text:'Lie down', points:25}, {text:'Drink water', points:19}, {text:'Rest somewhere quiet', points:13}, {text:'Put something cold on their head', points:7}] },
     { q: 'Name something that might be missing from a hotel room', answers: [{text:'Remote control', points:34}, {text:'Extra pillows', points:26}, {text:'Toiletries', points:18}, {text:'Coffee supplies', points:13}, {text:'An iron', points:9}] },
     { q: 'Name something people might do when their internet goes down', answers: [{text:'Restart the router', points:39}, {text:'Call the provider', points:23}, {text:'Check the cables', points:17}, {text:'Use mobile data', points:13}, {text:'Wait for it to come back', points:8}] },
+    { q: 'Name something that is inevitable besides death and taxes', answers: [{text:'Birth', points:40}, {text:'Mistakes', points:22}, {text:'Traffic', points:19}, {text:'Time', points:11}, {text:'Change', points:8}] },
   ]
