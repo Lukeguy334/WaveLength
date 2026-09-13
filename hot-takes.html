@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hot Takes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px); letter-spacing:0.03em; margin:0 0 16px;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .remove-player-btn:hover { color:var(--rose); border-color:var(--rose); }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .statement-card { text-align:center; padding:40px 24px; }
+  .statement-card .tag { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .statement-card .statement-text { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(22px,5vw,30px); margin:6px 0 26px; line-height:1.3; }
+
+  .stance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+  .stance-btn { padding:22px 14px; border-radius:12px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; cursor:pointer; }
+  .stance-btn:hover { border-color:var(--brass); }
+  .stance-btn.agree { }
+  .stance-btn.disagree { }
+  .stance-btn.selected.agree { border-color:var(--teal); background:rgba(79,209,197,0.14); color:var(--teal); }
+  .stance-btn.selected.disagree { border-color:var(--rose); background:rgba(226,99,122,0.14); color:var(--rose); }
+
+  .bar-row { margin: 10px 0 18px; }
+  .bar-row .bar-label { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .bar-track { height:14px; border-radius:7px; background:var(--ink-2); overflow:hidden; display:flex; }
+  .bar-fill.agree { background:var(--teal); height:100%; }
+  .bar-fill.disagree { background:var(--rose); height:100%; }
+
+  .reveal-names { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:16px; }
+  .reveal-name-chip { padding:6px 12px; border-radius:20px; border:1px solid var(--panel-line); font-size:13px; }
+  .reveal-name-chip.agree { border-color:var(--teal); color:var(--teal); }
+  .reveal-name-chip.disagree { border-color:var(--rose); color:var(--rose); }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; justify-content:center; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:7px 12px; font-size:13px; display:flex; gap:6px; align-items:center; }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); }
+
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .title-row h1 { margin:0; }
+  .rules-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .rules-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body h4 { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; margin:18px 0 6px; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { margin:0 0 10px; }
+  .modal-body ul, .modal-body ol { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+  .modal-body .rule-callout { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13.5px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Hot Takes</h1>
+    <button class="rules-btn" id="rulesBtn">Rules</button>
+  </div>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>The idea</h4>
+        <p>A statement shows up &mdash; something debatable, not necessarily serious. Everyone privately locks in Agree or Disagree, then the group's answers are revealed together.</p>
+        <h4>Scoring</h4>
+        <p>Landing with the majority earns a point. Being in the minority earns nothing &mdash; there's no penalty, it's just for fun and to see who agrees with who.</p>
+        <div class="rule-callout">Ties (an even split) don't award anyone a point that round.</div>
+        <h4>Modes</h4>
+        <p>Play locally passing one device around (everyone answers privately before passing on), or host/join an online room where everyone answers on their own device.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <p style="margin:0;color:var(--muted);font-size:14px;">A statement shows up, everyone locks in Agree or Disagree, then the group's answers are revealed together. Land with the majority to score.</p>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Play locally</h3><p>2&ndash;10 players pass one device around.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host a game</h3><p>Open a room, share the code.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join a game</h3><p>Got a room code? Enter it here.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;10)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Number of rounds</label>
+      <div class="choice-row" id="roundsChoice">
+        <button class="choice-btn" data-val="5">5</button>
+        <button class="choice-btn active" data-val="10">10</button>
+        <button class="choice-btn" data-val="15">15</button>
+        <button class="choice-btn" data-val="999">Until we stop</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Number of rounds</label>
+      <div class="choice-row" id="hostRoundsChoice">
+        <button class="choice-btn" data-val="5">5</button>
+        <button class="choice-btn active" data-val="10">10</button>
+        <button class="choice-btn" data-val="15">15</button>
+        <button class="choice-btn" data-val="999">Until we stop</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start game &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data/hot-takes-statements.js"></script>
+<script>
+(function(){
+  const STATEMENTS = window.HOT_TAKES_STATEMENTS;
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
+
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function wireChoiceRow(id){
+    document.getElementById(id).querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#'+id+' .choice-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  ['roundsChoice','hostRoundsChoice'].forEach(wireChoiceRow);
+  function getChoiceVal(id){
+    return document.querySelector('#'+id+' .choice-btn.active').dataset.val;
+  }
+
+  // ---------------- Local setup: dynamic player rows ----------------
+  let localPlayerCount = 0;
+  const localRowsEl = document.getElementById('localPlayerRows');
+  function addPlayerRow(){
+    if (localPlayerCount >= 10) return;
+    localPlayerCount++;
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.placeholder = 'Player ' + localPlayerCount;
+    input.maxLength = 16;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-player-btn';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', () => {
+      if (localRowsEl.children.length <= 2) return;
+      row.remove();
+      localPlayerCount--;
+    });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    localRowsEl.appendChild(row);
+  }
+  addPlayerRow(); addPlayerRow();
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ---------------- Prompt selection (shared) ----------------
+  let promptDeck = [];
+  function refillDeckIfNeeded(){
+    if (promptDeck.length === 0) promptDeck = shuffle(STATEMENTS);
+  }
+  function drawStatement(){
+    refillDeckIfNeeded();
+    return promptDeck.pop();
+  }
+
+  function tallyAnswers(answersByPlayerId, players){
+    let agree = 0, disagree = 0;
+    players.forEach(p => {
+      const a = answersByPlayerId[p.id];
+      if (a === 'agree') agree++;
+      else if (a === 'disagree') disagree++;
+    });
+    const total = agree + disagree;
+    const majority = agree > disagree ? 'agree' : (disagree > agree ? 'disagree' : null);
+    return { agree, disagree, total, majority };
+  }
+
+  // ============================================================
+  // LOCAL MODE
+  // ============================================================
+  let mode = 'local';
+  let myId = null, myName = '';
+  let peer = null, hostConns = {}, joinConn = null;
+  let game = null;
+
+  document.getElementById('localStart').addEventListener('click', () => {
+    const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+    const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
+    const totalRounds = parseInt(getChoiceVal('roundsChoice'), 10);
+    mode = 'local';
+    const players = names.map(n => ({ id: uid(), name: n, score: 0 }));
+    game = {
+      players,
+      totalRounds,
+      roundsCompleted: 0,
+      statement: drawStatement(),
+      answers: {},
+      submitIndex: 0,
+      phase: 'submit' // submit -> reveal -> (submit|gameEnd)
+    };
+    showScreen('game');
+    renderLocal();
+  });
+
+  function renderLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+
+    const scoreboard = document.createElement('div');
+    scoreboard.className = 'scoreboard';
+    game.players.forEach(p => {
+      const chip = document.createElement('span');
+      chip.className = 'score-chip';
+      chip.innerHTML = escapeHtml(p.name) + ' <span class="pts">' + p.score + '</span>';
+      scoreboard.appendChild(chip);
+    });
+    body.appendChild(scoreboard);
+
+    if (game.phase === 'submit'){
+      const player = game.players[game.submitIndex];
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcf1</div><h2>Pass the device to<br>' + escapeHtml(player.name) + '</h2><p>Answer privately, then pass it on.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = "I'm " + player.name + ' \u2014 show me the statement';
+      btn.addEventListener('click', () => {
+        renderStatementForCurrentLocalPlayer();
+      });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'reveal'){
+      renderRevealCommon(body, game.statement, game.answers, game.players, {
+        onNext: () => {
+          game.roundsCompleted++;
+          if (game.roundsCompleted >= game.totalRounds){
+            renderGameEndLocal();
+          } else {
+            game.statement = drawStatement();
+            game.answers = {};
+            game.submitIndex = 0;
+            game.phase = 'submit';
+            renderLocal();
+          }
+        },
+        nextLabel: (game.roundsCompleted + 1 >= game.totalRounds) ? 'See final scores \u2192' : 'Next statement \u2192'
+      });
+      return;
+    }
+  }
+
+  function renderStatementForCurrentLocalPlayer(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const player = game.players[game.submitIndex];
+    const card = document.createElement('div');
+    card.className = 'panel statement-card';
+    card.innerHTML = '<div class="tag">Do you agree?</div><div class="statement-text">' + escapeHtml(game.statement) + '</div>';
+    const grid = document.createElement('div');
+    grid.className = 'stance-grid';
+    const agreeBtn = document.createElement('button');
+    agreeBtn.className = 'stance-btn agree';
+    agreeBtn.textContent = 'Agree';
+    agreeBtn.addEventListener('click', () => {
+      game.answers[player.id] = 'agree';
+      advanceLocalSubmit();
+    });
+    const disagreeBtn = document.createElement('button');
+    disagreeBtn.className = 'stance-btn disagree';
+    disagreeBtn.textContent = 'Disagree';
+    disagreeBtn.addEventListener('click', () => {
+      game.answers[player.id] = 'disagree';
+      advanceLocalSubmit();
+    });
+    grid.appendChild(agreeBtn); grid.appendChild(disagreeBtn);
+    card.appendChild(grid);
+    body.appendChild(card);
+  }
+
+  function advanceLocalSubmit(){
+    game.submitIndex++;
+    if (game.submitIndex >= game.players.length){
+      const t = tallyAnswers(game.answers, game.players);
+      if (t.majority){
+        game.players.forEach(p => { if (game.answers[p.id] === t.majority) p.score++; });
+      }
+      game.phase = 'reveal';
+      renderLocal();
+    } else {
+      renderLocal();
+    }
+  }
+
+  function renderGameEndLocal(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    const sorted = game.players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;text-align:center;">Final scores</h3>';
+    sorted.forEach((p,i) => {
+      const row = document.createElement('div');
+      row.className = 'score-chip';
+      row.style.width = '100%';
+      row.style.marginBottom = '8px';
+      row.style.justifyContent = 'space-between';
+      row.innerHTML = '<span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(p.name) + '</span><span class="pts">' + p.score + ' pts</span>';
+      panel.appendChild(row);
+    });
+    const againBtn = document.createElement('button');
+    againBtn.className = 'primary-btn';
+    againBtn.textContent = 'Play again (same players)';
+    againBtn.addEventListener('click', () => {
+      game.players.forEach(p => p.score = 0);
+      game.roundsCompleted = 0;
+      game.statement = drawStatement();
+      game.answers = {};
+      game.submitIndex = 0;
+      game.phase = 'submit';
+      renderLocal();
+    });
+    panel.appendChild(againBtn);
+    const lobbyBtn = document.createElement('button');
+    lobbyBtn.className = 'secondary-btn';
+    lobbyBtn.textContent = 'Back to lobby';
+    lobbyBtn.addEventListener('click', () => location.reload());
+    panel.appendChild(lobbyBtn);
+    body.appendChild(panel);
+  }
+
+  // ---------------- Shared reveal renderer (local + online) ----------------
+  function renderRevealCommon(body, statement, answersByPlayerId, players, opts){
+    const t = tallyAnswers(answersByPlayerId, players);
+    const card = document.createElement('div');
+    card.className = 'panel statement-card';
+    card.innerHTML = '<div class="tag">The statement was</div><div class="statement-text">' + escapeHtml(statement) + '</div>';
+
+    const barRow = document.createElement('div');
+    barRow.className = 'bar-row';
+    const agreePct = t.total ? Math.round((t.agree/t.total)*100) : 0;
+    const disagreePct = t.total ? 100 - agreePct : 0;
+    barRow.innerHTML = '<div class="bar-label"><span style="color:var(--teal);">Agree ' + t.agree + '</span><span style="color:var(--rose);">Disagree ' + t.disagree + '</span></div>' +
+      '<div class="bar-track"><div class="bar-fill agree" style="width:' + agreePct + '%;"></div><div class="bar-fill disagree" style="width:' + disagreePct + '%;"></div></div>';
+    card.appendChild(barRow);
+
+    const names = document.createElement('div');
+    names.className = 'reveal-names';
+    players.forEach(p => {
+      const a = answersByPlayerId[p.id];
+      if (!a) return;
+      const chip = document.createElement('span');
+      chip.className = 'reveal-name-chip ' + a;
+      chip.textContent = p.name;
+      names.appendChild(chip);
+    });
+    card.appendChild(names);
+
+    if (t.majority){
+      const majText = document.createElement('p');
+      majText.style.color = 'var(--muted)'; majText.style.fontSize = '13px'; majText.style.marginTop = '16px';
+      majText.textContent = 'Majority ' + (t.majority === 'agree' ? 'agreed' : 'disagreed') + ' \u2014 they each score a point.';
+      card.appendChild(majText);
+    } else {
+      const tieText = document.createElement('p');
+      tieText.style.color = 'var(--muted)'; tieText.style.fontSize = '13px'; tieText.style.marginTop = '16px';
+      tieText.textContent = 'Even split \u2014 no points this round.';
+      card.appendChild(tieText);
+    }
+
+    if (opts.showControls !== false){
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'primary-btn';
+      nextBtn.textContent = opts.nextLabel || 'Next statement \u2192';
+      nextBtn.addEventListener('click', opts.onNext);
+      card.appendChild(nextBtn);
+    } else {
+      const waitP = document.createElement('p');
+      waitP.style.color = 'var(--muted)'; waitP.style.fontSize = '13px'; waitP.style.marginTop = '16px';
+      waitP.textContent = 'Waiting for the host to continue\u2026';
+      card.appendChild(waitP);
+    }
+    body.appendChild(card);
+  }
+
+  // ============================================================
+  // HOST / JOIN (online)
+  // ============================================================
+  let hostRoomCode = null, hostTotalRounds = 10;
+  let hostPlayers = [];
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    hostTotalRounds = parseInt(getChoiceVal('hostRoundsChoice'), 10);
+    myId = uid(); myName = name;
+    hostRoomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = hostRoomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('hottakes-'+hostRoomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => { c.send({ type:'awaitingName' }); });
+      c.on('close', () => {
+        hostPlayers = hostPlayers.filter(p => p.conn !== c);
+        renderHostPlayerList();
+        broadcastLobby();
+      });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const name = (msg.name || 'Player').slice(0,16);
+      const id = uid();
+      hostPlayers.push({ id, name, score:0, conn });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      broadcastLobby();
+    } else if (msg.type === 'answer'){
+      submitOnlineAnswer(conn.__playerId, msg.value);
+    } else if (msg.type === 'requestNext'){
+      advanceOnlineRound();
+    }
+  }
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+  }
+  function broadcastLobby(){
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'lobby', players: hostPlayers.map(x=>({id:x.id,name:x.name})) }); });
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) peer.destroy();
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    const players = hostPlayers.map(p => ({ id:p.id, name:p.name, score:0 }));
+    hostPlayers.forEach((p,i) => p.score = 0);
+    game = {
+      players,
+      totalRounds: hostTotalRounds,
+      roundsCompleted: 0,
+      statement: drawStatement(),
+      answers: {},
+      phase: 'submit'
+    };
+    showScreen('game');
+    broadcastGameState();
+  });
+
+  function submitOnlineAnswer(playerId, value){
+    if (game.phase !== 'submit') return;
+    game.answers[playerId] = value;
+    const allIn = game.players.every(p => game.answers[p.id]);
+    if (allIn){
+      const t = tallyAnswers(game.answers, game.players);
+      if (t.majority){
+        game.players.forEach(p => { if (game.answers[p.id] === t.majority) p.score++; });
+        hostPlayers.forEach(hp => { const gp = game.players.find(x=>x.id===hp.id); if (gp) hp.score = gp.score; });
+      }
+      game.phase = 'reveal';
+    }
+    broadcastGameState();
+  }
+  function advanceOnlineRound(){
+    game.roundsCompleted++;
+    if (game.roundsCompleted >= game.totalRounds){
+      game.phase = 'gameEnd';
+    } else {
+      game.statement = drawStatement();
+      game.answers = {};
+      game.phase = 'submit';
+    }
+    broadcastGameState();
+  }
+  function broadcastGameState(){
+    hostPlayers.forEach(p => {
+      if (!p.conn) return;
+      p.conn.send({ type:'state', game: redactedGameFor(p.id), myId: p.id });
+    });
+    renderOnline();
+  }
+  // Redaction: during 'submit', a viewer only ever learns whether THEY have
+  // answered (never anyone else's answer, and never the running tally) so
+  // no one can be swayed by seeing others' picks before locking in their own.
+  function redactedGameFor(viewerId){
+    const g = JSON.parse(JSON.stringify(game));
+    if (g.phase === 'submit'){
+      const myAnswer = g.answers[viewerId];
+      g.answers = {};
+      if (myAnswer) g.answers[viewerId] = myAnswer;
+      g.__answeredCount = Object.keys(game.answers).length;
+    }
+    return g;
+  }
+
+  // ---------------- JOIN ----------------
+  let joinTimeout = null;
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    const btn = document.getElementById('joinConnect');
+    errEl.style.color='var(--muted)'; errEl.textContent='';
+    if (!code){ errEl.style.color='var(--rose)'; errEl.textContent='Enter a room code.'; return; }
+    myName = name;
+    btn.disabled = true;
+    errEl.textContent = 'Connecting\u2026';
+    let settled = false;
+    function fail(msg){
+      if (settled) return; settled = true;
+      clearTimeout(joinTimeout);
+      errEl.style.color='var(--rose)'; errEl.textContent = msg;
+      btn.disabled = false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    joinTimeout = setTimeout(() => fail("Couldn't reach that room. Double-check the code and that it's still open, then try again."), 10000);
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('hottakes-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId;
+          mode = 'guest';
+          document.getElementById('joinWaitText').textContent = "You're in! Waiting for the host to start the game\u2026";
+        } else if (msg.type === 'lobby'){
+          document.getElementById('joinWaitText').textContent = "You're in with: " + msg.players.map(p=>p.name).join(', ') + '. Waiting for host to start\u2026';
+        } else if (msg.type === 'state'){
+          game = msg.game;
+          if (!screens.game.classList.contains('active')) showScreen('game');
+          renderOnline();
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+
+  // ---------------- Online render ----------------
+  function renderOnline(){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+
+    const scoreboard = document.createElement('div');
+    scoreboard.className = 'scoreboard';
+    (game.players||[]).forEach(p => {
+      const chip = document.createElement('span');
+      chip.className = 'score-chip';
+      chip.innerHTML = escapeHtml(p.name) + ' <span class="pts">' + p.score + '</span>';
+      scoreboard.appendChild(chip);
+    });
+    body.appendChild(scoreboard);
+
+    if (game.phase === 'submit'){
+      const already = game.answers && game.answers[myId];
+      const card = document.createElement('div');
+      card.className = 'panel statement-card';
+      card.innerHTML = '<div class="tag">Do you agree?</div><div class="statement-text">' + escapeHtml(game.statement) + '</div>';
+      if (already){
+        const p = document.createElement('p');
+        p.style.color='var(--muted)'; p.style.fontSize='13px';
+        p.textContent = 'Answer locked in. Waiting for everyone else\u2026';
+        card.appendChild(p);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'stance-grid';
+        const agreeBtn = document.createElement('button');
+        agreeBtn.className = 'stance-btn agree';
+        agreeBtn.textContent = 'Agree';
+        agreeBtn.addEventListener('click', () => {
+          if (mode === 'host') submitOnlineAnswer(myId, 'agree');
+          else joinConn.send({ type:'answer', value:'agree' });
+        });
+        const disagreeBtn = document.createElement('button');
+        disagreeBtn.className = 'stance-btn disagree';
+        disagreeBtn.textContent = 'Disagree';
+        disagreeBtn.addEventListener('click', () => {
+          if (mode === 'host') submitOnlineAnswer(myId, 'disagree');
+          else joinConn.send({ type:'answer', value:'disagree' });
+        });
+        grid.appendChild(agreeBtn); grid.appendChild(disagreeBtn);
+        card.appendChild(grid);
+      }
+      body.appendChild(card);
+      return;
+    }
+
+    if (game.phase === 'reveal'){
+      renderRevealCommon(body, game.statement, game.answers, game.players, {
+        showControls: mode === 'host',
+        nextLabel: 'Next statement \u2192',
+        onNext: () => {
+          if (mode === 'host') advanceOnlineRound();
+          else joinConn.send({ type:'requestNext' });
+        }
+      });
+      return;
+    }
+
+    if (game.phase === 'gameEnd'){
+      const sorted = game.players.slice().sort((a,b)=>b.score-a.score);
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.innerHTML = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;text-align:center;">Final scores</h3>';
+      sorted.forEach((p,i) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.justifyContent='space-between'; row.style.marginBottom='8px';
+        row.innerHTML = '<span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(p.name) + '</span><span style="color:var(--brass-bright);font-family:\'JetBrains Mono\',monospace;">' + p.score + ' pts</span>';
+        panel.appendChild(row);
+      });
+      if (mode === 'host'){
+        const againBtn = document.createElement('button');
+        againBtn.className = 'primary-btn';
+        againBtn.textContent = 'Play again (same players)';
+        againBtn.addEventListener('click', () => {
+          hostPlayers.forEach(p => p.score = 0);
+          const players = hostPlayers.map(p => ({ id:p.id, name:p.name, score:0 }));
+          game = { players, totalRounds: hostTotalRounds, roundsCompleted:0, statement: drawStatement(), answers:{}, phase:'submit' };
+          broadcastGameState();
+        });
+        panel.appendChild(againBtn);
+      }
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      panel.appendChild(lobbyBtn);
+      body.appendChild(panel);
+      return;
+    }
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+// Would You Rather prompts - each has two options (A/B) plus a category tag.
+// Used by: would-you-rather.html
+//
+// To add a prompt: add { category: 'CategoryName', a: 'Option A', b: 'Option B' }
+// to the array below. Categories become selectable automatically once used.
+// Keep both options roughly the same length so neither reads as the "obvious"
+// pick just from being longer/more detailed.
+
+  window.WOULD_YOU_RATHER_PROMPTS = [
+    { category: 'Funny', a: 'Only be able to whisper for the rest of your life', b: 'Only be able to shout for the rest of your life' },
+    { category: 'Funny', a: 'Always have to skip everywhere', b: 'Always have to walk backwards' },
+    { category: 'Funny', a: 'Sneeze confetti', b: 'Sneeze glitter' },
+    { category: 'Funny', a: 'Have a pet dragon the size of a cat', b: 'Have a pet cat the size of a dragon' },
+    { category: 'Funny', a: 'Speak in rhymes for a week', b: 'Speak in movie quotes for a week' },
+    { category: 'Funny', a: 'Have hiccups for a full day', b: 'Have an itch you can\'t scratch for a full day' },
+    { category: 'Funny', a: 'Always have to narrate your own actions out loud', b: 'Always hear a laugh track after everything you say' },
+    { category: 'Funny', a: 'Fart loudly every time you sit down', b: 'Burp loudly every time you stand up' },
+    { category: 'Weird', a: 'Have fingers as long as your legs', b: 'Have legs as short as your fingers' },
+    { category: 'Weird', a: 'Taste colors', b: 'Hear smells' },
+    { category: 'Weird', a: 'Have a permanent second shadow that moves on its own', b: 'Have a reflection that\'s always a few seconds delayed' },
+    { category: 'Weird', a: 'Sweat maple syrup', b: 'Cry lemonade' },
+    { category: 'Weird', a: 'Have a tail you can\'t control', b: 'Have antennae you can\'t control' },
+    { category: 'Weird', a: 'Only be able to sleep standing up', b: 'Only be able to sleep with your eyes open' },
+    { category: 'Weird', a: 'Have square pupils', b: 'Have no eyebrows ever again' },
+    { category: 'Food', a: 'Never eat cheese again', b: 'Never eat chocolate again' },
+    { category: 'Food', a: 'Only eat food that\'s cold', b: 'Only eat food that\'s room temperature' },
+    { category: 'Food', a: 'Have unlimited tacos for life', b: 'Have unlimited sushi for life' },
+    { category: 'Food', a: 'Give up seasoning salt forever', b: 'Give up seasoning pepper forever' },
+    { category: 'Food', a: 'Always have to eat dessert first', b: 'Never be allowed dessert at all' },
+    { category: 'Food', a: 'Only drink through a straw forever', b: 'Only eat with chopsticks forever' },
+    { category: 'Food', a: 'Have a pizza that\'s always slightly burnt', b: 'Have a pizza that\'s always slightly undercooked' },
+    { category: 'Difficult', a: 'Know how you\'ll die', b: 'Know when you\'ll die' },
+    { category: 'Difficult', a: 'Lose all your memories from the last year', b: 'Lose the ability to make new memories for a year' },
+    { category: 'Difficult', a: 'Always know when someone is lying to you', b: 'Always be able to get away with lying yourself' },
+    { category: 'Difficult', a: 'Give up your favorite hobby forever', b: 'Give up your favorite food forever' },
+    { category: 'Difficult', a: 'Be brilliant but unhappy', b: 'Be average but content' },
+    { category: 'Difficult', a: 'Have to move to a new city every year', b: 'Never be able to leave your hometown' },
+    { category: 'Difficult', a: 'Have unlimited money but no free time', b: 'Have unlimited free time but very little money' },
+    { category: 'Gross', a: 'Step in gum barefoot', b: 'Step in something wet and unidentifiable barefoot' },
+    { category: 'Gross', a: 'Find a hair in your food halfway through eating it', b: 'Find out the food was a day past expiration after eating it' },
+    { category: 'Gross', a: 'Have to share a toothbrush with a stranger once', b: 'Have to wear a stranger\'s shoes for a day' },
+    { category: 'Gross', a: 'Never be able to shower with hot water again', b: 'Never be able to use air conditioning again' },
+    { category: 'Gross', a: 'Accidentally swallow a bug', b: 'Accidentally swallow a hair' },
+    { category: 'Family-friendly', a: 'Have the power to talk to animals', b: 'Have the power to talk to plants' },
+    { category: 'Family-friendly', a: 'Be the funniest person in the room', b: 'Be the smartest person in the room' },
+    { category: 'Family-friendly', a: 'Live in a treehouse', b: 'Live in a houseboat' },
+    { category: 'Family-friendly', a: 'Have the ability to fly', b: 'Have the ability to turn invisible' },
+    { category: 'Family-friendly', a: 'Always win at board games', b: 'Always win at sports' },
+    { category: 'Family-friendly', a: 'Have a rewind button for your life', b: 'Have a pause button for your life' },
+    { category: 'Family-friendly', a: 'Explore outer space', b: 'Explore the deep ocean' },
+    { category: 'Family-friendly', a: 'Be able to teleport anywhere', b: 'Be able to read minds' },
+    { category: 'Spicy/absurd', a: 'Fight one horse-sized duck', b: 'Fight a hundred duck-sized horses' },
+    { category: 'Spicy/absurd', a: 'Have unlimited breadsticks but no other food', b: 'Have any food you want but only one breadstick, ever' },
+    { category: 'Spicy/absurd', a: 'Be the strongest person alive but very slow', b: 'Be the fastest person alive but very weak' },
+    { category: 'Spicy/absurd', a: 'Win the lottery but lose all your friends', b: 'Keep all your friends but never win anything again' },
+    { category: 'Spicy/absurd', a: 'Be famous for something embarrassing', b: 'Never be recognized for something amazing you did' },
+    { category: 'Spicy/absurd', a: 'Have to agree with everything your worst enemy says', b: 'Have to disagree with everything your best friend says' },
+    { category: 'Spicy/absurd', a: 'Live one incredible year and then disappear', b: 'Live an ordinary hundred years' },
+    { category: 'Spicy/absurd', a: 'Know all the questions but none of the answers', b: 'Know all the answers but none of the questions' }
+  ];

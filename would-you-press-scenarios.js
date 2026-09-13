@@ -1,0 +1,60 @@
+// Would You Press the Button scenarios - each is a benefit paired with a
+// drawback; players decide whether the trade-off is worth it.
+// Used by: would-you-press.html
+//
+// To add a scenario: add { benefit: 'You become X', drawback: 'but Y' } to
+// the array below. Keep the drawback genuinely costly, not trivial, so
+// Press vs Don't Press is a real dilemma.
+
+  window.WOULD_YOU_PRESS_SCENARIOS = [
+    { benefit: 'You become incredibly lucky', drawback: 'but you can never play video games again' },
+    { benefit: 'You never get sick again', drawback: 'but you lose your sense of taste' },
+    { benefit: 'You become fluent in every language', drawback: 'but you can only speak one sentence per hour' },
+    { benefit: 'You get $1,000,000 right now', drawback: 'but a random stranger loses their job' },
+    { benefit: 'You never have to sleep again', drawback: 'but you age twice as fast' },
+    { benefit: 'You become the best in the world at your job', drawback: 'but you can never talk about it with anyone' },
+    { benefit: 'You can teleport anywhere instantly', drawback: 'but every trip costs you a random memory' },
+    { benefit: 'You become unbelievably good-looking', drawback: 'but no one recognizes your face from one day to the next' },
+    { benefit: 'You get a photographic memory', drawback: 'but you can never forget anything, even things you want to' },
+    { benefit: 'You become a world-class musician overnight', drawback: 'but you can only play one song ever again' },
+    { benefit: 'You get to relive one day of your life on repeat whenever you want', drawback: 'but you can never choose a new day' },
+    { benefit: 'You gain the ability to talk to animals', drawback: 'but they never stop talking to you' },
+    { benefit: 'You become immune to embarrassment', drawback: 'but everyone around you becomes slightly more likely to be embarrassed for you' },
+    { benefit: 'You can undo any single mistake once a year', drawback: 'but you lose a year off your life each time' },
+    { benefit: 'You get free flights for life', drawback: 'but you can never fly with anyone you know' },
+    { benefit: 'You become able to read minds', drawback: 'but you can never turn it off' },
+    { benefit: 'You get to keep your youth and never look older', drawback: 'but everyone else ages normally around you' },
+    { benefit: 'You gain super strength', drawback: 'but only when no one is watching' },
+    { benefit: 'You can always find a parking spot instantly', drawback: 'but your car randomly changes color every week' },
+    { benefit: 'You never have to work again and keep your current lifestyle', drawback: 'but you can never leave your hometown again' },
+    { benefit: 'You become a genius at math', drawback: 'but you lose all sense of direction' },
+    { benefit: 'Your favorite show gets ten new seasons', drawback: 'but you can only watch it alone, forever' },
+    { benefit: 'You get the perfect comeback in every argument', drawback: 'but you have to wait 24 hours to say it' },
+    { benefit: 'You gain the power of invisibility', drawback: 'but only your clothes turn invisible, not you' },
+    { benefit: 'You become a professional athlete in any sport you choose', drawback: 'but you can never compete, only practice' },
+    { benefit: 'You get free coffee for life', drawback: 'but it has to be the same order every single time' },
+    { benefit: 'You can skip any line anywhere', drawback: 'but the person behind you gets pushed back double the wait' },
+    { benefit: 'You become the funniest person in any room', drawback: 'but only strangers ever laugh at your jokes' },
+    { benefit: 'You gain perfect pitch and rhythm', drawback: 'but you can only sing in front of people you have never met' },
+    { benefit: 'You get to know one truth about the universe no one else knows', drawback: 'but you can never prove it to anyone' },
+    { benefit: 'You become allergic to nothing, ever', drawback: 'but you develop one very specific new fear' },
+    { benefit: 'Every plant you touch grows instantly', drawback: 'but every plant you touch also wilts a week later' },
+    { benefit: 'You never lose your keys, wallet, or phone again', drawback: 'but you have to say where they are out loud, every time' },
+    { benefit: 'You get to try any job for a day with full skill', drawback: 'but you forget how by the next morning' },
+    { benefit: 'You become the world record holder in one sport of your choice', drawback: 'but the record is broken the very next day' },
+    { benefit: 'You gain the ability to fall asleep instantly anywhere', drawback: 'but you can only sleep for exactly 20 minutes at a time' },
+    { benefit: 'You get a guaranteed reservation at any restaurant, anytime', drawback: 'but you have to order whatever the chef picks' },
+    { benefit: 'You become fireproof', drawback: 'but you get uncomfortably warm around any open flame' },
+    { benefit: 'You get to always know the weather perfectly a week ahead', drawback: 'but only for a city you have never visited' },
+    { benefit: 'You gain the power to make any room go quiet when you enter', drawback: 'but it stays awkwardly silent until you leave' },
+    { benefit: 'You become excellent at every board game', drawback: 'but you can only ever play against family' },
+    { benefit: 'You get one wish granted exactly as worded', drawback: 'but you have to say it out loud in front of everyone you know' },
+    { benefit: 'You never get a paper cut, stub your toe, or bite your cheek again', drawback: 'but you get hiccups once a week for an hour' },
+    { benefit: 'You become able to grow any plant indoors with no effort', drawback: 'but your house is permanently five degrees colder' },
+    { benefit: 'You get to pick the weather for your own wedding day', drawback: 'but it rains on everyone else\u2019s wedding that year' },
+    { benefit: 'You gain a perfect sense of when someone is about to call you', drawback: 'but you have to answer, no matter what you are doing' },
+    { benefit: 'You become the best cook among everyone you know', drawback: 'but you can only cook for one person per meal' },
+    { benefit: 'You never have writer\u2019s block or run out of ideas again', drawback: 'but every idea has to be shared immediately, half-formed' },
+    { benefit: 'You gain the ability to skip any commercial or ad instantly', drawback: 'but you lose ten seconds of whatever you were watching too' },
+    { benefit: 'You get to always find the shortcut in any city', drawback: 'but it only saves you exactly two minutes, never more' }
+  ];

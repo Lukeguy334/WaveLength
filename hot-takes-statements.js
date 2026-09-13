@@ -1,0 +1,61 @@
+// Hot Takes statements - controversial/funny opinions players react to with
+// Agree/Disagree (or Hot/Not Hot). Kept light and debatable, not genuinely
+// inflammatory.
+// Used by: hot-takes.html
+//
+// To add a statement: add 'Your statement.' to the array below. Keep them
+// short (one sentence), phrased as an opinion/claim rather than a question,
+// and genuinely debatable - a statement everyone will agree on isn't fun.
+
+  window.HOT_TAKES_STATEMENTS = [
+    "Pineapple belongs on pizza.",
+    "Breakfast food is better at dinner than at breakfast.",
+    "The sequel was better than the original, more often than people admit.",
+    "Cereal is a soup.",
+    "A hot dog is a sandwich.",
+    "It's acceptable to wear socks with sandals.",
+    "Board games are more fun than video games.",
+    "Texting is better than calling, even for important conversations.",
+    "It's fine to talk during movies at home.",
+    "Mornings are better than nights.",
+    "Cold pizza is better than fresh pizza.",
+    "Camping is not actually relaxing.",
+    "The book is not always better than the movie.",
+    "Reply-all emails should be illegal.",
+    "Small talk is underrated.",
+    "It's okay to re-gift a present.",
+    "Karaoke is only fun if you're bad at it.",
+    "Waiting in line is worse than the thing you're waiting for.",
+    "A microwave is a top-5 kitchen appliance.",
+    "Group chats peak in the first month.",
+    "Flip phones were better for your social life.",
+    "It's fine to watch a show out of order.",
+    "Ketchup on eggs is correct.",
+    "Skipping the credits is disrespectful.",
+    "You should always tip at least 20%.",
+    "Working from home is more productive than an office.",
+    "Horoscopes are just fun, not real, and that's fine.",
+    "It's okay to lie about liking a gift.",
+    "The best part of a trip is coming home.",
+    "Air fryers are overrated.",
+    "You can tell a lot about someone from their shoes.",
+    "It's rude to show up exactly on time.",
+    "Fantasy football ruins Sundays.",
+    "A convertible is impractical everywhere.",
+    "It's fine to unfollow a friend without unfriending them.",
+    "Handwriting doesn't matter anymore.",
+    "The best seat on a plane is the aisle, not the window.",
+    "Sweatpants are appropriate at most restaurants.",
+    "Group projects should be abolished.",
+    "It's okay to peek at presents before you open them.",
+    "Waking up early is overrated as a personality trait.",
+    "The middle seat should always be free on a flight.",
+    "You should never split a dessert.",
+    "It's fine to check your phone during a movie in theaters if you're quick.",
+    "Decaf coffee is pointless.",
+    "The last slice of pizza should go to whoever cooked.",
+    "A firm handshake matters less than people think.",
+    "Reusable water bottles are more about aesthetics than the environment.",
+    "It's okay to skip the gym for a good reason more than once a week.",
+    "Silent movies hold up better than most people expect."
+  ];
