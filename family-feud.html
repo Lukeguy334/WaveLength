@@ -876,11 +876,16 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     });
     peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
   });
+  // NOTE: r.isStealAttempt is only set once a steal guess is actually submitted
+  // (inside submitGuessOnline), so while the round is still in the 'steal' phase
+  // waiting for that guess, r.isStealAttempt isn't true yet - r.phase is the only
+  // reliable signal at that point. Once judging starts, r.phase has moved on to
+  // 'judging' so r.isStealAttempt (now set) is what tells us it was a steal.
   function onlineGuesserIndex(g){
-    return g.round.isStealAttempt ? (g.currentIndex+1)%g.order.length : g.currentIndex;
+    return (g.round.phase === 'steal' || g.round.isStealAttempt) ? (g.currentIndex+1)%g.order.length : g.currentIndex;
   }
   function onlineJudgeIndex(g){
-    return g.round.isStealAttempt ? g.currentIndex : (g.currentIndex+1)%g.order.length;
+    return (g.round.phase === 'steal' || g.round.isStealAttempt) ? g.currentIndex : (g.currentIndex+1)%g.order.length;
   }
   function handleHostMessage(conn, msg){
     if (msg.type === 'joinName'){
