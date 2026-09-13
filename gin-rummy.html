@@ -963,6 +963,14 @@
       if (cards.length !== action.cardIds.length) return { error: 'Cards not in hand.' };
       const type = meldTypeOf(cards);
       if (!type) return { error: 'Not a valid set or run.' };
+      if (s.forcedCardId && action.cardIds.indexOf(s.forcedCardId) === -1){
+        const forcedCard = actor.hand.find(c => c.id === s.forcedCardId);
+        const handAfter = actor.hand.filter(c => action.cardIds.indexOf(c.id) === -1);
+        const tableMeldsAfter = s.tableMelds.concat([{ type: type, suit: type === 'run' ? cards[0].suit : null, cards: cards.map(c => ({ card: c, ownerId: actor.id })) }]);
+        if (forcedCard && !canMeldCard(forcedCard, handAfter, tableMeldsAfter)){
+          return { error: "You can't lay that down \u2014 it would leave the " + forcedCard.rank + SUIT_SYMBOL[forcedCard.suit] + ' you took with no way to be melded.' };
+        }
+      }
       actor.hand = actor.hand.filter(c => action.cardIds.indexOf(c.id) === -1);
       const meld = {
         id: 'm' + Math.random().toString(36).slice(2,9),
@@ -985,6 +993,14 @@
       const meld = s.tableMelds.find(m => m.id === action.meldId);
       if (!meld) return { error: 'Meld not found.' };
       if (!canExtendMeld(meld, card)) return { error: "That card can't extend that meld." };
+      if (s.forcedCardId && s.forcedCardId !== card.id){
+        const forcedCard = actor.hand.find(c => c.id === s.forcedCardId);
+        const handAfter = actor.hand.filter(c => c.id !== action.cardId);
+        const tableMeldsAfter = s.tableMelds.map(m => m.id === meld.id ? { type: m.type, suit: m.suit, cards: m.cards.concat([{ card: card, ownerId: actor.id }]) } : m);
+        if (forcedCard && !canMeldCard(forcedCard, handAfter, tableMeldsAfter)){
+          return { error: "You can't play that off \u2014 it would leave the " + forcedCard.rank + SUIT_SYMBOL[forcedCard.suit] + ' you took with no way to be melded.' };
+        }
+      }
       actor.hand = actor.hand.filter(c => c.id !== action.cardId);
       meld.cards.push({ card: card, ownerId: actor.id });
       if (s.forcedCardId === card.id) s.forcedCardId = null;
