@@ -7,8 +7,7 @@
 // ends of the dial.
 
   window.WAVELENGTH_SPECTRA = [
-    ["Bad", "Good"],
-    ["Bad superpower", "Good superpower"],
+    ["Useless superpower", "Useful superpower"],
     ["Practical", "Impractical"],
     ["Cheap", "Expensive"],
     ["Old-fashioned", "Futuristic"],
