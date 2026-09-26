@@ -143,7 +143,6 @@
   { title: 'Things You Can Shake', answers: ['Maraca', 'Snow Globe', 'Dressing Bottle', 'Can Of Spray Paint', 'Dice Cup', 'Protein Shaker'] },
   { title: 'Things You Can Hang', answers: ['Coat', 'Picture', 'Curtain', 'Swing', 'Chandelier', 'Calendar'] },
   { title: 'Things You Can Lock', answers: ['Door', 'Bicycle', 'Safe', 'Diary', 'Suitcase', 'Gate'] },
-  { title: 'Things You Can Charge', answers: ['Phone', 'Laptop', 'Tablet', 'Electric Car', 'Smartwatch', 'Camera Battery'] }
-];
+  { title: 'Things You Can Charge', answers: ['Phone', 'Laptop', 'Tablet', 'Electric Car', 'Smartwatch', 'Camera Battery'] },
+]
   
-  ]
