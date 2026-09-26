@@ -210,6 +210,12 @@
 <script src="data/would-you-rather-prompts.js"></script>
 <script>
 (function(){
+  if (!window.WOULD_YOU_RATHER_PROMPTS){
+    document.body.innerHTML = '<div style="max-width:560px;margin:80px auto;padding:24px;font-family:sans-serif;background:#2a1a1a;color:#f5b5b5;border-radius:12px;border:1px solid #7a3a3a;">'
+      + '<h2 style="margin-top:0;">Missing game data</h2>'
+      + '<p>This page could not load <code>data/would-you-rather-prompts.js</code>. Make sure that file exists in the <code>data/</code> folder next to this page and is spelled exactly that way (check it was actually uploaded/committed).</p></div>';
+    return;
+  }
   const PROMPTS = window.WOULD_YOU_RATHER_PROMPTS;
   const CATEGORY_NAMES = [...new Set(PROMPTS.map(p => p.category))];
 
