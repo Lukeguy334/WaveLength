@@ -1772,6 +1772,15 @@
     _toast('\ud83c\udfae Chaos mode activated! Grab and throw them around!');
     setTimeout(_showHUD, 600);
 
+    // Capture the floor height ONCE, before any chaos elements are added
+    // to the page. The falling pieces are position:absolute on <body>, so
+    // if we kept re-measuring document.body.scrollHeight every frame (as
+    // before), the floor would include the falling items' own position
+    // and grow right along with them -- a runaway floor they can never
+    // actually reach. Freezing it here to the page's real, unmodified
+    // height gives them solid, fixed ground.
+    let _floorH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
+
     // Keep it light: just a couple of whole cards, plus a few Play buttons
     // plucked off other cards, rather than dropping all 16 at once.
     const allCards = [...document.querySelectorAll('#grid .card')].filter(c => {
@@ -1858,7 +1867,11 @@
       // with the page; the floor is the real bottom of the document, not
       // just the current viewport, so a tall grid's cards can fall and
       // land further down the page, visible once you scroll to them.
-      const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, vh);
+      // Uses the floor height captured once at launch (see _floorH above)
+      // rather than re-measuring live, which would include the falling
+      // items themselves and let the floor run away from them.
+      if (vh > _floorH) _floorH = vh;
+      const docH = _floorH;
       // Tornado orbits the center of whatever's currently in view, so it
       // stays visible and centered no matter how far the page is scrolled.
       const cx = window.scrollX + vw / 2, cy = window.scrollY + vh / 2;
