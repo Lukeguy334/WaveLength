@@ -343,6 +343,13 @@
     transform: scale(1.03);
   }
 
+  /* While the easter-egg chaos mode is active, remaining background game
+     cards should not be clickable/navigable until the page resets. */
+  #grid.gn-chaos-lock a.card {
+    pointer-events: none;
+    cursor: default;
+  }
+
   /* ---------- Modal (quiz) ---------- */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 500;
@@ -824,11 +831,20 @@
     `;
     card.addEventListener('click', (e) => {
       e.preventDefault();
+      if (window.__gnEasterEggActivating) return;
+      window.__gnEasterEggActivating = true;
       const searchInput = document.getElementById('searchInput');
       searchInput.value = '';
       state.query = '';
+      searchInput.blur();
       renderGrid();
-      if (window.__gnEasterEggLaunch) window.__gnEasterEggLaunch();
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      // Give the restored home page a clear beat on screen before chaos
+      // begins, instead of switching and launching in the same tick.
+      setTimeout(() => {
+        window.__gnEasterEggActivating = false;
+        if (window.__gnEasterEggLaunch) window.__gnEasterEggLaunch();
+      }, 550);
     });
     return card;
   }
@@ -1100,15 +1116,19 @@
     }
   });
 
+  // All physics coordinates (_mouseX/_mouseY, item x/y, bomb x/y, black
+  // holes, etc.) live in PAGE space (document-relative), not viewport
+  // space, and spawned elements use position:absolute so they scroll
+  // naturally with the page instead of staying pinned to the viewport.
   document.addEventListener('mousemove', e => {
-    _mouseX = e.clientX; _mouseY = e.clientY;
-    _mhist.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+    _mouseX = e.clientX + window.scrollX; _mouseY = e.clientY + window.scrollY;
+    _mhist.push({ x: _mouseX, y: _mouseY, t: performance.now() });
     if (_mhist.length > 8) _mhist.shift();
     if (!_active) return;
     for (const p of _items){
       if (!p.dragging) continue;
-      p.x = e.clientX - p.grabOffX;
-      p.y = e.clientY - p.grabOffY;
+      p.x = _mouseX - p.grabOffX;
+      p.y = _mouseY - p.grabOffY;
       p.el.style.left = p.x + 'px';
       p.el.style.top = p.y + 'px';
     }
@@ -1169,18 +1189,19 @@
     el.className = 'gn-egg-el';
     el.textContent = '\ud83d\udca3';
     const size = 40;
-    const x = Math.random() * (window.innerWidth - size);
-    el.style.cssText = 'position:fixed;left:' + x + 'px;top:-' + size + 'px;font-size:' + size + 'px;' +
+    const x = window.scrollX + Math.random() * (window.innerWidth - size);
+    const y = window.scrollY - size;
+    el.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;font-size:' + size + 'px;' +
       'line-height:1;z-index:10000;pointer-events:none;user-select:none;' +
       'filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));';
     document.body.appendChild(el);
-    _bombs.push({ el, x, y: -size, vx: (Math.random() - 0.5) * 3, vy: 2, size, rot: 0 });
+    _bombs.push({ el, x, y, vx: (Math.random() - 0.5) * 3, vy: 2, size, rot: 0 });
   }
 
   function _explode(cx, cy){
     const flash = document.createElement('div');
     flash.className = 'gn-egg-el';
-    flash.style.cssText = 'position:fixed;left:' + cx + 'px;top:' + cy + 'px;width:320px;height:320px;' +
+    flash.style.cssText = 'position:absolute;left:' + cx + 'px;top:' + cy + 'px;width:320px;height:320px;' +
       'border-radius:50%;pointer-events:none;z-index:9998;' +
       'background:radial-gradient(circle,#FFE066 0%,#FF8C00 35%,#FF4500 60%,transparent 80%);' +
       'animation:gn-explode .35s ease-out forwards;';
@@ -1189,7 +1210,7 @@
 
     const ring = document.createElement('div');
     ring.className = 'gn-egg-el';
-    ring.style.cssText = 'position:fixed;left:' + cx + 'px;top:' + cy + 'px;width:320px;height:320px;' +
+    ring.style.cssText = 'position:absolute;left:' + cx + 'px;top:' + cy + 'px;width:320px;height:320px;' +
       'border-radius:50%;pointer-events:none;z-index:9997;' +
       'border:4px solid rgba(255,200,50,.8);' +
       'animation:gn-ring .45s ease-out forwards;';
@@ -1202,7 +1223,7 @@
       const ang = Math.PI * 2 / 8 * i;
       const dist = 60 + Math.random() * 80;
       const colors = ['#e8c572', '#4fd1c5', '#e2637a', '#fff'];
-      spark.style.cssText = 'position:fixed;left:' + cx + 'px;top:' + cy + 'px;' +
+      spark.style.cssText = 'position:absolute;left:' + cx + 'px;top:' + cy + 'px;' +
         'width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:9999;' +
         'background:' + colors[i % 4] + ';' +
         'transition:left .4s ease-out,top .4s ease-out,opacity .4s;';
@@ -1276,7 +1297,7 @@
   function _spawnBlackHole(){
     if (_blackHoles.length >= 3) _blackHoles.shift();
     const el = document.createElement('div'); el.className = 'gn-egg-el';
-    el.style.cssText = 'position:fixed;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
+    el.style.cssText = 'position:absolute;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
       'width:60px;height:60px;border-radius:50%;z-index:9990;pointer-events:none;' +
       'background:radial-gradient(circle,#000 30%,#1a0033 60%,transparent 80%);' +
       'transform:translate(-50%,-50%) scale(0);transition:transform .4s cubic-bezier(.34,1.56,.64,1);' +
@@ -1284,7 +1305,7 @@
     document.body.appendChild(el);
     requestAnimationFrame(() => el.style.transform = 'translate(-50%,-50%) scale(1)');
     const ring = document.createElement('div'); ring.className = 'gn-egg-el';
-    ring.style.cssText = 'position:fixed;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
+    ring.style.cssText = 'position:absolute;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
       'width:200px;height:200px;border-radius:50%;z-index:9989;pointer-events:none;' +
       'border:2px solid rgba(100,0,255,.3);transform:translate(-50%,-50%);' +
       'animation:gn-ring 1.5s ease-out infinite;';
@@ -1305,7 +1326,7 @@
       }
     }
     const ring = document.createElement('div'); ring.className = 'gn-egg-el';
-    ring.style.cssText = 'position:fixed;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
+    ring.style.cssText = 'position:absolute;left:' + _mouseX + 'px;top:' + _mouseY + 'px;' +
       'width:' + (RADIUS * 2) + 'px;height:' + (RADIUS * 2) + 'px;border-radius:50%;' +
       'border:3px solid rgba(79,209,197,.7);pointer-events:none;z-index:9998;' +
       'animation:gn-ring .5s ease-out forwards;';
@@ -1373,13 +1394,14 @@
         if (!_active) return;
         if (_items.filter(p => p.isConfetti).length >= CONF_MAX) return;
         const el = document.createElement('div'); el.className = 'gn-egg-el';
-        const size = 7 + Math.random() * 12; const x = Math.random() * window.innerWidth;
-        el.style.cssText = 'position:fixed;left:' + x + 'px;top:-20px;width:' + size + 'px;height:' + size + 'px;' +
+        const size = 7 + Math.random() * 12; const x = window.scrollX + Math.random() * window.innerWidth;
+        const y = window.scrollY - 20;
+        el.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + size + 'px;height:' + size + 'px;' +
           'background:' + colors[Math.floor(Math.random() * colors.length)] + ';' +
           'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
           'pointer-events:none;z-index:9995;';
         document.body.appendChild(el);
-        _items.push({ el, x, y: -20, w: size, h: size,
+        _items.push({ el, x, y, w: size, h: size,
           vx: (Math.random() - 0.5) * 5, vy: Math.random() * 3 + 1,
           rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 10,
           dragging: false, grabOffX: 0, grabOffY: 0, isConfetti: true, life: 2100 });
@@ -1574,7 +1596,8 @@
         const clone = document.createElement(isImg ? 'img' : 'div');
         clone.className = 'gn-egg-el';
         if (isImg) clone.src = el.src;
-        clone.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;' +
+        const px = r.left + window.scrollX, py = r.top + window.scrollY;
+        clone.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;width:' + r.width + 'px;height:' + r.height + 'px;' +
           'font-family:' + cs.fontFamily + ';font-size:' + cs.fontSize + ';font-weight:' + cs.fontWeight + ';' +
           'color:' + cs.color + ';background:' + cs.background + ';' +
           'border-radius:' + cs.borderRadius + ';padding:' + cs.padding + ';' +
@@ -1583,7 +1606,7 @@
         if (!isImg) clone.innerHTML = el.innerHTML;
         document.body.appendChild(clone);
         el.style.visibility = 'hidden';
-        _items.push({ el: clone, x: r.left, y: r.top, w: r.width, h: Math.max(r.height, 20),
+        _items.push({ el: clone, x: px, y: py, w: r.width, h: Math.max(r.height, 20),
           vx: (Math.random() - 0.5) * 18, vy: -(Math.random() * 10 + 4) + extraVY,
           rot: 0, rotV: (Math.random() - 0.5) * spin,
           dragging: false, grabOffX: 0, grabOffY: 0, isDebris: true });
@@ -1592,6 +1615,9 @@
       breakBlock(document.querySelector('.site-logo'), -4, 8);
       const targets = ['.eyebrow', 'header p', '.toolbar', '.category-heading', '.slot', 'footer'];
       targets.forEach(sel => document.querySelectorAll(sel).forEach(el => breakBlock(el)));
+      // The other games still sitting in the grid should also break apart
+      // and fall when the nuke goes off, not just the header/footer chrome.
+      document.querySelectorAll('#grid .card').forEach(el => breakBlock(el, -2, 10));
     }, 120);
     _hudStatus('\u2622\ufe0f NUKED -- Shift+R to reset');
     const hudEl = document.getElementById('gn-hud');
@@ -1627,25 +1653,32 @@
     });
     const playEls = _shuffled(playCandidates).slice(0, Math.min(3, playCandidates.length));
 
+    // Lock the remaining background cards so they can't be clicked/navigated
+    // away from while chaos mode is active; the page reload on Shift+R
+    // reset naturally clears this.
+    grid.classList.add('gn-chaos-lock');
+
     let si = 0;
     boxCards.forEach(card => {
       const rect = card.getBoundingClientRect();
+      const px = rect.left + window.scrollX, py = rect.top + window.scrollY;
       const el = document.createElement('div');
       el.className = 'gn-egg-el card';
       el.innerHTML = card.innerHTML;
-      el.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;' +
+      el.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;' +
         'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;' +
         'box-sizing:border-box;opacity:1;transform:none;animation:none;';
       document.body.appendChild(el);
       card.style.visibility = 'hidden';
-      const p = { el, x: rect.left, y: rect.top, w: rect.width, h: rect.height,
+      const p = { el, x: px, y: py, w: rect.width, h: rect.height,
         vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 8 - 2,
         rot: 0, rotV: (Math.random() - 0.5) * 6, dragging: false, grabOffX: 0, grabOffY: 0,
         origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
       const _si = si++;
       setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
       el.addEventListener('mousedown', e => {
-        p.dragging = true; p.grabOffX = e.clientX - p.x; p.grabOffY = e.clientY - p.y;
+        const mx = e.clientX + window.scrollX, my = e.clientY + window.scrollY;
+        p.dragging = true; p.grabOffX = mx - p.x; p.grabOffY = my - p.y;
         p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
         el.style.cursor = 'grabbing'; el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
         e.preventDefault(); e.stopPropagation();
@@ -1654,11 +1687,12 @@
 
     playEls.forEach(playEl => {
       const rect = playEl.getBoundingClientRect();
+      const px = rect.left + window.scrollX, py = rect.top + window.scrollY;
       const cs = getComputedStyle(playEl);
       const el = document.createElement('div');
       el.className = 'gn-egg-el play';
       el.innerHTML = playEl.innerHTML;
-      el.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;' +
+      el.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;' +
         'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;' +
         'display:' + cs.display + ';align-items:center;justify-content:center;gap:6px;' +
         'font-family:' + cs.fontFamily + ';font-weight:' + cs.fontWeight + ';font-size:' + cs.fontSize + ';' +
@@ -1666,14 +1700,15 @@
         'box-sizing:border-box;opacity:1;transform:none;animation:none;';
       document.body.appendChild(el);
       playEl.style.visibility = 'hidden';
-      const p = { el, x: rect.left, y: rect.top, w: rect.width, h: rect.height,
+      const p = { el, x: px, y: py, w: rect.width, h: rect.height,
         vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 8 - 2,
         rot: 0, rotV: (Math.random() - 0.5) * 6, dragging: false, grabOffX: 0, grabOffY: 0,
         origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
       const _si = si++;
       setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
       el.addEventListener('mousedown', e => {
-        p.dragging = true; p.grabOffX = e.clientX - p.x; p.grabOffY = e.clientY - p.y;
+        const mx = e.clientX + window.scrollX, my = e.clientY + window.scrollY;
+        p.dragging = true; p.grabOffX = mx - p.x; p.grabOffY = my - p.y;
         p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
         el.style.cursor = 'grabbing'; el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
         e.preventDefault(); e.stopPropagation();
@@ -1686,7 +1721,14 @@
       if (!_active) return;
       const dt = Math.min((now - prev) / 16, 3); prev = now;
       const vw = window.innerWidth, vh = window.innerHeight;
-      const cx = vw / 2, cy = vh / 2;
+      // Items live in page (document) coordinates so they scroll naturally
+      // with the page; the floor is the real bottom of the document, not
+      // just the current viewport, so a tall grid's cards can fall and
+      // land further down the page, visible once you scroll to them.
+      const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, vh);
+      // Tornado orbits the center of whatever's currently in view, so it
+      // stays visible and centered no matter how far the page is scrolled.
+      const cx = window.scrollX + vw / 2, cy = window.scrollY + vh / 2;
 
       _rainbowT += dt;
       if (_rainbowMode && _items.length){
@@ -1762,13 +1804,13 @@
         p.rotV *= Math.pow(RFRIC, dt); p.rot += p.rotV * dt;
 
         if (p.isDebris){
-          if (p.y > vh + 120 || p.x < -300 || p.x > vw + 300){ p.el.remove(); _items.splice(i, 1); i--; n--; continue; }
+          if (p.y > window.scrollY + vh + 300 || p.x < -300 || p.x > vw + 300){ p.el.remove(); _items.splice(i, 1); i--; n--; continue; }
         } else if (_gravMode !== 2){
-          if (p.y + p.h >= vh){ p.y = vh - p.h; p.vy *= -BOUNCE; p.vx *= 0.82; p.rotV *= 0.55; if (Math.abs(p.vy) < 1) p.vy = 0; }
+          if (p.y + p.h >= docH){ p.y = docH - p.h; p.vy *= -BOUNCE; p.vx *= 0.82; p.rotV *= 0.55; if (Math.abs(p.vy) < 1) p.vy = 0; }
           if (p.y < 0){ p.y = 0; p.vy *= -BOUNCE; }
         } else {
           if (p.y < 0){ p.y = 0; p.vy *= -BOUNCE; }
-          if (p.y + p.h > vh){ p.y = vh - p.h; p.vy *= -BOUNCE; }
+          if (p.y + p.h > docH){ p.y = docH - p.h; p.vy *= -BOUNCE; }
         }
         if (p.x + p.w >= vw){ p.x = vw - p.w; p.vx *= -BOUNCE; p.rotV *= -0.6; }
         if (p.x < 0){ p.x = 0; p.vx *= -BOUNCE; p.rotV *= -0.6; }
@@ -1805,7 +1847,7 @@
         b.rot += 3 * dt;
         b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
         b.el.style.transform = 'rotate(' + b.rot + 'deg)';
-        if (b.y + b.size >= vh - 10){
+        if (b.y + b.size >= window.scrollY + vh - 10){
           _explode(b.x + b.size / 2, b.y + b.size / 2);
           b.el.remove(); _bombs.splice(bi, 1);
         }
