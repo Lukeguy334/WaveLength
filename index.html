@@ -240,7 +240,7 @@
 <div class="wrap">
   <header>
     <img class="site-logo" src="assets/logo-header.png" alt="Game Night">
-    <div class="eyebrow"><span class="dot"></span> 12 games online</div>
+    <div class="eyebrow"><span class="dot"></span> <span id="gameCount">12</span> games online</div>
     <h1 class="sr-only">Game Night</h1>
     <p>Browser games built for playing with people &mdash; no installs, no accounts. Pick one below.</p>
   </header>
@@ -481,6 +481,7 @@
   ];
 
   const grid = document.getElementById('grid');
+  document.getElementById('gameCount').textContent = GAMES.length;
 
   GAMES.forEach((game, i) => {
     const card = document.createElement('a');
