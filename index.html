@@ -233,6 +233,230 @@
     * { animation: none !important; transition: none !important; }
     .card { opacity: 1; transform: none; }
   }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar { margin-bottom: 28px; }
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+
+  .search-input {
+    flex: 1 1 240px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--brass); }
+
+  .sort-select {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    outline: none;
+    cursor: pointer;
+  }
+  .sort-select:focus { border-color: var(--brass); }
+
+  .toolbar-row2 { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--panel-line);
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .chip:hover { border-color: var(--brass); color: var(--paper); }
+  .chip.active {
+    background: linear-gradient(180deg, var(--brass-bright), var(--brass));
+    color: #1c1305;
+    border-color: transparent;
+    font-weight: 600;
+  }
+
+  .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tool-btn {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px 16px;
+    border-radius: 9px;
+    border: 1px solid var(--panel-line);
+    background: var(--panel);
+    color: var(--paper);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.15s ease;
+  }
+  .tool-btn:hover { border-color: var(--teal); transform: translateY(-1px); }
+  .tool-btn.primary {
+    background: linear-gradient(180deg, var(--teal), #33a89c);
+    color: #06201e;
+    border-color: transparent;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+    padding: 40px 20px;
+    border: 1px dashed var(--panel-line);
+    border-radius: 16px;
+  }
+  .empty-state.hidden { display: none; }
+
+  .category-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--brass-bright);
+    letter-spacing: 0.03em;
+    margin: 26px 0 12px;
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .category-heading:first-child { margin-top: 0; }
+  .category-heading::after { content: ''; flex: 1; height: 1px; background: var(--panel-line); }
+
+  .card.rolling {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(79,209,197,0.35), 0 18px 34px var(--shadow);
+    transform: scale(1.03);
+  }
+
+  /* ---------- Modal (quiz) ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(10,13,18,0.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    position: relative;
+    background: linear-gradient(180deg, #202836, #171d27);
+    border: 1px solid var(--panel-line);
+    border-radius: 18px;
+    padding: 30px 26px 26px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 86vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px var(--shadow);
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--panel-line);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { color: var(--paper); border-color: var(--brass); }
+
+  .quiz-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .quiz-q {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin: 0 0 20px;
+    line-height: 1.3;
+  }
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.15s ease;
+  }
+  .quiz-option:hover { border-color: var(--brass); transform: translateX(3px); }
+  .quiz-progress { display: flex; gap: 6px; margin-bottom: 22px; }
+  .quiz-dot { height: 4px; flex: 1; border-radius: 2px; background: var(--panel-line); }
+  .quiz-dot.done { background: var(--brass); }
+
+  .quiz-result-card {
+    display: flex; gap: 16px; align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease;
+  }
+  .quiz-result-card:hover { border-color: var(--brass); transform: translateY(-2px); }
+  .quiz-result-card .icon { width: 50px; height: 30px; flex-shrink: 0; }
+  .quiz-result-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; margin: 0 0 4px; }
+  .quiz-result-card p { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.4; }
+
+  .quiz-retry {
+    display: block; width: 100%; text-align: center;
+    background: none; border: none; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    margin-top: 14px; cursor: pointer;
+    text-decoration: underline;
+  }
+  .quiz-retry:hover { color: var(--paper); }
+
+  @media (max-width: 560px) {
+    .toolbar-row2 { flex-direction: column; align-items: stretch; }
+    .toolbar-actions { justify-content: stretch; }
+    .toolbar-actions .tool-btn { flex: 1; justify-content: center; }
+  }
+
+  /* ---------- Easter egg (type "gamenight") ---------- */
+  @keyframes gn-explode { 0% { transform: translate(-50%,-50%) scale(0); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+  @keyframes gn-ring { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0.9; } 100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; } }
+  @keyframes gn-shake { 0%,100% { transform: translate(0,0); } 15% { transform: translate(-5px,3px); } 30% { transform: translate(5px,-3px); } 45% { transform: translate(-4px,2px); } 60% { transform: translate(3px,-2px); } 75% { transform: translate(-2px,1px); } }
+  .gn-shaking { animation: gn-shake 0.35s ease-out; }
+  @keyframes gn-bigshake { 0%,100% { transform: translate(0,0); } 10% { transform: translate(-14px,8px); } 20% { transform: translate(14px,-10px); } 30% { transform: translate(-10px,14px); } 40% { transform: translate(12px,-8px); } 50% { transform: translate(-8px,12px); } 60% { transform: translate(10px,-6px); } 70% { transform: translate(-6px,8px); } 80% { transform: translate(8px,-4px); } 90% { transform: translate(-4px,4px); } }
+  .gn-bigshaking { animation: gn-bigshake 0.8s ease-out; }
+  @keyframes gn-quake { 0%,100% { transform: translate(0,0); } 12% { transform: translate(-12px,7px); } 25% { transform: translate(10px,-9px); } 37% { transform: translate(-8px,11px); } 50% { transform: translate(11px,-7px); } 62% { transform: translate(-9px,8px); } 75% { transform: translate(8px,-10px); } 87% { transform: translate(-7px,6px); } }
+  .gn-quaking { animation: gn-quake 0.12s linear infinite; }
+  @keyframes gn-spin-logo { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes gn-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes gn-progress-fill { from { width: 0; } to { width: 100%; } }
+  @keyframes gn-nuke-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
 </style>
 </head>
 <body>
@@ -245,9 +469,37 @@
     <p>Browser games built for playing with people &mdash; no installs, no accounts. Pick one below.</p>
   </header>
 
+  <div class="toolbar">
+    <div class="search-row">
+      <input type="search" id="searchInput" class="search-input" placeholder="Search games...">
+      <select id="sortSelect" class="sort-select">
+        <option value="featured">Sort: Featured</option>
+        <option value="az">Sort: A &rarr; Z</option>
+        <option value="za">Sort: Z &rarr; A</option>
+        <option value="players">Sort: Player count</option>
+        <option value="category">Sort: By category</option>
+      </select>
+    </div>
+    <div class="toolbar-row2">
+      <div class="chip-row" id="categoryChips"></div>
+      <div class="toolbar-actions">
+        <button class="tool-btn" id="randomBtn">&#127922; Surprise me</button>
+        <button class="tool-btn primary" id="quizBtn">&#129513; What should we play?</button>
+      </div>
+    </div>
+  </div>
+
   <div class="grid" id="grid"></div>
+  <div class="empty-state hidden" id="emptyState">No games match &ldquo;<span id="emptyQuery"></span>&rdquo;. Try another search or category.</div>
 
   <footer>More games get added to the rack as they're built.</footer>
+</div>
+
+<div class="modal-overlay hidden" id="quizModal">
+  <div class="modal-box">
+    <button class="modal-close" id="quizClose">&times;</button>
+    <div id="quizBody"></div>
+  </div>
 </div>
 
 <script>
@@ -259,6 +511,7 @@
       players: '2+',
       time: '~20 min',
       href: 'wavelength.html',
+      category: 'Party', playerMin: 2, playerMax: 99, timeMin: 20, vibes: ['brain', 'simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <path d="M10 62 A 50 50 0 0 1 110 62" fill="none" stroke="var(--panel-line)" stroke-width="6" stroke-linecap="round"/>
         <path d="M22 62 A 38 38 0 0 1 55 26" fill="none" stroke="var(--teal)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
@@ -272,6 +525,7 @@
       players: '2\u20134',
       time: '~15 min/hand',
       href: 'gin-rummy.html',
+      category: 'Card', playerMin: 2, playerMax: 4, timeMin: 15, vibes: ['challenge'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="14" y="10" width="34" height="48" rx="5" fill="#f6f3ea" stroke="var(--panel-line)" stroke-width="2" transform="rotate(-8 31 34)"/>
         <rect x="44" y="8" width="34" height="48" rx="5" fill="#f6f3ea" stroke="var(--panel-line)" stroke-width="2"/>
@@ -285,6 +539,7 @@
       players: '1\u20132',
       time: '~2 min',
       href: 'tictactoe.html',
+      category: 'Board', playerMin: 1, playerMax: 2, timeMin: 2, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <line x1="42" y1="10" x2="42" y2="60" stroke="var(--panel-line)" stroke-width="3"/>
         <line x1="78" y1="10" x2="78" y2="60" stroke="var(--panel-line)" stroke-width="3"/>
@@ -301,6 +556,7 @@
       players: '1\u20132',
       time: '~5 min',
       href: 'connect4.html',
+      category: 'Board', playerMin: 1, playerMax: 2, timeMin: 5, vibes: ['challenge'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="14" y="8" width="92" height="54" rx="6" fill="var(--panel-line)" opacity="0.3"/>
         <circle cx="30" cy="22" r="8" fill="var(--rose)"/>
@@ -320,6 +576,7 @@
       players: '1\u20132',
       time: '~20 min',
       href: 'chess.html',
+      category: 'Board', playerMin: 1, playerMax: 2, timeMin: 20, vibes: ['challenge', 'brain'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 12 L64 12 L64 20 L70 20 L70 25 L64 28 L66 44 L74 50 L74 56 L46 56 L46 50 L54 44 L56 28 L50 25 L50 20 L56 20 Z" fill="var(--paper)" stroke="var(--brass)" stroke-width="1.5"/>
         <line x1="60" y1="8" x2="60" y2="14" stroke="var(--brass-bright)" stroke-width="2.5"/>
@@ -332,6 +589,7 @@
       players: '3\u201310',
       time: '~10 min',
       href: 'imposter.html',
+      category: 'Party', playerMin: 3, playerMax: 10, timeMin: 10, vibes: ['simple', 'brain'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <circle cx="40" cy="30" r="16" fill="var(--panel-line)" opacity="0.4"/>
         <circle cx="40" cy="24" r="7" fill="none" stroke="var(--teal)" stroke-width="2.5"/>
@@ -348,6 +606,7 @@
       players: '2\u20138',
       time: '~10 min',
       href: 'pictionary.html',
+      category: 'Party', playerMin: 2, playerMax: 8, timeMin: 10, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="20" y="12" width="80" height="46" rx="6" fill="var(--paper)" opacity="0.92"/>
         <path d="M35 45 Q45 25 60 35 Q75 45 85 25" fill="none" stroke="var(--teal)" stroke-width="3" stroke-linecap="round"/>
@@ -360,6 +619,7 @@
       players: '2\u20138',
       time: '~10 min',
       href: 'nfl-team.html',
+      category: 'Party', playerMin: 2, playerMax: 8, timeMin: 10, vibes: ['brain'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <ellipse cx="60" cy="35" rx="34" ry="21" fill="#7a3c1e" stroke="var(--brass-bright)" stroke-width="2"/>
         <line x1="46" y1="35" x2="74" y2="35" stroke="var(--paper)" stroke-width="2"/>
@@ -376,6 +636,7 @@
       players: '2\u20138',
       time: '~10 min',
       href: 'nfl-grid.html',
+      category: 'Trivia', playerMin: 2, playerMax: 8, timeMin: 10, vibes: ['brain'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="30" y="10" width="60" height="50" fill="none" stroke="var(--brass)" stroke-width="2"/>
         <line x1="50" y1="10" x2="50" y2="60" stroke="var(--brass)" stroke-width="2"/>
@@ -391,6 +652,7 @@
       players: '1\u20134',
       time: '~10 min',
       href: 'wheel-of-fortune.html',
+      category: 'Trivia', playerMin: 1, playerMax: 4, timeMin: 10, vibes: ['brain', 'simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="20" y="18" width="80" height="34" rx="4" fill="#0d3b3a" stroke="var(--brass)" stroke-width="2"/>
         <rect x="28" y="26" width="10" height="14" fill="var(--paper)"/>
@@ -406,6 +668,7 @@
       players: '1\u20138',
       time: '~10 min',
       href: 'pyramid.html',
+      category: 'Trivia', playerMin: 1, playerMax: 8, timeMin: 10, vibes: ['brain'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 12 L92 58 L28 58 Z" fill="none" stroke="var(--brass)" stroke-width="2.5"/>
         <line x1="44" y1="35" x2="76" y2="35" stroke="var(--brass)" stroke-width="1.5"/>
@@ -419,6 +682,7 @@
       players: '1\u20138',
       time: '~10 min',
       href: 'family-feud.html',
+      category: 'Trivia', playerMin: 1, playerMax: 8, timeMin: 10, vibes: ['brain', 'simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="24" y="14" width="72" height="14" rx="3" fill="#1a2f52" stroke="var(--brass)" stroke-width="1.5"/>
         <rect x="24" y="30" width="72" height="14" rx="3" fill="#1a2f52" stroke="var(--brass)" stroke-width="1.5"/>
@@ -434,6 +698,7 @@
       players: '2\u201310',
       time: '~10 min',
       href: 'hot-takes.html',
+      category: 'Party', playerMin: 2, playerMax: 10, timeMin: 10, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <circle cx="60" cy="35" r="24" fill="none" stroke="var(--brass)" stroke-width="2.5"/>
         <path d="M50 40 Q60 28 70 40" fill="none" stroke="var(--rose)" stroke-width="3" stroke-linecap="round"/>
@@ -447,6 +712,7 @@
       players: '2\u201310',
       time: '~10 min',
       href: 'would-you-rather.html',
+      category: 'Party', playerMin: 2, playerMax: 10, timeMin: 10, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 10 L60 60" stroke="var(--panel-line)" stroke-width="2"/>
         <rect x="20" y="18" width="32" height="20" rx="4" fill="none" stroke="var(--teal)" stroke-width="2"/>
@@ -459,6 +725,7 @@
       players: '2\u201310',
       time: '~10 min',
       href: 'would-you-press.html',
+      category: 'Party', playerMin: 2, playerMax: 10, timeMin: 10, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="40" y="24" width="40" height="30" rx="6" fill="#3a1418" stroke="var(--rose)" stroke-width="2"/>
         <circle cx="60" cy="36" r="10" fill="var(--rose)" opacity="0.85"/>
@@ -471,6 +738,7 @@
       players: '2\u201310',
       time: '~10 min',
       href: 'guess-the-majority.html',
+      category: 'Party', playerMin: 2, playerMax: 10, timeMin: 10, vibes: ['simple'],
       icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
         <rect x="24" y="40" width="16" height="18" fill="var(--teal)"/>
         <rect x="48" y="24" width="16" height="34" fill="var(--brass-bright)"/>
@@ -480,14 +748,35 @@
     }
   ];
 
-  const grid = document.getElementById('grid');
   document.getElementById('gameCount').textContent = GAMES.length;
 
-  GAMES.forEach((game, i) => {
+  // ============================================================
+  // Search / filter / sort state
+  // ============================================================
+  const CATEGORIES = ['All', 'Party', 'Board', 'Trivia', 'Card'];
+  const CATEGORY_ORDER = ['Party', 'Board', 'Trivia', 'Card'];
+  const state = { query: '', category: 'All', sort: 'featured' };
+
+  function matchesFilter(g){
+    const q = state.query.trim().toLowerCase();
+    if (q && !g.title.toLowerCase().includes(q) && !g.tagline.toLowerCase().includes(q) && !g.category.toLowerCase().includes(q)) return false;
+    if (state.category !== 'All' && g.category !== state.category) return false;
+    return true;
+  }
+
+  function sortedGames(list){
+    const arr = list.slice();
+    if (state.sort === 'az') arr.sort((a,b) => a.title.localeCompare(b.title));
+    else if (state.sort === 'za') arr.sort((a,b) => b.title.localeCompare(a.title));
+    else if (state.sort === 'players') arr.sort((a,b) => (a.playerMin - b.playerMin) || (a.playerMax - b.playerMax));
+    return arr;
+  }
+
+  function buildCard(game, i){
     const card = document.createElement('a');
     card.className = 'card';
     card.href = game.href;
-    card.style.animationDelay = (i * 0.06) + 's';
+    card.style.animationDelay = (Math.min(i, 10) * 0.06) + 's';
     card.innerHTML = `
       <div class="rivet tl"></div>
       <div class="rivet tr"></div>
@@ -500,16 +789,229 @@
       </div>
       <span class="play">Play <span class="arrow">&rarr;</span></span>
     `;
-    grid.appendChild(card);
+    return card;
+  }
+
+  const grid = document.getElementById('grid');
+  const emptyState = document.getElementById('emptyState');
+  const emptyQuery = document.getElementById('emptyQuery');
+
+  function renderGrid(){
+    grid.innerHTML = '';
+    const filtered = GAMES.filter(matchesFilter);
+
+    if (!filtered.length){
+      emptyState.classList.remove('hidden');
+      emptyQuery.textContent = state.query || 'that category';
+      return;
+    }
+    emptyState.classList.add('hidden');
+
+    if (state.sort === 'category'){
+      CATEGORY_ORDER.forEach(cat => {
+        const inCat = filtered.filter(g => g.category === cat).sort((a,b) => a.title.localeCompare(b.title));
+        if (!inCat.length) return;
+        const heading = document.createElement('div');
+        heading.className = 'category-heading';
+        heading.textContent = cat;
+        grid.appendChild(heading);
+        inCat.forEach((game, i) => grid.appendChild(buildCard(game, i)));
+      });
+    } else {
+      sortedGames(filtered).forEach((game, i) => grid.appendChild(buildCard(game, i)));
+    }
+
+    // Fill remaining grid slots with a quiet placeholder so the rack doesn't look empty with just one game.
+    if (filtered.length < 2 && GAMES.length < 2){
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.textContent = 'Next game slot open.';
+      grid.appendChild(slot);
+    }
+  }
+
+  // ---------------- Category chips ----------------
+  const chipsEl = document.getElementById('categoryChips');
+  CATEGORIES.forEach(cat => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip' + (cat === 'All' ? ' active' : '');
+    chip.textContent = cat;
+    chip.dataset.cat = cat;
+    chip.addEventListener('click', () => {
+      state.category = cat;
+      chipsEl.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.cat === cat));
+      renderGrid();
+    });
+    chipsEl.appendChild(chip);
   });
 
-  // Fill remaining grid slots with a quiet placeholder so the rack doesn't look empty with just one game.
-  if (GAMES.length < 2){
-    const slot = document.createElement('div');
-    slot.className = 'slot';
-    slot.textContent = 'Next game slot open.';
-    grid.appendChild(slot);
+  // ---------------- Search ----------------
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    state.query = e.target.value;
+    renderGrid();
+  });
+
+  // ---------------- Sort ----------------
+  document.getElementById('sortSelect').addEventListener('change', (e) => {
+    state.sort = e.target.value;
+    renderGrid();
+  });
+
+  // ---------------- Random game ----------------
+  document.getElementById('randomBtn').addEventListener('click', () => {
+    const pool = GAMES.filter(matchesFilter);
+    const list = pool.length ? pool : GAMES;
+    const cardEls = [...grid.querySelectorAll('.card')];
+    const pick = list[Math.floor(Math.random() * list.length)];
+    if (!cardEls.length){
+      location.href = pick.href;
+      return;
+    }
+    let ticks = 0;
+    const maxTicks = 14;
+    const iv = setInterval(() => {
+      cardEls.forEach(c => c.classList.remove('rolling'));
+      cardEls[Math.floor(Math.random() * cardEls.length)].classList.add('rolling');
+      ticks++;
+      if (ticks >= maxTicks){
+        clearInterval(iv);
+        setTimeout(() => { location.href = pick.href; }, 260);
+      }
+    }, 70);
+  });
+
+  renderGrid();
+
+  // ============================================================
+  // "What should we play?" quiz
+  // ============================================================
+  const QUIZ_QUESTIONS = [
+    {
+      key: 'players',
+      q: 'How many of you are playing?',
+      options: [
+        { label: 'Just me, solo', value: 'solo' },
+        { label: 'Just the two of us', value: 'two' },
+        { label: 'Small group (3-5)', value: 'small' },
+        { label: 'Big crew (6+)', value: 'big' }
+      ]
+    },
+    {
+      key: 'time',
+      q: 'How much time do you have?',
+      options: [
+        { label: 'Quick one, under 10 min', value: 'quick' },
+        { label: 'A proper game, 10-20 min', value: 'medium' },
+        { label: 'Doesn\'t matter, we\'re here all night', value: 'any' }
+      ]
+    },
+    {
+      key: 'vibe',
+      q: 'How are you feeling today?',
+      options: [
+        { label: '&#128293; I want a challenge', value: 'challenge' },
+        { label: '&#129504; I could use some brain power', value: 'brain' },
+        { label: '&#128524; I want something simple', value: 'simple' }
+      ]
+    },
+    {
+      key: 'howmany',
+      q: 'Want one pick, or a few to choose from?',
+      options: [
+        { label: 'Just tell me what to play', value: 'one' },
+        { label: 'Give me a few options', value: 'few' }
+      ]
+    }
+  ];
+
+  let quizAnswers = {};
+  let quizStep = 0;
+  const quizModal = document.getElementById('quizModal');
+  const quizBody = document.getElementById('quizBody');
+
+  function openQuiz(){
+    quizStep = 0;
+    quizAnswers = {};
+    quizModal.classList.remove('hidden');
+    renderQuizStep();
   }
+  function closeQuiz(){
+    quizModal.classList.add('hidden');
+  }
+  function renderQuizStep(){
+    if (quizStep >= QUIZ_QUESTIONS.length){
+      renderQuizResult();
+      return;
+    }
+    const q = QUIZ_QUESTIONS[quizStep];
+    const dots = QUIZ_QUESTIONS.map((_, i) => `<div class="quiz-dot${i <= quizStep ? ' done' : ''}"></div>`).join('');
+    quizBody.innerHTML = `
+      <div class="quiz-progress">${dots}</div>
+      <div class="quiz-eyebrow">Question ${quizStep + 1} of ${QUIZ_QUESTIONS.length}</div>
+      <h3 class="quiz-q">${q.q}</h3>
+      <div id="quizOptions"></div>
+    `;
+    const optWrap = document.getElementById('quizOptions');
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'quiz-option';
+      btn.innerHTML = opt.label;
+      btn.addEventListener('click', () => {
+        quizAnswers[q.key] = opt.value;
+        quizStep++;
+        renderQuizStep();
+      });
+      optWrap.appendChild(btn);
+    });
+  }
+
+  function scoreGame(g, answers){
+    let score = 0;
+    const pc = answers.players;
+    const wantMin = pc === 'solo' ? 1 : pc === 'two' ? 2 : pc === 'small' ? 3 : 6;
+    const wantMax = pc === 'solo' ? 1 : pc === 'two' ? 2 : pc === 'small' ? 5 : 99;
+    if (g.playerMin <= wantMax && g.playerMax >= wantMin) score += 3;
+    else score -= 4;
+
+    const t = answers.time;
+    if (t === 'quick' && g.timeMin <= 10) score += 2;
+    else if (t === 'medium' && g.timeMin >= 8 && g.timeMin <= 25) score += 2;
+    else if (t === 'any') score += 1;
+
+    if (g.vibes.includes(answers.vibe)) score += 3;
+
+    return score;
+  }
+
+  function renderQuizResult(){
+    const scored = GAMES.map(g => ({ g, s: scoreGame(g, quizAnswers) })).sort((a, b) => b.s - a.s);
+    const howmany = quizAnswers.howmany;
+    const picks = howmany === 'one' ? scored.slice(0, 1) : scored.slice(0, 3);
+
+    const cardsHtml = picks.map(({ g }) => `
+      <a class="quiz-result-card" href="${g.href}">
+        <div class="icon">${g.icon}</div>
+        <div>
+          <h3>${g.title}</h3>
+          <p>${g.tagline}</p>
+        </div>
+      </a>
+    `).join('');
+
+    quizBody.innerHTML = `
+      <div class="quiz-eyebrow">Your pick${picks.length > 1 ? 's' : ''}</div>
+      <h3 class="quiz-q">${picks.length > 1 ? 'A few good fits' : 'Play this'}</h3>
+      ${cardsHtml}
+      <button type="button" class="quiz-retry" id="quizRetry">Take the quiz again</button>
+    `;
+    document.getElementById('quizRetry').addEventListener('click', openQuiz);
+  }
+
+  document.getElementById('quizBtn').addEventListener('click', openQuiz);
+  document.getElementById('quizClose').addEventListener('click', closeQuiz);
+  quizModal.addEventListener('click', (e) => { if (e.target.id === 'quizModal') closeQuiz(); });
 </script>
 
 </body>
