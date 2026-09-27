@@ -89,6 +89,29 @@
 
   .round-end-card { text-align:center; padding:30px 24px; }
   .round-end-card .the-score { font-family:'Space Grotesk',sans-serif; font-size:30px; color:var(--brass-bright); margin:10px 0; }
+
+  .pyramid-viz { display:flex; flex-direction:column; align-items:center; gap:5px; margin:6px 0 20px; }
+  .pyramid-viz-row { display:flex; gap:5px; }
+  .pyramid-brick { width:64px; height:40px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); }
+  .pyramid-brick.brick-done { background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; border-color:var(--brass); }
+  .pyramid-brick.brick-missed { background:rgba(226,99,122,0.15); border-color:rgba(226,99,122,0.4); color:var(--rose); }
+  .pyramid-brick.brick-current { border-color:var(--brass-bright); box-shadow:0 0 0 2px rgba(232,197,114,0.35); color:var(--brass-bright); animation:pulse-brick 1.4s ease-in-out infinite; }
+  @keyframes pulse-brick { 0%,100%{ box-shadow:0 0 0 2px rgba(232,197,114,0.35); } 50%{ box-shadow:0 0 0 5px rgba(232,197,114,0.15); } }
+  .tier-badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; padding:4px 10px; border-radius:6px; margin-bottom:8px; }
+  .tier-badge.tier-easy { background:rgba(79,209,197,0.15); color:var(--teal); }
+  .tier-badge.tier-medium { background:rgba(201,162,75,0.15); color:var(--brass-bright); }
+  .tier-badge.tier-hard { background:rgba(226,99,122,0.15); color:var(--rose); }
+  .secret-word-card { text-align:center; background:var(--ink-2); border:2px dashed var(--brass); border-radius:12px; padding:28px 16px; margin-bottom:16px; }
+  .secret-word-card .secret-word { font-family:'Space Grotesk',sans-serif; font-size:32px; font-weight:700; color:var(--paper); }
+  .wc-subject-card { text-align:center; background:var(--ink-2); border:2px dashed var(--violet); border-radius:12px; padding:22px 16px; margin-bottom:16px; }
+  .wc-subject-card .wc-subject { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--paper); margin-bottom:10px; }
+  .wc-subject-card .wc-examples { color:var(--muted); font-size:13.5px; line-height:1.6; }
+  .cash-total { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; }
+  .grand-prize-banner { text-align:center; padding:20px; background:linear-gradient(180deg,rgba(232,197,114,0.18),rgba(201,162,75,0.06)); border:1px solid var(--brass); border-radius:12px; margin-bottom:16px; }
+  .grand-prize-banner h2 { font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); margin:0 0 4px; font-size:26px; }
+  .skip-link { background:transparent; border:none; color:var(--muted); font-size:12.5px; text-decoration:underline; cursor:pointer; padding:0; margin-top:10px; }
+  .skip-link:hover { color:var(--brass-bright); }
 </style>
 </head>
 <body>
@@ -98,7 +121,7 @@
     <h1>$100,000 Pyramid</h1>
     <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
   </div>
-  <p class="subtitle">Give clues, get your partner to name everything on the list before time runs out.</p>
+  <p class="subtitle">Climb the pyramid one secret word at a time, then take on the Winner's Circle.</p>
 
   <div class="modal-overlay hidden" id="rulesModal">
     <div class="modal-box">
@@ -108,20 +131,41 @@
       </div>
       <div class="modal-body">
         <h4>Goal</h4>
-        <p>The clue-giver sees a category and a list of 6 answers. Using spoken clues &mdash; never the answer itself or a "rhymes with" hint &mdash; they try to get their partner (and anyone else listening) to say all 6 before time runs out.</p>
-        <h4>Playing</h4>
+        <p>Six rounds, six boxes of the pyramid, bottom to top. Each round the clue-giver sees ONE secret word or phrase and has to get their partner to say that exact word before time runs out &mdash; using clues, never the word itself.</p>
+        <h4>Difficulty climbs with the pyramid</h4>
+        <p>The bottom row (rounds 1&ndash;3) is easy, literal, everyday stuff. The middle row (rounds 4&ndash;5) gets more abstract &mdash; verbs, specific descriptions. The top box (round 6) is the hardest: rare, abstract, or oddly-specific words. You'll watch the pyramid visually fill in as you go.</p>
+        <h4>Main Game clue rules</h4>
         <ul>
-          <li>Pass the device to the clue-giver. They see the category and all 6 answers privately, and keep holding the device (facing themselves) for the whole round &mdash; the guesser never looks at the screen.</li>
-          <li>Once the timer starts, they give one clue at a time for any answer on the list, in any order.</li>
-          <li>The moment someone guesses one correctly, the clue-giver taps that item to mark it off and moves to the next.</li>
-          <li>Stuck on one? Skip it and come back &mdash; nothing has to go in order.</li>
+          <li><b>Descriptive clues are allowed.</b> Full sentences, prepositions, scene-setting &mdash; all fine. ("It's a grey animal with a trunk" works.)</li>
+          <li>Never say the secret word itself or any part of it, rhyme with it, invent a fake word, say a key word from it, use a synonym of it, or use hand gestures.</li>
         </ul>
-        <div class="rule-callout"><b>Some categories are themed</b> (like "Things a shower curtain would say") &mdash; the answers are creative phrases that fit the theme, not literal facts. Play it loose and have fun with the clues.</div>
+        <h4>The Winner's Circle</h4>
+        <p>Clear all 6 boxes' worth of rounds and you move on to a bonus round modeled on the show's Winner's Circle, with a rules reminder before it starts. This time the giver privately sees a <b>category</b> and its example items, and has to get their partner to name the category itself &mdash; by rattling off examples from it.</p>
+        <div class="rule-callout"><b>Winner's Circle clue rules are stricter:</b> clues must be <b>list-only</b> &mdash; just naming items in the category, no descriptive sentences. Prepositions like "of" or "with" are banned here (they're fine in the Main Game). Every other ban still applies: no saying the answer or part of it, no rhymes, no invented words, no key words or synonyms, no gestures.</div>
         <h4>Scoring</h4>
-        <p>Each item you get before time runs out is worth a point. Whoever's been clue-giver rotates each round, and scores add up across rounds.</p>
+        <p>Boxes pay out like the show: $1,000 on the bottom row, $5,000 in the middle, $10,000 for the top box. Clear the whole Winner's Circle before time runs out and you win the $100,000 grand prize.</p>
         <h4>Modes</h4>
-        <p>Play solo to practice giving clues against the clock, pass-and-play locally with 2&ndash;8 people, or host/join an online room.</p>
+        <p>Play solo to practice giving clues against the clock, pass-and-play locally with 2&ndash;8 people, or host/join an online room. With more than 2 players, the clue-giver rotates every round; whoever's leading after round 6 gets the Winner's Circle.</p>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="wcRulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Winner's Circle rules</h3>
+      </div>
+      <div class="modal-body">
+        <p>You've cleared the pyramid! Before the bonus round starts, remember: this round plays differently.</p>
+        <ul>
+          <li><b>List-only clues.</b> The giver can only rattle off items belonging to the category &mdash; no descriptive sentences.</li>
+          <li><b>Prepositions are banned</b> ("of", "with", etc.) &mdash; only in this round, not the main game.</li>
+          <li>All the usual bans still apply: no saying the answer or part of it, no rhymes, no invented words, no synonyms, no gestures.</li>
+          <li>Guess the <b>category itself</b> from the examples &mdash; not an individual item.</li>
+        </ul>
+        <div class="rule-callout">One continuous clock. Get through as many categories as you can &mdash; skip a tough one and come back if there's time.</div>
+      </div>
+      <button class="primary-btn" id="wcRulesContinue" style="width:100%;">I understand &mdash; start the Winner's Circle &rarr;</button>
     </div>
   </div>
 
@@ -199,16 +243,25 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="data/pyramid-categories.js"></script>
+<script src="data/pyramid-words.js"></script>
 <script>
 (function(){
-  if (!window.PYRAMID_CATEGORIES){
+  if (!window.PYRAMID_MAIN_BANK || !window.PYRAMID_WC_BANK){
+    const missing = [];
+    if (!window.PYRAMID_MAIN_BANK || !window.PYRAMID_WC_BANK) missing.push('data/pyramid-words.js');
     document.body.innerHTML = '<div style="max-width:560px;margin:80px auto;padding:24px;font-family:sans-serif;background:#2a1a1a;color:#f5b5b5;border-radius:12px;border:1px solid #7a3a3a;">'
       + '<h2 style="margin-top:0;">Missing game data</h2>'
-      + '<p>This page could not load <code>data/pyramid-categories.js</code>. Make sure that file exists in the <code>data/</code> folder next to this page and is spelled exactly that way (check it was actually uploaded/committed).</p></div>';
+      + '<p>This page could not load <code>' + missing.join('</code>, <code>') + '</code>. Make sure that file exists in the <code>data/</code> folder next to this page and is spelled exactly that way (check it was actually uploaded/committed).</p></div>';
     return;
   }
-const CATEGORIES = window.PYRAMID_CATEGORIES;;
+  const MAIN_BANK = window.PYRAMID_MAIN_BANK;
+  const WC_BANK = window.PYRAMID_WC_BANK;
+  const BOX_TIER = ['easy','easy','easy','medium','medium','hard'];
+  const BOX_VALUE = { easy: 1000, medium: 5000, hard: 10000 };
+  const TIER_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  // Visual pyramid rows, top box first: [ [box indices in this row] ]
+  const PYRAMID_ROWS = [ [5], [3,4], [0,1,2] ];
+  const WC_TIME_LIMIT = 60;
 
   function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
   function randomRoomCode(){
@@ -219,10 +272,54 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function pickCategory(excludeTitle){
-    let pool = CATEGORIES.filter(c => c.title !== excludeTitle);
-    if (!pool.length) pool = CATEGORIES;
-    return pool[Math.floor(Math.random()*pool.length)];
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function pickMainWord(tier, excludeWord){
+    const pool = MAIN_BANK[tier].filter(w => w !== excludeWord);
+    const source = pool.length ? pool : MAIN_BANK[tier];
+    return source[Math.floor(Math.random()*source.length)];
+  }
+  function pickWcSubjects(){
+    const tiers = ['easy','easy','medium','medium','hard','hard'];
+    const usedByTier = { easy: shuffle(WC_BANK.easy), medium: shuffle(WC_BANK.medium), hard: shuffle(WC_BANK.hard) };
+    const counters = { easy:0, medium:0, hard:0 };
+    return tiers.map(tier => {
+      const list = usedByTier[tier];
+      const item = list[counters[tier] % list.length];
+      counters[tier]++;
+      return { title: item.title, answers: item.answers.slice() };
+    });
+  }
+  function formatCash(n){ return '$' + n.toLocaleString('en-US'); }
+
+  function pyramidVizEl(levelIndex, boxResults){
+    const wrap = document.createElement('div');
+    wrap.className = 'pyramid-viz';
+    PYRAMID_ROWS.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'pyramid-viz-row';
+      row.forEach(boxIdx => {
+        const brick = document.createElement('div');
+        let cls = 'pyramid-brick';
+        if (boxResults[boxIdx] === true) cls += ' brick-done';
+        else if (boxResults[boxIdx] === false) cls += ' brick-missed';
+        else if (boxIdx === levelIndex) cls += ' brick-current';
+        brick.className = cls;
+        brick.textContent = '$' + (BOX_VALUE[BOX_TIER[boxIdx]]/1000) + 'K';
+        rowEl.appendChild(brick);
+      });
+      wrap.appendChild(rowEl);
+    });
+    return wrap;
+  }
+
+  function pickWcGiverIndex(players){
+    let bestIdx = 0;
+    players.forEach((p,i) => { if (p.score > players[bestIdx].score) bestIdx = i; });
+    return bestIdx;
   }
 
   // ---------------- Screen navigation ----------------
@@ -248,6 +345,30 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
   document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
   document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
   document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id === 'rulesModal') document.getElementById('rulesModal').classList.add('hidden'); });
+
+  // Winner's Circle rules gate: whichever mode is active sets wcStartCallback
+  // right before opening the modal; the modal's own button just calls it.
+  let wcStartCallback = null;
+  document.getElementById('wcRulesContinue').addEventListener('click', () => {
+    document.getElementById('wcRulesModal').classList.add('hidden');
+    if (wcStartCallback) { const cb = wcStartCallback; wcStartCallback = null; cb(); }
+  });
+  function openWcRulesGate(cb){
+    wcStartCallback = cb;
+    document.getElementById('wcRulesModal').classList.remove('hidden');
+  }
+  // Online mode: the rules gate is driven by the synced 'wcRulesGate' phase
+  // (see renderOnline) rather than a local callback, so whichever player is
+  // actually about to enter the Winner's Circle sees it on their own screen.
+  document.getElementById('wcRulesContinue').addEventListener('click', () => {
+    if (mode === 'host'){
+      document.getElementById('wcRulesModal').classList.add('hidden');
+      startOnlineWinnersCircle();
+    } else if (mode === 'guest' && joinConn){
+      document.getElementById('wcRulesModal').classList.add('hidden');
+      joinConn.send({ type:'wcRulesAck' });
+    }
+  });
 
   ['timeChoice','hostTimeChoice'].forEach(id => {
     document.querySelectorAll('#'+id+' .choice-btn').forEach(btn => {
@@ -289,9 +410,9 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
   let mode = 'local';
   let localState = null;
 
-  function newRound(excludeTitle, timeLimit){
-    const cat = pickCategory(excludeTitle);
-    return { category: cat.title, answers: cat.answers.slice(), gotten: Array(6).fill(false), timeLeft: timeLimit };
+  function newMainRound(levelIndex, excludeWord){
+    const tier = BOX_TIER[levelIndex];
+    return { tier, secretWord: pickMainWord(tier, excludeWord), timeLeft: 0 };
   }
 
   document.getElementById('pickSolo').addEventListener('click', () => {
@@ -300,11 +421,13 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       players: [{ id: uid(), name: 'You', score: 0 }],
       currentIndex: 0,
       timeLimit: 60,
-      round: null,
+      levelIndex: 0,
+      boxResults: [],
+      round: newMainRound(0, null),
       phase: 'wordShown',
-      solo: true
+      solo: true,
+      wc: null
     };
-    localState.round = newRound(null, 60);
     showScreen('game');
     renderLocal();
   });
@@ -318,11 +441,13 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       players: names.map(n => ({ id: uid(), name: n, score: 0 })),
       currentIndex: 0,
       timeLimit,
-      round: null,
+      levelIndex: 0,
+      boxResults: [],
+      round: newMainRound(0, null),
       phase: 'reveal',
-      solo: false
+      solo: false,
+      wc: null
     };
-    localState.round = newRound(null, timeLimit);
     showScreen('game');
     renderLocal();
   });
@@ -332,8 +457,7 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
     const body = document.getElementById('gameBody');
     body.innerHTML = '';
     const st = localState;
-    const giver = st.players[st.currentIndex];
-    const r = st.round;
+    const giver = st.solo ? st.players[0] : st.players[st.currentIndex];
 
     if (st.phase === 'reveal'){
       const card = document.createElement('div');
@@ -341,7 +465,7 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       card.innerHTML = '<div class="to-icon">\ud83c\udfc6</div><h2>Pass the device to<br>' + escapeHtml(giver.name) + '</h2><p>Everyone else look away!</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
-      btn.textContent = "I'm " + giver.name + ' \u2014 show me my list';
+      btn.textContent = "I'm " + giver.name + ' \u2014 show me my word';
       btn.addEventListener('click', () => { st.phase = 'wordShown'; renderLocal(); });
       card.appendChild(btn);
       body.appendChild(card);
@@ -349,24 +473,34 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
     }
 
     if (st.phase === 'wordShown'){
-      const card = document.createElement('div');
-      card.className = 'panel';
-      card.innerHTML = '<div class="category-title">' + escapeHtml(r.category) + '</div>';
-      const list = document.createElement('div');
-      list.className = 'answer-list';
-      r.answers.forEach(a => {
-        const item = document.createElement('div');
-        item.className = 'answer-item';
-        item.innerHTML = '<span>' + escapeHtml(a) + '</span>';
-        list.appendChild(item);
-      });
-      card.appendChild(list);
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.appendChild(pyramidVizEl(st.levelIndex, st.boxResults));
+      const tier = st.round.tier;
+      const badge = document.createElement('div');
+      badge.style.textAlign = 'center';
+      badge.innerHTML = '<span class="tier-badge tier-'+tier+'">'+TIER_LABEL[tier]+' &middot; '+formatCash(BOX_VALUE[tier])+'</span>';
+      panel.appendChild(badge);
+      const wordCard = document.createElement('div');
+      wordCard.className = 'secret-word-card';
+      wordCard.innerHTML = '<div class="secret-word">' + escapeHtml(st.round.secretWord) + '</div>';
+      panel.appendChild(wordCard);
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
       btn.textContent = 'Talk it out \u2192';
       btn.addEventListener('click', () => { st.phase = 'getReady'; renderLocal(); });
-      card.appendChild(btn);
-      body.appendChild(card);
+      panel.appendChild(btn);
+      const skip = document.createElement('button');
+      skip.className = 'skip-link';
+      skip.style.display = 'block';
+      skip.style.margin = '10px auto 0';
+      skip.textContent = 'Get a different word';
+      skip.addEventListener('click', () => {
+        st.round = newMainRound(st.levelIndex, st.round.secretWord);
+        renderLocal();
+      });
+      panel.appendChild(skip);
+      body.appendChild(panel);
       return;
     }
 
@@ -379,7 +513,7 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       btn.textContent = 'Start the timer \u2192';
       btn.addEventListener('click', () => {
         st.phase = 'playing';
-        r.timeLeft = st.timeLimit;
+        st.round.timeLeft = st.timeLimit;
         renderLocal();
         startLocalTimer();
       });
@@ -389,11 +523,12 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
     }
 
     if (st.phase === 'playing'){
+      const tier = st.round.tier;
       const hud = document.createElement('div');
       hud.className = 'hud-row';
       hud.innerHTML = '<div class="hud-chip">' + escapeHtml(giver.name) + ' is giving clues</div>' +
-        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + r.timeLeft + '</span>s</div>' +
-        '<div class="hud-chip">' + r.gotten.filter(Boolean).length + ' / 6 gotten</div>';
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + st.round.timeLeft + '</span>s</div>' +
+        '<div class="hud-chip tier-badge tier-'+tier+'" style="margin:0;">'+TIER_LABEL[tier]+' &middot; '+formatCash(BOX_VALUE[tier])+'</div>';
       body.appendChild(hud);
 
       if (!st.solo){
@@ -402,100 +537,182 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
         st.players.forEach((pl,i) => {
           const chip = document.createElement('span');
           chip.className = 'score-chip' + (i===st.currentIndex?' active-giver':'');
-          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
           scoreboard.appendChild(chip);
         });
         body.appendChild(scoreboard);
       }
 
-      const catTitle = document.createElement('div');
-      catTitle.className = 'category-title';
-      catTitle.textContent = r.category;
-      body.appendChild(catTitle);
+      body.appendChild(pyramidVizEl(st.levelIndex, st.boxResults));
 
-      const list = document.createElement('div');
-      list.className = 'answer-list';
-      r.answers.forEach((a, idx) => {
-        const item = document.createElement('div');
-        item.className = 'answer-item' + (r.gotten[idx]?' gotten':'');
-        item.innerHTML = '<span>' + escapeHtml(a) + '</span>' + (r.gotten[idx]?'<span class="check">\u2713</span>':'');
-        if (!r.gotten[idx]){
-          item.addEventListener('click', () => {
-            r.gotten[idx] = true;
-            giver.score += 1;
-            if (r.gotten.every(Boolean)){
-              endLocalRound();
-            } else {
-              renderLocal();
-            }
-          });
-        }
-        list.appendChild(item);
-      });
-      body.appendChild(list);
+      const wordCard = document.createElement('div');
+      wordCard.className = 'secret-word-card';
+      wordCard.innerHTML = '<div class="secret-word">' + escapeHtml(st.round.secretWord) + '</div>';
+      body.appendChild(wordCard);
 
+      const btnRow = document.createElement('div');
+      const gotBtn = document.createElement('button');
+      gotBtn.className = 'primary-btn';
+      gotBtn.textContent = 'Got it! \u2713';
+      gotBtn.addEventListener('click', () => completeBoxLocal(true));
+      btnRow.appendChild(gotBtn);
       const endBtn = document.createElement('button');
       endBtn.className = 'secondary-btn';
-      endBtn.style.marginLeft = '0';
-      endBtn.textContent = 'End round early';
-      endBtn.addEventListener('click', endLocalRound);
-      body.appendChild(endBtn);
+      endBtn.textContent = 'Time\u2019s up / give up';
+      endBtn.addEventListener('click', () => completeBoxLocal(false));
+      btnRow.appendChild(endBtn);
+      body.appendChild(btnRow);
+
+      const skip = document.createElement('button');
+      skip.className = 'skip-link';
+      skip.style.display = 'block';
+      skip.textContent = 'Get a different word (keeps the clock running)';
+      skip.addEventListener('click', () => {
+        st.round.secretWord = pickMainWord(st.round.tier, st.round.secretWord);
+        renderLocal();
+      });
+      body.appendChild(skip);
       return;
     }
 
     if (st.phase === 'roundEnd'){
       const card = document.createElement('div');
       card.className = 'panel round-end-card';
-      const gottenCount = r.gotten.filter(Boolean).length;
-      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">Round over</h3>' +
-        '<div class="the-score">' + gottenCount + ' / 6</div>' +
-        '<p style="color:var(--muted);">' + escapeHtml(r.category) + '</p>';
+      const gotten = st.boxResults[st.levelIndex];
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (gotten ? 'Got it!' : 'No dice this time') + '</h3>' +
+        (gotten ? '<div class="the-score">+' + formatCash(BOX_VALUE[st.round.tier]) + '</div>' : '') +
+        '<p style="color:var(--muted);">The word was: <b style="color:var(--paper);">' + escapeHtml(st.round.secretWord) + '</b></p>';
+      card.appendChild(pyramidVizEl(st.levelIndex, st.boxResults));
+      if (!st.solo){
+        const scoreboard = document.createElement('div');
+        scoreboard.className = 'scoreboard';
+        scoreboard.style.justifyContent = 'center';
+        st.players.forEach(pl => {
+          const chip = document.createElement('span');
+          chip.className = 'score-chip';
+          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
+          scoreboard.appendChild(chip);
+        });
+        card.appendChild(scoreboard);
+      } else {
+        const scoreLine = document.createElement('p');
+        scoreLine.style.color = 'var(--brass-bright)'; scoreLine.style.fontWeight = '600';
+        scoreLine.textContent = 'Total: ' + formatCash(st.players[0].score);
+        card.appendChild(scoreLine);
+      }
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
-      btn.textContent = st.solo ? 'Next round \u2192' : 'Next player \u2192';
-      btn.addEventListener('click', () => {
-        const prevCategory = r.category;
-        if (!st.solo) st.currentIndex = (st.currentIndex + 1) % st.players.length;
-        st.round = newRound(prevCategory, st.timeLimit);
-        st.phase = st.solo ? 'wordShown' : 'reveal';
-        renderLocal();
-      });
-      card.appendChild(btn);
-      if (!st.solo){
-        const scoresBtn = document.createElement('button');
-        scoresBtn.className = 'secondary-btn';
-        scoresBtn.textContent = 'See scores';
-        scoresBtn.addEventListener('click', () => { st.phase = 'gameEnd'; renderLocal(); });
-        card.appendChild(scoresBtn);
+      if (st.levelIndex < 5){
+        btn.textContent = st.solo ? 'Next round \u2192' : 'Next player \u2192';
+        btn.addEventListener('click', () => {
+          const prevWord = st.round.secretWord;
+          st.levelIndex++;
+          if (!st.solo) st.currentIndex = (st.currentIndex + 1) % st.players.length;
+          st.round = newMainRound(st.levelIndex, prevWord);
+          st.phase = st.solo ? 'wordShown' : 'reveal';
+          renderLocal();
+        });
+      } else {
+        btn.textContent = 'Continue to the Winner\u2019s Circle \u2192';
+        btn.addEventListener('click', () => {
+          openWcRulesGate(() => startLocalWinnersCircle());
+        });
       }
-      const lobbyBtn = document.createElement('button');
-      lobbyBtn.className = 'secondary-btn';
-      lobbyBtn.textContent = 'Back to lobby';
-      lobbyBtn.addEventListener('click', () => location.reload());
-      card.appendChild(lobbyBtn);
+      card.appendChild(btn);
       body.appendChild(card);
       return;
     }
 
-    if (st.phase === 'gameEnd'){
+    if (st.phase === 'wcPass'){
+      const wcGiver = st.players[st.wc.giverIndex];
       const card = document.createElement('div');
-      card.className = 'panel';
-      let html = '<h3 style="margin-top:0;font-family:\'Space Grotesk\',sans-serif;">Scores so far</h3>';
-      st.players.slice().sort((a,b)=>b.score-a.score).forEach((pl,i) => {
-        html += '<div class="score-chip' + (i===0?' active-giver':'') + '" style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>' + (i===0?'\ud83c\udfc6 ':'') + escapeHtml(pl.name) + '</span><span class="pts">' + pl.score + '</span></div>';
-      });
-      card.innerHTML = html;
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83c\udf1f</div><h2>Winner\u2019s Circle<br>Pass to ' + escapeHtml(wcGiver.name) + '</h2><p>' + escapeHtml(wcGiver.name) + ' had the highest score \u2014 they\u2019re in the hot seat! Everyone else look away.</p>';
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
-      btn.textContent = 'Keep playing \u2192';
+      btn.textContent = "I'm " + wcGiver.name + ' \u2014 show me the categories';
+      btn.addEventListener('click', () => { st.phase = 'wcGetReady'; renderLocal(); });
+      card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'wcGetReady'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      card.innerHTML = '<div class="to-icon">\ud83d\udcac</div><h2>Get ready</h2><p>One continuous ' + WC_TIME_LIMIT + '-second clock for all 6 categories. List-only clues, no prepositions. Start it when you\u2019re ready.</p>';
+      const btn = document.createElement('button');
+      btn.className = 'primary-btn';
+      btn.textContent = 'Start the clock \u2192';
       btn.addEventListener('click', () => {
-        st.round = newRound(null, st.timeLimit);
-        st.phase = 'reveal';
+        st.phase = 'wcPlaying';
+        st.wc.timeLeft = WC_TIME_LIMIT;
         renderLocal();
+        startLocalWcTimer();
       });
       card.appendChild(btn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (st.phase === 'wcPlaying'){
+      const wcGiver = st.players[st.wc.giverIndex];
+      const gottenCount = st.wc.gotten.filter(Boolean).length;
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + escapeHtml(wcGiver.name) + ' \u2014 Winner\u2019s Circle</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + st.wc.timeLeft + '</span>s</div>' +
+        '<div class="hud-chip">' + gottenCount + ' / ' + st.wc.subjects.length + '</div>';
+      body.appendChild(hud);
+
+      const subj = st.wc.subjects[st.wc.index];
+      const subjCard = document.createElement('div');
+      subjCard.className = 'wc-subject-card';
+      subjCard.innerHTML = '<div class="wc-subject">' + escapeHtml(subj.title) + '</div>' +
+        '<div class="wc-examples">Examples to draw clues from: ' + subj.answers.map(escapeHtml).join(', ') + '</div>';
+      body.appendChild(subjCard);
+
+      const btnRow = document.createElement('div');
+      const gotBtn = document.createElement('button');
+      gotBtn.className = 'primary-btn';
+      gotBtn.textContent = 'Got it! \u2713';
+      gotBtn.addEventListener('click', () => markWcLocal(true));
+      btnRow.appendChild(gotBtn);
+      const skipBtn = document.createElement('button');
+      skipBtn.className = 'secondary-btn';
+      skipBtn.textContent = 'Skip \u2192';
+      skipBtn.addEventListener('click', () => markWcLocal(false));
+      btnRow.appendChild(skipBtn);
+      body.appendChild(btnRow);
+      return;
+    }
+
+    if (st.phase === 'matchEnd'){
+      const cleared = st.wc.cleared;
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      if (cleared){
+        const banner = document.createElement('div');
+        banner.className = 'grand-prize-banner';
+        banner.innerHTML = '<h2>\ud83c\udf89 $100,000 GRAND PRIZE! \ud83c\udf89</h2><p style="color:var(--muted);margin:0;">Cleared the whole Winner\u2019s Circle before time ran out.</p>';
+        card.appendChild(banner);
+      } else {
+        const gottenCount = st.wc.gotten.filter(Boolean).length;
+        card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">Winner\u2019s Circle: ' + gottenCount + ' / ' + st.wc.subjects.length + '</h3>' +
+          '<p style="color:var(--muted);">Time ran out before the full pyramid of categories was cleared.</p>';
+      }
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      st.players.slice().sort((a,b)=>b.score-a.score).forEach((pl,i) => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (i===0?' active-giver':'');
+        chip.innerHTML = (i===0?'\ud83c\udfc6 ':'') + escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
       const lobbyBtn = document.createElement('button');
-      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.className = 'primary-btn';
       lobbyBtn.textContent = 'Back to lobby';
       lobbyBtn.addEventListener('click', () => location.reload());
       card.appendChild(lobbyBtn);
@@ -503,6 +720,19 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       return;
     }
   }
+
+  function completeBoxLocal(gotten){
+    if (localTimer) clearInterval(localTimer);
+    const st = localState;
+    st.boxResults[st.levelIndex] = gotten;
+    if (gotten){
+      const giver = st.solo ? st.players[0] : st.players[st.currentIndex];
+      giver.score += BOX_VALUE[st.round.tier];
+    }
+    st.phase = 'roundEnd';
+    renderLocal();
+  }
+
   function startLocalTimer(){
     if (localTimer) clearInterval(localTimer);
     localTimer = setInterval(() => {
@@ -514,14 +744,64 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       if (chipEl) chipEl.classList.toggle('low', localState.round.timeLeft <= 10);
       if (localState.round.timeLeft <= 0){
         clearInterval(localTimer);
-        endLocalRound();
+        completeBoxLocal(false);
       }
     }, 1000);
   }
-  function endLocalRound(){
-    if (localTimer) clearInterval(localTimer);
-    localState.phase = 'roundEnd';
+
+  function startLocalWinnersCircle(){
+    const st = localState;
+    st.wc = { subjects: pickWcSubjects(), index: 0, gotten: Array(6).fill(false), timeLeft: WC_TIME_LIMIT, giverIndex: st.solo ? 0 : pickWcGiverIndex(st.players), cleared: false };
+    st.phase = st.solo ? 'wcGetReady' : 'wcPass';
     renderLocal();
+  }
+
+  function advanceWcIndexLocal(){
+    const wc = localState.wc;
+    const n = wc.subjects.length;
+    for (let step=1; step<=n; step++){
+      const idx = (wc.index + step) % n;
+      if (!wc.gotten[idx]){ wc.index = idx; return; }
+    }
+  }
+
+  function markWcLocal(gotten){
+    const st = localState;
+    st.wc.gotten[st.wc.index] = gotten;
+    if (st.wc.gotten.every(Boolean)){
+      endLocalWc(true);
+      return;
+    }
+    advanceWcIndexLocal();
+    renderLocal();
+  }
+
+  function endLocalWc(cleared){
+    if (localTimer) clearInterval(localTimer);
+    const st = localState;
+    st.wc.cleared = cleared;
+    if (cleared){
+      const giver = st.solo ? st.players[0] : st.players[st.wc.giverIndex];
+      giver.score += 100000;
+    }
+    st.phase = 'matchEnd';
+    renderLocal();
+  }
+
+  function startLocalWcTimer(){
+    if (localTimer) clearInterval(localTimer);
+    localTimer = setInterval(() => {
+      if (localState.phase !== 'wcPlaying'){ clearInterval(localTimer); return; }
+      localState.wc.timeLeft--;
+      const numEl = document.getElementById('timeLeftNum');
+      const chipEl = document.getElementById('timerChip');
+      if (numEl) numEl.textContent = localState.wc.timeLeft;
+      if (chipEl) chipEl.classList.toggle('low', localState.wc.timeLeft <= 10);
+      if (localState.wc.timeLeft <= 0){
+        clearInterval(localTimer);
+        endLocalWc(false);
+      }
+    }, 1000);
   }
 
   // ============================================================
@@ -555,6 +835,12 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
     });
     peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
   });
+  function currentGiverId(g){
+    if (g.phase === 'wcPass' || g.phase === 'wcGetReady' || g.phase === 'wcPlaying' || g.phase === 'matchEnd'){
+      return g.wc ? g.order[g.wc.giverIndex] : null;
+    }
+    return g.order[g.giverIndex];
+  }
   function handleHostMessage(conn, msg){
     if (msg.type === 'joinName'){
       const id = uid();
@@ -562,14 +848,22 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       conn.__playerId = id;
       conn.send({ type:'joined', yourId: id });
       renderHostPlayerList();
-    } else if (msg.type === 'markGotten'){
-      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) markGottenOnline(msg.idx);
-    } else if (msg.type === 'endRound'){
-      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) endOnlineRound();
+    } else if (msg.type === 'completeBox'){
+      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) completeBoxOnline(msg.gotten);
+    } else if (msg.type === 'skipWord'){
+      if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) skipWordOnline();
     } else if (msg.type === 'startTimer'){
       if (onlineGame && onlineGame.order[onlineGame.giverIndex] === conn.__playerId) beginOnlineTimer();
     } else if (msg.type === 'nextRound'){
       advanceOnlineRound();
+    } else if (msg.type === 'startWc'){
+      startOnlineWinnersCircle();
+    } else if (msg.type === 'wcStartTimer'){
+      if (onlineGame && onlineGame.wc && onlineGame.order[onlineGame.wc.giverIndex] === conn.__playerId) beginOnlineWcTimer();
+    } else if (msg.type === 'wcMark'){
+      if (onlineGame && onlineGame.wc && onlineGame.order[onlineGame.wc.giverIndex] === conn.__playerId) markWcOnline(msg.gotten);
+    } else if (msg.type === 'wcRulesAck'){
+      if (onlineGame && onlineGame.phase === 'wcRulesGate' && onlineGame.order[onlineGame.pendingWcGiverIndex] === conn.__playerId) startOnlineWinnersCircle();
     }
   }
   function renderHostPlayerList(){
@@ -585,24 +879,20 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
   });
   document.getElementById('hostStartGame').addEventListener('click', () => {
     showScreen('game');
-    startOnlineRound(null);
-  });
-
-  function startOnlineRound(excludeTitle){
-    const cat = pickCategory(excludeTitle);
     onlineGame = {
       order: hostPlayers.map(p=>p.id),
       giverIndex: 0,
-      category: cat.title,
-      answers: cat.answers.slice(),
-      gotten: Array(6).fill(false),
+      levelIndex: 0,
+      boxResults: [],
+      tier: BOX_TIER[0],
+      secretWord: pickMainWord(BOX_TIER[0], null),
       timeLimit: hostTimeLimit,
-      timeLeft: hostTimeLimit,
-      phase: 'getReady', // getReady -> playing -> roundEnd
-      roundGottenCount: 0
+      timeLeft: 0,
+      phase: 'getReady',
+      wc: null
     };
     broadcastOnlineState();
-  }
+  });
   function beginOnlineTimer(){
     if (onlineGame.phase !== 'getReady') return;
     onlineGame.phase = 'playing';
@@ -610,30 +900,89 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
     broadcastOnlineState();
     startOnlineTimer();
   }
-  function markGottenOnline(idx){
+  function completeBoxOnline(gotten){
     const g = onlineGame;
-    if (g.phase !== 'playing' || g.gotten[idx]) return;
-    g.gotten[idx] = true;
-    const giverId = g.order[g.giverIndex];
-    const pl = hostPlayers.find(p=>p.id===giverId);
-    if (pl) pl.score += 1;
-    if (g.gotten.every(Boolean)) endOnlineRound();
-    else broadcastOnlineState();
-  }
-  function endOnlineRound(){
     if (onlineTimer) clearInterval(onlineTimer);
-    onlineGame.phase = 'roundEnd';
+    g.boxResults[g.levelIndex] = gotten;
+    if (gotten){
+      const pl = hostPlayers.find(p=>p.id===g.order[g.giverIndex]);
+      if (pl) pl.score += BOX_VALUE[g.tier];
+    }
+    g.phase = 'roundEnd';
+    broadcastOnlineState();
+  }
+  function skipWordOnline(){
+    const g = onlineGame;
+    g.secretWord = pickMainWord(g.tier, g.secretWord);
     broadcastOnlineState();
   }
   function advanceOnlineRound(){
-    const prevCategory = onlineGame.category;
-    onlineGame.giverIndex = (onlineGame.giverIndex + 1) % onlineGame.order.length;
-    const cat = pickCategory(prevCategory);
-    onlineGame.category = cat.title;
-    onlineGame.answers = cat.answers.slice();
-    onlineGame.gotten = Array(6).fill(false);
-    onlineGame.timeLeft = onlineGame.timeLimit;
-    onlineGame.phase = 'getReady';
+    const g = onlineGame;
+    if (g.levelIndex >= 5) return; // must go through Winner's Circle gate instead
+    const prevWord = g.secretWord;
+    g.levelIndex++;
+    g.giverIndex = (g.giverIndex + 1) % g.order.length;
+    g.tier = BOX_TIER[g.levelIndex];
+    g.secretWord = pickMainWord(g.tier, prevWord);
+    g.phase = 'getReady';
+    broadcastOnlineState();
+  }
+  function advanceToWcRulesGateOnline(){
+    const g = onlineGame;
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    let bestIdx = 0;
+    players.forEach((p,i) => { if (p.score > players[bestIdx].score) bestIdx = i; });
+    g.pendingWcGiverIndex = bestIdx;
+    g.phase = 'wcRulesGate';
+    broadcastOnlineState();
+  }
+  function startOnlineWinnersCircle(){
+    const g = onlineGame;
+    let bestIdx = g.pendingWcGiverIndex;
+    if (typeof bestIdx !== 'number'){
+      const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+      bestIdx = 0;
+      players.forEach((p,i) => { if (p.score > players[bestIdx].score) bestIdx = i; });
+    }
+    g.wc = { subjects: pickWcSubjects(), index: 0, gotten: Array(6).fill(false), timeLeft: WC_TIME_LIMIT, giverIndex: bestIdx, cleared: false };
+    g.phase = 'wcGetReady';
+    broadcastOnlineState();
+  }
+  function beginOnlineWcTimer(){
+    const g = onlineGame;
+    if (g.phase !== 'wcGetReady') return;
+    g.phase = 'wcPlaying';
+    g.wc.timeLeft = WC_TIME_LIMIT;
+    broadcastOnlineState();
+    startOnlineWcTimer();
+  }
+  function advanceWcIndexOnline(){
+    const wc = onlineGame.wc;
+    const n = wc.subjects.length;
+    for (let step=1; step<=n; step++){
+      const idx = (wc.index + step) % n;
+      if (!wc.gotten[idx]){ wc.index = idx; return; }
+    }
+  }
+  function markWcOnline(gotten){
+    const g = onlineGame;
+    g.wc.gotten[g.wc.index] = gotten;
+    if (g.wc.gotten.every(Boolean)){
+      endOnlineWc(true);
+      return;
+    }
+    advanceWcIndexOnline();
+    broadcastOnlineState();
+  }
+  function endOnlineWc(cleared){
+    if (onlineTimer) clearInterval(onlineTimer);
+    const g = onlineGame;
+    g.wc.cleared = cleared;
+    if (cleared){
+      const pl = hostPlayers.find(p=>p.id===g.order[g.wc.giverIndex]);
+      if (pl) pl.score += 100000;
+    }
+    g.phase = 'matchEnd';
     broadcastOnlineState();
   }
   function startOnlineTimer(){
@@ -643,25 +992,54 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
       onlineGame.timeLeft--;
       if (onlineGame.timeLeft <= 0){
         clearInterval(onlineTimer);
-        endOnlineRound();
+        completeBoxOnline(false);
+      } else {
+        broadcastTimerOnly();
+      }
+    }, 1000);
+  }
+  function startOnlineWcTimer(){
+    if (onlineTimer) clearInterval(onlineTimer);
+    onlineTimer = setInterval(() => {
+      if (onlineGame.phase !== 'wcPlaying'){ clearInterval(onlineTimer); return; }
+      onlineGame.wc.timeLeft--;
+      if (onlineGame.wc.timeLeft <= 0){
+        clearInterval(onlineTimer);
+        endOnlineWc(false);
       } else {
         broadcastTimerOnly();
       }
     }, 1000);
   }
   function broadcastTimerOnly(){
-    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'timer', timeLeft: onlineGame.timeLeft }); });
+    const g = onlineGame;
+    const timeLeft = g.phase === 'wcPlaying' ? g.wc.timeLeft : g.timeLeft;
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'timer', timeLeft }); });
     const numEl = document.getElementById('timeLeftNum');
-    if (numEl) numEl.textContent = onlineGame.timeLeft;
+    if (numEl) numEl.textContent = timeLeft;
   }
   function redactedGameFor(viewerId){
     const g = onlineGame;
-    const isGiver = g.order[g.giverIndex] === viewerId;
-    return {
-      order: g.order, giverIndex: g.giverIndex, category: g.category,
-      answers: isGiver ? g.answers : g.answers.map((a,i) => g.gotten[i] ? a : null),
-      gotten: g.gotten, timeLimit: g.timeLimit, timeLeft: g.timeLeft, phase: g.phase
+    const giverId = currentGiverId(g);
+    const isGiver = giverId === viewerId;
+    const base = {
+      order: g.order, giverIndex: g.giverIndex, levelIndex: g.levelIndex, boxResults: g.boxResults,
+      tier: g.tier, timeLeft: g.timeLeft, timeLimit: g.timeLimit, phase: g.phase,
+      secretWord: isGiver ? g.secretWord : null,
+      pendingWcGiverIndex: g.pendingWcGiverIndex
     };
+    if (g.wc){
+      base.wc = {
+        giverIndex: g.wc.giverIndex,
+        index: g.wc.index,
+        gotten: g.wc.gotten,
+        timeLeft: g.wc.timeLeft,
+        cleared: g.wc.cleared,
+        subject: isGiver ? g.wc.subjects[g.wc.index] : null,
+        subjectCount: g.wc.subjects.length
+      };
+    }
+    return base;
   }
   function broadcastOnlineState(){
     const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
@@ -672,114 +1050,125 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
   function renderOnline(g, players, viewerId, isHost){
     const body = document.getElementById('gameBody');
     body.innerHTML = '';
-    const isGiver = g.order[g.giverIndex] === viewerId;
-    const giverPl = players.find(p=>p.id===g.order[g.giverIndex]) || {name:'\u2026'};
+    const giverId = currentGiverId(g);
+    const isGiver = giverId === viewerId;
+    const giverPl = players.find(p=>p.id===giverId) || {name:'\u2026'};
 
     if (g.phase === 'getReady'){
       const card = document.createElement('div');
-      card.className = 'panel pass-card';
+      card.className = 'panel';
+      card.appendChild(pyramidVizEl(g.levelIndex, g.boxResults));
       if (isGiver){
-        card.innerHTML = '<div class="category-title">' + escapeHtml(g.category) + '</div>';
-        const list = document.createElement('div');
-        list.className = 'answer-list';
-        g.answers.forEach(a => {
-          const item = document.createElement('div');
-          item.className = 'answer-item';
-          item.innerHTML = '<span>' + escapeHtml(a) + '</span>';
-          list.appendChild(item);
-        });
-        card.appendChild(list);
+        const tier = g.tier;
+        const badge = document.createElement('div');
+        badge.style.textAlign = 'center';
+        badge.innerHTML = '<span class="tier-badge tier-'+tier+'">'+TIER_LABEL[tier]+' &middot; '+formatCash(BOX_VALUE[tier])+'</span>';
+        card.appendChild(badge);
+        const wordCard = document.createElement('div');
+        wordCard.className = 'secret-word-card';
+        wordCard.innerHTML = '<div class="secret-word">' + escapeHtml(g.secretWord) + '</div>';
+        card.appendChild(wordCard);
         const btn = document.createElement('button');
         btn.className = 'primary-btn';
         btn.textContent = 'Start the timer \u2192';
-        btn.addEventListener('click', () => {
-          if (isHost) beginOnlineTimer();
-          else joinConn.send({ type:'startTimer' });
-        });
+        btn.addEventListener('click', () => { if (isHost) beginOnlineTimer(); else joinConn.send({ type:'startTimer' }); });
         card.appendChild(btn);
+        const skip = document.createElement('button');
+        skip.className = 'skip-link';
+        skip.style.display = 'block';
+        skip.style.margin = '10px auto 0';
+        skip.textContent = 'Get a different word';
+        skip.addEventListener('click', () => { if (isHost) skipWordOnline(); else joinConn.send({ type:'skipWord' }); });
+        card.appendChild(skip);
       } else {
-        card.innerHTML = '<div class="to-icon">\ud83d\udcac</div><h2>Get ready</h2><p>' + escapeHtml(giverPl.name) + ' is looking over their list. The timer starts when they\u2019re ready.</p>';
+        const p = document.createElement('p');
+        p.style.textAlign = 'center'; p.style.color = 'var(--muted)';
+        p.textContent = escapeHtml(giverPl.name) + ' is looking over their word. The timer starts when they\u2019re ready.';
+        card.appendChild(p);
       }
       body.appendChild(card);
       return;
     }
 
     if (g.phase === 'playing'){
+      const tier = g.tier;
       const hud = document.createElement('div');
       hud.className = 'hud-row';
       hud.innerHTML = '<div class="hud-chip">' + (isGiver ? 'You\u2019re' : escapeHtml(giverPl.name) + ' is') + ' giving clues</div>' +
         '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + g.timeLeft + '</span>s</div>' +
-        '<div class="hud-chip">' + g.gotten.filter(Boolean).length + ' / 6 gotten</div>';
+        '<div class="hud-chip tier-badge tier-'+tier+'" style="margin:0;">'+TIER_LABEL[tier]+' &middot; '+formatCash(BOX_VALUE[tier])+'</div>';
       body.appendChild(hud);
 
       const scoreboard = document.createElement('div');
       scoreboard.className = 'scoreboard';
       players.forEach(pl => {
         const chip = document.createElement('span');
-        chip.className = 'score-chip' + (pl.id===g.order[g.giverIndex]?' active-giver':'');
-        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        chip.className = 'score-chip' + (pl.id===giverId?' active-giver':'');
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
         scoreboard.appendChild(chip);
       });
       body.appendChild(scoreboard);
-
-      const catTitle = document.createElement('div');
-      catTitle.className = 'category-title';
-      catTitle.textContent = g.category;
-      body.appendChild(catTitle);
-
-      const list = document.createElement('div');
-      list.className = 'answer-list';
-      g.answers.forEach((a, idx) => {
-        const item = document.createElement('div');
-        const known = a !== null;
-        item.className = 'answer-item' + (g.gotten[idx]?' gotten':'');
-        item.innerHTML = '<span>' + (known ? escapeHtml(a) : '\u2014') + '</span>' + (g.gotten[idx]?'<span class="check">\u2713</span>':'');
-        if (isGiver && !g.gotten[idx]){
-          item.addEventListener('click', () => {
-            if (isHost) markGottenOnline(idx);
-            else joinConn.send({ type:'markGotten', idx });
-          });
-        }
-        list.appendChild(item);
-      });
-      body.appendChild(list);
+      body.appendChild(pyramidVizEl(g.levelIndex, g.boxResults));
 
       if (isGiver){
+        const wordCard = document.createElement('div');
+        wordCard.className = 'secret-word-card';
+        wordCard.innerHTML = '<div class="secret-word">' + escapeHtml(g.secretWord) + '</div>';
+        body.appendChild(wordCard);
+        const btnRow = document.createElement('div');
+        const gotBtn = document.createElement('button');
+        gotBtn.className = 'primary-btn';
+        gotBtn.textContent = 'Got it! \u2713';
+        gotBtn.addEventListener('click', () => { if (isHost) completeBoxOnline(true); else joinConn.send({ type:'completeBox', gotten:true }); });
+        btnRow.appendChild(gotBtn);
         const endBtn = document.createElement('button');
         endBtn.className = 'secondary-btn';
-        endBtn.style.marginLeft = '0';
-        endBtn.textContent = 'End round early';
-        endBtn.addEventListener('click', () => {
-          if (isHost) endOnlineRound();
-          else joinConn.send({ type:'endRound' });
-        });
-        body.appendChild(endBtn);
+        endBtn.textContent = 'Time\u2019s up / give up';
+        endBtn.addEventListener('click', () => { if (isHost) completeBoxOnline(false); else joinConn.send({ type:'completeBox', gotten:false }); });
+        btnRow.appendChild(endBtn);
+        body.appendChild(btnRow);
+        const skip = document.createElement('button');
+        skip.className = 'skip-link';
+        skip.style.display = 'block';
+        skip.textContent = 'Get a different word (keeps the clock running)';
+        skip.addEventListener('click', () => { if (isHost) skipWordOnline(); else joinConn.send({ type:'skipWord' }); });
+        body.appendChild(skip);
+      } else {
+        const waitMsg = document.createElement('p');
+        waitMsg.style.color = 'var(--muted)'; waitMsg.style.fontSize = '13px'; waitMsg.style.textAlign = 'center';
+        waitMsg.textContent = 'Waiting for ' + escapeHtml(giverPl.name) + '\u2026';
+        body.appendChild(waitMsg);
       }
       return;
     }
 
     if (g.phase === 'roundEnd'){
+      const gotten = g.boxResults[g.levelIndex];
       const card = document.createElement('div');
       card.className = 'panel round-end-card';
-      const gottenCount = g.gotten.filter(Boolean).length;
-      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">Round over</h3>' +
-        '<div class="the-score">' + gottenCount + ' / 6</div>' +
-        '<p style="color:var(--muted);">' + escapeHtml(g.category) + '</p>';
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + (gotten ? 'Got it!' : 'No dice this time') + '</h3>' +
+        (gotten ? '<div class="the-score">+' + formatCash(BOX_VALUE[g.tier]) + '</div>' : '');
+      card.appendChild(pyramidVizEl(g.levelIndex, g.boxResults));
       const scoreboard = document.createElement('div');
       scoreboard.className = 'scoreboard';
       scoreboard.style.justifyContent = 'center';
       players.forEach(pl => {
         const chip = document.createElement('span');
         chip.className = 'score-chip';
-        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
         scoreboard.appendChild(chip);
       });
       card.appendChild(scoreboard);
       if (isHost){
         const btn = document.createElement('button');
         btn.className = 'primary-btn';
-        btn.textContent = 'Next player \u2192';
-        btn.addEventListener('click', () => advanceOnlineRound());
+        if (g.levelIndex < 5){
+          btn.textContent = 'Next player \u2192';
+          btn.addEventListener('click', () => advanceOnlineRound());
+        } else {
+          btn.textContent = 'Continue to the Winner\u2019s Circle \u2192';
+          btn.addEventListener('click', () => { advanceToWcRulesGateOnline(); });
+        }
         card.appendChild(btn);
       } else {
         const p = document.createElement('p');
@@ -787,8 +1176,111 @@ const CATEGORIES = window.PYRAMID_CATEGORIES;;
         p.textContent = 'Waiting for the host to continue\u2026';
         card.appendChild(p);
       }
+      body.appendChild(card);
+      return;
+    }
+
+    if (g.phase === 'wcRulesGate'){
+      const pendingGiverId = g.order[g.pendingWcGiverIndex];
+      const isPendingGiver = pendingGiverId === viewerId;
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      if (isPendingGiver){
+        document.getElementById('wcRulesModal').classList.remove('hidden');
+        card.innerHTML = '<p style="text-align:center;color:var(--muted);">Read the Winner\u2019s Circle rules to continue.</p>';
+      } else {
+        document.getElementById('wcRulesModal').classList.add('hidden');
+        const giverName = (players.find(p=>p.id===pendingGiverId)||{}).name || 'The next giver';
+        card.innerHTML = '<p style="text-align:center;color:var(--muted);">' + escapeHtml(giverName) + ' is reading the Winner\u2019s Circle rules\u2026</p>';
+      }
+      body.appendChild(card);
+      return;
+    }
+
+    if (g.phase === 'wcGetReady'){
+      const card = document.createElement('div');
+      card.className = 'panel pass-card';
+      if (isGiver){
+        card.innerHTML = '<div class="to-icon">\ud83c\udf1f</div><h2>Winner\u2019s Circle</h2><p>One continuous ' + WC_TIME_LIMIT + '-second clock for all ' + g.wc.subjectCount + ' categories. List-only clues, no prepositions. Start it when you\u2019re ready.</p>';
+        const btn = document.createElement('button');
+        btn.className = 'primary-btn';
+        btn.textContent = 'Start the clock \u2192';
+        btn.addEventListener('click', () => { if (isHost) beginOnlineWcTimer(); else joinConn.send({ type:'wcStartTimer' }); });
+        card.appendChild(btn);
+      } else {
+        card.innerHTML = '<div class="to-icon">\ud83c\udf1f</div><h2>Winner\u2019s Circle</h2><p>' + escapeHtml(giverPl.name) + ' had the highest score \u2014 they\u2019re in the hot seat! Get ready to guess.</p>';
+      }
+      body.appendChild(card);
+      return;
+    }
+
+    if (g.phase === 'wcPlaying'){
+      const gottenCount = g.wc.gotten.filter(Boolean).length;
+      const hud = document.createElement('div');
+      hud.className = 'hud-row';
+      hud.innerHTML = '<div class="hud-chip">' + escapeHtml(giverPl.name) + ' \u2014 Winner\u2019s Circle</div>' +
+        '<div class="hud-chip timer-chip" id="timerChip">Time <span class="num" id="timeLeftNum">' + g.wc.timeLeft + '</span>s</div>' +
+        '<div class="hud-chip">' + gottenCount + ' / ' + g.wc.subjectCount + '</div>';
+      body.appendChild(hud);
+
+      if (isGiver && g.wc.subject){
+        const subjCard = document.createElement('div');
+        subjCard.className = 'wc-subject-card';
+        subjCard.innerHTML = '<div class="wc-subject">' + escapeHtml(g.wc.subject.title) + '</div>' +
+          '<div class="wc-examples">Examples to draw clues from: ' + g.wc.subject.answers.map(escapeHtml).join(', ') + '</div>';
+        body.appendChild(subjCard);
+        const btnRow = document.createElement('div');
+        const gotBtn = document.createElement('button');
+        gotBtn.className = 'primary-btn';
+        gotBtn.textContent = 'Got it! \u2713';
+        gotBtn.addEventListener('click', () => { if (isHost) markWcOnline(true); else joinConn.send({ type:'wcMark', gotten:true }); });
+        btnRow.appendChild(gotBtn);
+        const skipBtn = document.createElement('button');
+        skipBtn.className = 'secondary-btn';
+        skipBtn.textContent = 'Skip \u2192';
+        skipBtn.addEventListener('click', () => { if (isHost) markWcOnline(false); else joinConn.send({ type:'wcMark', gotten:false }); });
+        btnRow.appendChild(skipBtn);
+        body.appendChild(btnRow);
+      } else {
+        const waitMsg = document.createElement('p');
+        waitMsg.style.color = 'var(--muted)'; waitMsg.style.fontSize = '13px'; waitMsg.style.textAlign = 'center';
+        waitMsg.textContent = 'Guess the category from the clues you\u2019re hearing\u2026';
+        body.appendChild(waitMsg);
+      }
+      return;
+    }
+
+    if (g.phase === 'matchEnd'){
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      if (g.wc.cleared){
+        const banner = document.createElement('div');
+        banner.className = 'grand-prize-banner';
+        banner.innerHTML = '<h2>\ud83c\udf89 $100,000 GRAND PRIZE! \ud83c\udf89</h2><p style="color:var(--muted);margin:0;">Cleared the whole Winner\u2019s Circle before time ran out.</p>';
+        card.appendChild(banner);
+      } else {
+        const gottenCount = g.wc.gotten.filter(Boolean).length;
+        const h = document.createElement('h3');
+        h.style.margin = '0'; h.style.fontFamily = "'Space Grotesk',sans-serif";
+        h.textContent = 'Winner\u2019s Circle: ' + gottenCount + ' / ' + g.wc.subjectCount;
+        card.appendChild(h);
+        const p = document.createElement('p');
+        p.style.color = 'var(--muted)';
+        p.textContent = 'Time ran out before the full pyramid of categories was cleared.';
+        card.appendChild(p);
+      }
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      players.slice().sort((a,b)=>b.score-a.score).forEach((pl,i) => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (i===0?' active-giver':'');
+        chip.innerHTML = (i===0?'\ud83c\udfc6 ':'') + escapeHtml(pl.name) + '<span class="pts">' + formatCash(pl.score) + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
       const lobbyBtn = document.createElement('button');
-      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.className = 'primary-btn';
       lobbyBtn.textContent = 'Back to lobby';
       lobbyBtn.addEventListener('click', () => location.reload());
       card.appendChild(lobbyBtn);
