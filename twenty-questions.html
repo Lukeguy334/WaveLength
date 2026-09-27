@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>20 Questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.in-control { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+
+  .jp-clue-card { text-align:center; padding:34px 20px; }
+
+  .counter-ring { text-align:center; margin-bottom:16px; }
+  .counter-ring .count-num { font-family:'Space Grotesk',sans-serif; font-size:44px; font-weight:700; color:var(--brass-bright); }
+  .counter-ring .count-label { color:var(--muted); font-size:13px; }
+
+  .answer-btn-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:16px 0; }
+  .answer-btn { padding:14px 22px; border-radius:10px; border:2px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
+  .answer-btn.yes { border-color:var(--teal); color:var(--teal); }
+  .answer-btn.no { border-color:var(--rose); color:var(--rose); }
+  .answer-btn.maybe { border-color:var(--brass); color:var(--brass-bright); }
+  .answer-btn:hover { filter:brightness(1.15); }
+  .answer-btn:disabled { opacity:0.35; cursor:not-allowed; }
+
+  .log-list { max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+  .log-row { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:8px 12px; font-size:13px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+  .log-row .log-q { color:var(--paper); }
+  .log-row .log-a { font-family:'JetBrains Mono',monospace; font-weight:700; flex-shrink:0; }
+  .log-row .log-a.yes { color:var(--teal); }
+  .log-row .log-a.no { color:var(--rose); }
+  .log-row .log-a.maybe { color:var(--brass-bright); }
+
+  .idea-chip-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .idea-chip { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:20px; padding:5px 12px; font-size:12px; color:var(--muted); }
+
+  .waiting-list { color:var(--muted); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>20 Questions</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Think of a person, place, or thing. Everyone else has 20 yes-or-no questions to figure out what it is.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li>The current answerer secretly thinks of a person, place, or thing (out loud in your head, or typed privately here if you want a reveal at the end).</li>
+          <li>Everyone else takes turns asking yes-or-no questions out loud. The answerer taps Yes, No, or Sometimes/Depends after each one &mdash; that's what counts toward the limit of 20.</li>
+          <li>Anyone can guess the secret at any point instead of asking a question &mdash; a wrong guess still uses up one of the 20.</li>
+          <li>Guess correctly before the 20 run out and you win the round. If the 20 run out first, the answerer wins.</li>
+          <li>The answerer role rotates every round.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Everyone shares one device, passing it to whoever is answering.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code &mdash; everyone plays from their own device.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Rounds per player</label>
+      <div class="choice-row" id="localRoundsChoice">
+        <button class="choice-btn active" data-val="1">Once each</button>
+        <button class="choice-btn" data-val="2">Twice each</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Rounds per player</label>
+      <div class="choice-row" id="hostRoundsChoice">
+        <button class="choice-btn active" data-val="1">Once each</button>
+        <button class="choice-btn" data-val="2">Twice each</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data/twenty-questions-ideas.js"></script>
+<script>
+(function(){
+  const IDEAS = window.TWENTY_QUESTIONS_IDEAS;
+  const MAX_Q = 20;
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function randomIdea(){ return IDEAS[Math.floor(Math.random()*IDEAS.length)]; }
+
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id==='rulesModal') e.target.classList.add('hidden'); });
+
+  document.querySelectorAll('#localRoundsChoice .choice-btn, #hostRoundsChoice .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  const localPlayerRows = document.getElementById('localPlayerRows');
+  function addLocalPlayerRow(name){
+    const row = document.createElement('div'); row.className = 'player-row-input';
+    const input = document.createElement('input'); input.className='text-input'; input.maxLength=16; input.placeholder='Player name'; input.value = name || '';
+    row.appendChild(input);
+    const rm = document.createElement('button'); rm.className='remove-player-btn'; rm.textContent='\u00d7';
+    rm.addEventListener('click', () => { if (localPlayerRows.children.length > 2) row.remove(); });
+    row.appendChild(rm);
+    localPlayerRows.appendChild(row);
+  }
+  addLocalPlayerRow('Player 1'); addLocalPlayerRow('Player 2');
+  document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    if (localPlayerRows.children.length >= 8) return;
+    addLocalPlayerRow('Player ' + (localPlayerRows.children.length+1));
+  });
+
+  // ============================================================
+  // LOCAL (pass & play)
+  // ============================================================
+  let game = null;
+  document.getElementById('localStart').addEventListener('click', () => {
+    const names = [...localPlayerRows.querySelectorAll('input')].map(i => i.value.trim() || 'Player').slice(0,8);
+    const perPlayer = parseInt(document.querySelector('#localRoundsChoice .choice-btn.active').dataset.val, 10);
+    startLocalGame(names, perPlayer);
+  });
+
+  function startLocalGame(names, perPlayer){
+    game = {
+      players: names.map((n,i) => ({ id:'l'+i, name:n, score:0 })),
+      totalRounds: names.length * perPlayer,
+      roundIndex: 0,
+      answererIdx: 0,
+      phase: 'round-intro', // round-intro | secret-entry | play | round-end | done
+      secret: '', count: 0, log: [], winnerId: null
+    };
+    showScreen('game');
+    renderLocal();
+  }
+
+  function localScoreboard(g, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    g.players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip' + (p.id===highlightId?' in-control':'');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderLocal(){
+    const g = game; const body = document.getElementById('gameBody'); body.innerHTML = '';
+    if (g.phase === 'round-intro') return renderLocalRoundIntro(g, body);
+    if (g.phase === 'secret-entry') return renderLocalSecretEntry(g, body);
+    if (g.phase === 'play') return renderLocalPlay(g, body);
+    if (g.phase === 'round-end') return renderLocalRoundEnd(g, body);
+    if (g.phase === 'done') return renderLocalDone(g, body);
+  }
+
+  function renderLocalRoundIntro(g, body){
+    const answerer = g.players[g.answererIdx];
+    body.appendChild(localScoreboard(g, answerer.id));
+    const panel = document.createElement('div'); panel.className = 'panel pass-card';
+    panel.innerHTML = '<div class="to-icon">\ud83e\udd14</div><h2>Pass to ' + escapeHtml(answerer.name) + '</h2><p>Round ' + (g.roundIndex+1) + ' of ' + g.totalRounds + ' &mdash; you\'re thinking of something this round.</p>';
+    const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent = "I'm " + answerer.name + ", ready";
+    btn.addEventListener('click', () => { g.phase='secret-entry'; renderLocal(); });
+    panel.appendChild(btn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalSecretEntry(g, body){
+    const answerer = g.players[g.answererIdx];
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Think of a person, place, or thing</h3>' +
+      '<p style="color:var(--muted);">Typing it is optional &mdash; it just lets the app reveal it at the end. Keep it in your head either way.</p>';
+    const input = document.createElement('input'); input.className='text-input'; input.placeholder='(optional) type your secret';
+    panel.appendChild(input);
+    const ideaBtn = document.createElement('button'); ideaBtn.className='secondary-btn'; ideaBtn.textContent='Need an idea? Draw a random one';
+    const ideaChips = document.createElement('div'); ideaChips.className='idea-chip-row';
+    ideaBtn.addEventListener('click', () => {
+      const idea = randomIdea();
+      const chip = document.createElement('span'); chip.className='idea-chip'; chip.textContent = idea.category + ': ' + idea.item;
+      ideaChips.innerHTML=''; ideaChips.appendChild(chip);
+    });
+    panel.appendChild(ideaBtn);
+    panel.appendChild(ideaChips);
+    const startBtn = document.createElement('button'); startBtn.className='primary-btn'; startBtn.style.display='block'; startBtn.textContent="Got it, start the questions";
+    startBtn.addEventListener('click', () => {
+      g.secret = input.value.trim();
+      g.count = 0; g.log = [];
+      g.phase = 'play';
+      renderLocal();
+    });
+    panel.appendChild(startBtn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalPlay(g, body){
+    const answerer = g.players[g.answererIdx];
+    body.appendChild(localScoreboard(g, answerer.id));
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const counter = document.createElement('div'); counter.className = 'counter-ring';
+    counter.innerHTML = '<div class="count-num">' + (MAX_Q - g.count) + '</div><div class="count-label">questions left</div>';
+    panel.appendChild(counter);
+
+    const noteInput = document.createElement('input'); noteInput.className='text-input'; noteInput.placeholder='(optional) what was asked?';
+    panel.appendChild(noteInput);
+
+    const row = document.createElement('div'); row.className='answer-btn-row';
+    ['yes','no','maybe'].forEach(kind => {
+      const btn = document.createElement('button'); btn.className='answer-btn ' + kind;
+      btn.textContent = kind==='yes'?'Yes':kind==='no'?'No':'Sometimes';
+      btn.addEventListener('click', () => {
+        g.log.unshift({ q: noteInput.value.trim() || '(question ' + (g.count+1) + ')', a: kind });
+        g.count++;
+        if (g.count >= MAX_Q){ g.winnerId = answerer.id; g.phase='round-end'; }
+        renderLocal();
+      });
+      row.appendChild(btn);
+    });
+    panel.appendChild(row);
+
+    const guessBtn = document.createElement('button'); guessBtn.className = 'secondary-btn'; guessBtn.style.display='block'; guessBtn.textContent = 'Someone wants to guess';
+    guessBtn.addEventListener('click', () => renderLocalGuessForm(g, body, panel));
+    panel.appendChild(guessBtn);
+
+    if (g.log.length){
+      const logList = document.createElement('div'); logList.className='log-list';
+      g.log.forEach(entry => {
+        const r = document.createElement('div'); r.className='log-row';
+        r.innerHTML = '<span class="log-q">' + escapeHtml(entry.q) + '</span><span class="log-a ' + entry.a + '">' + (entry.a==='yes'?'YES':entry.a==='no'?'NO':'SOMETIMES') + '</span>';
+        logList.appendChild(r);
+      });
+      panel.appendChild(logList);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderLocalGuessForm(g, body, panel){
+    const overlay = document.createElement('div'); overlay.style.marginTop='14px'; overlay.style.borderTop='1px solid var(--panel-line)'; overlay.style.paddingTop='14px';
+    overlay.innerHTML = '<label class="field-label">Guesser\'s name</label>';
+    const guesserInput = document.createElement('input'); guesserInput.className='text-input';
+    overlay.appendChild(guesserInput);
+    const lbl2 = document.createElement('label'); lbl2.className='field-label'; lbl2.textContent='Their guess'; overlay.appendChild(lbl2);
+    const guessInput = document.createElement('input'); guessInput.className='text-input';
+    overlay.appendChild(guessInput);
+    const row = document.createElement('div'); row.className='answer-btn-row';
+    const correctBtn = document.createElement('button'); correctBtn.className='answer-btn yes'; correctBtn.textContent='Correct!';
+    correctBtn.addEventListener('click', () => {
+      const guesser = g.players.find(p => p.name.toLowerCase() === guesserInput.value.trim().toLowerCase());
+      if (guesser) guesser.score += 1;
+      g.winnerId = guesser ? guesser.id : null;
+      g.phase = 'round-end';
+      renderLocal();
+    });
+    const wrongBtn = document.createElement('button'); wrongBtn.className='answer-btn no'; wrongBtn.textContent='Wrong';
+    wrongBtn.addEventListener('click', () => {
+      g.log.unshift({ q: (guesserInput.value.trim()||'Someone') + ' guessed: ' + (guessInput.value.trim()||'?'), a: 'no' });
+      g.count++;
+      if (g.count >= MAX_Q){ g.winnerId = game.players[game.answererIdx].id; g.phase='round-end'; }
+      renderLocal();
+    });
+    row.appendChild(correctBtn); row.appendChild(wrongBtn);
+    overlay.appendChild(row);
+    panel.appendChild(overlay);
+  }
+
+  function renderLocalRoundEnd(g, body){
+    const answerer = g.players[g.answererIdx];
+    const winner = g.players.find(p=>p.id===g.winnerId);
+    body.appendChild(localScoreboard(g, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+      (winner ? escapeHtml(winner.name) + ' got it!' : escapeHtml(answerer.name) + ' stumped everyone!') + '</h2>' +
+      (g.secret ? '<p style="color:var(--muted);">The secret was: <b style="color:var(--paper);">' + escapeHtml(g.secret) + '</b></p>' : '<p style="color:var(--muted);">(No secret was typed in to reveal.)</p>');
+    const nextBtn = document.createElement('button'); nextBtn.className='primary-btn';
+    const isLast = g.roundIndex >= g.totalRounds - 1;
+    nextBtn.textContent = isLast ? 'See final scores' : 'Next round';
+    nextBtn.addEventListener('click', () => {
+      if (isLast){ g.phase='done'; }
+      else {
+        g.roundIndex++; g.answererIdx = (g.answererIdx+1) % g.players.length;
+        g.phase='round-intro'; g.secret=''; g.count=0; g.log=[]; g.winnerId=null;
+      }
+      renderLocal();
+    });
+    panel.appendChild(nextBtn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalDone(g, body){
+    const ranked = g.players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className='scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href='twenty-questions.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ============================================================
+  // ONLINE (host-authoritative)
+  // ============================================================
+  let myId = null, myName = '', mode = 'local';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let onlineGame = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('twentyq-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer){ try{peer.destroy();}catch(e){} }
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    const perPlayer = parseInt(document.querySelector('#hostRoundsChoice .choice-btn.active').dataset.val, 10);
+    onlineGame = {
+      order: hostPlayers.map(p=>p.id),
+      totalRounds: hostPlayers.length * perPlayer,
+      roundIndex: 0, answererIdx: 0,
+      phase: 'round-intro',
+      secret: '', count: 0, log: [], winnerId: null,
+      pendingGuess: null
+    };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'gameStart' }); });
+    showScreen('game');
+    broadcastOnlineState();
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      return;
+    }
+    if (!onlineGame) return;
+    const g = onlineGame;
+    const answererId = g.order[g.answererIdx];
+    if (msg.type === 'beginSecret'){
+      if (conn.__playerId !== answererId || g.phase !== 'round-intro') return;
+      g.phase = 'secret-entry';
+      broadcastOnlineState();
+    } else if (msg.type === 'setSecret'){
+      if (conn.__playerId !== answererId || g.phase !== 'secret-entry') return;
+      g.secret = (msg.secret||'').trim();
+      g.count = 0; g.log = [];
+      g.phase = 'play';
+      broadcastOnlineState();
+    } else if (msg.type === 'logAnswer'){
+      if (conn.__playerId !== answererId || g.phase !== 'play') return;
+      g.log.unshift({ q: (msg.note||'').trim() || '(question ' + (g.count+1) + ')', a: msg.kind });
+      g.count++;
+      if (g.count >= MAX_Q){ g.winnerId = answererId; g.phase = 'round-end'; }
+      broadcastOnlineState();
+    } else if (msg.type === 'requestGuess'){
+      if (g.phase !== 'play' || conn.__playerId === answererId) return;
+      g.pendingGuess = { playerId: conn.__playerId, text: msg.text };
+      broadcastOnlineState();
+    } else if (msg.type === 'judgeGuess'){
+      if (conn.__playerId !== answererId || !g.pendingGuess) return;
+      const guesser = hostPlayers.find(p=>p.id===g.pendingGuess.playerId);
+      if (msg.correct){
+        if (guesser) guesser.score += 1;
+        g.winnerId = guesser ? guesser.id : null;
+        g.phase = 'round-end';
+      } else {
+        g.log.unshift({ q: (guesser?guesser.name:'Someone') + ' guessed: ' + g.pendingGuess.text, a: 'no' });
+        g.count++;
+        if (g.count >= MAX_Q){ g.winnerId = answererId; g.phase = 'round-end'; }
+      }
+      g.pendingGuess = null;
+      broadcastOnlineState();
+    } else if (msg.type === 'nextRound'){
+      if (g.phase !== 'round-end') return;
+      if (g.roundIndex >= g.totalRounds - 1){ g.phase = 'done'; }
+      else {
+        g.roundIndex++; g.answererIdx = (g.answererIdx+1) % g.order.length;
+        g.phase = 'round-intro'; g.secret=''; g.count=0; g.log=[]; g.winnerId=null; g.pendingGuess=null;
+      }
+      broadcastOnlineState();
+    }
+  }
+
+  function broadcastOnlineState(){
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    const g = onlineGame;
+    // Don't leak the secret to non-answerers before the round ends.
+    const answererId = g.order[g.answererIdx];
+    hostPlayers.forEach(p => {
+      const safeSecret = (p.id === answererId || g.phase === 'round-end' || g.phase === 'done') ? g.secret : '';
+      const payload = Object.assign({}, g, { secret: safeSecret });
+      if (p.conn) p.conn.send({ type:'state', game: payload, players });
+    });
+    const hostSafeSecret = (myId === answererId || g.phase === 'round-end' || g.phase === 'done') ? g.secret : '';
+    renderOnline(Object.assign({}, g, { secret: hostSafeSecret }), players, myId, true);
+  }
+
+  function onlineScoreboard(players, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip' + (p.id===highlightId?' in-control':'');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+  function sendOnline(msg){
+    if (mode === 'host'){ handleHostMessage({ __playerId: myId, send(){} }, msg); }
+    else if (joinConn) joinConn.send(msg);
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody'); body.innerHTML = '';
+    if (g.phase === 'round-intro') return renderOnlineRoundIntro(g, players, viewerId, body);
+    if (g.phase === 'secret-entry') return renderOnlineSecretEntry(g, players, viewerId, body);
+    if (g.phase === 'play') return renderOnlinePlay(g, players, viewerId, body);
+    if (g.phase === 'round-end') return renderOnlineRoundEnd(g, players, viewerId, isHost, body);
+    if (g.phase === 'done') return renderOnlineDone(players, body);
+  }
+
+  function renderOnlineRoundIntro(g, players, viewerId, body){
+    const answererId = g.order[g.answererIdx];
+    const answerer = players.find(p=>p.id===answererId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, answererId));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Round ' + (g.roundIndex+1) + ' of ' + g.totalRounds + '</h3>';
+    if (viewerId === answererId){
+      panel.innerHTML += '<p style="color:var(--muted);">You\'re answering this round.</p>';
+      const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Ready';
+      btn.addEventListener('click', () => sendOnline({ type:'beginSecret' }));
+      panel.appendChild(btn);
+    } else {
+      panel.innerHTML += '<p style="color:var(--muted);">' + escapeHtml(answerer.name) + ' is answering this round\u2026</p>';
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineSecretEntry(g, players, viewerId, body){
+    const answererId = g.order[g.answererIdx];
+    const answerer = players.find(p=>p.id===answererId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, answererId));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    if (viewerId === answererId){
+      panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Think of a person, place, or thing</h3>' +
+        '<p style="color:var(--muted);">Typing it is optional &mdash; it just lets the app reveal it at the end.</p>';
+      const input = document.createElement('input'); input.className='text-input'; input.placeholder='(optional) type your secret';
+      panel.appendChild(input);
+      const ideaBtn = document.createElement('button'); ideaBtn.className='secondary-btn'; ideaBtn.textContent='Need an idea? Draw a random one';
+      const ideaChips = document.createElement('div'); ideaChips.className='idea-chip-row';
+      ideaBtn.addEventListener('click', () => {
+        const idea = randomIdea();
+        const chip = document.createElement('span'); chip.className='idea-chip'; chip.textContent = idea.category + ': ' + idea.item;
+        ideaChips.innerHTML=''; ideaChips.appendChild(chip);
+      });
+      panel.appendChild(ideaBtn); panel.appendChild(ideaChips);
+      const startBtn = document.createElement('button'); startBtn.className='primary-btn'; startBtn.style.display='block'; startBtn.textContent='Start the questions';
+      startBtn.addEventListener('click', () => sendOnline({ type:'setSecret', secret: input.value }));
+      panel.appendChild(startBtn);
+    } else {
+      panel.innerHTML = '<p style="color:var(--muted);">' + escapeHtml(answerer.name) + ' is picking a secret\u2026</p>';
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlinePlay(g, players, viewerId, body){
+    const answererId = g.order[g.answererIdx];
+    body.appendChild(onlineScoreboard(players, answererId));
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const counter = document.createElement('div'); counter.className='counter-ring';
+    counter.innerHTML = '<div class="count-num">' + (MAX_Q - g.count) + '</div><div class="count-label">questions left</div>';
+    panel.appendChild(counter);
+
+    if (viewerId === answererId){
+      if (g.pendingGuess){
+        const guesser = players.find(p=>p.id===g.pendingGuess.playerId) || {name:'Someone'};
+        const gpanel = document.createElement('div'); gpanel.style.textAlign='center'; gpanel.style.marginBottom='14px';
+        gpanel.innerHTML = '<p><b>' + escapeHtml(guesser.name) + '</b> guesses: <b style="color:var(--brass-bright);">' + escapeHtml(g.pendingGuess.text) + '</b></p>';
+        panel.appendChild(gpanel);
+        const row = document.createElement('div'); row.className='answer-btn-row';
+        const correctBtn = document.createElement('button'); correctBtn.className='answer-btn yes'; correctBtn.textContent='Correct!';
+        correctBtn.addEventListener('click', () => sendOnline({ type:'judgeGuess', correct:true }));
+        const wrongBtn = document.createElement('button'); wrongBtn.className='answer-btn no'; wrongBtn.textContent='Wrong';
+        wrongBtn.addEventListener('click', () => sendOnline({ type:'judgeGuess', correct:false }));
+        row.appendChild(correctBtn); row.appendChild(wrongBtn);
+        panel.appendChild(row);
+      } else {
+        const noteInput = document.createElement('input'); noteInput.className='text-input'; noteInput.placeholder='(optional) what was asked?';
+        panel.appendChild(noteInput);
+        const row = document.createElement('div'); row.className='answer-btn-row';
+        ['yes','no','maybe'].forEach(kind => {
+          const btn = document.createElement('button'); btn.className='answer-btn ' + kind;
+          btn.textContent = kind==='yes'?'Yes':kind==='no'?'No':'Sometimes';
+          btn.addEventListener('click', () => sendOnline({ type:'logAnswer', kind, note: noteInput.value }));
+          row.appendChild(btn);
+        });
+        panel.appendChild(row);
+      }
+    } else {
+      if (g.pendingGuess && g.pendingGuess.playerId === viewerId){
+        panel.innerHTML += '<p style="color:var(--muted);text-align:center;">Waiting for the answerer to judge your guess\u2026</p>';
+      } else if (g.pendingGuess){
+        panel.innerHTML += '<p style="color:var(--muted);text-align:center;">Someone else has a guess pending\u2026</p>';
+      } else {
+        const guessBtn = document.createElement('button'); guessBtn.className='secondary-btn'; guessBtn.style.display='block'; guessBtn.textContent = 'Make a guess';
+        guessBtn.addEventListener('click', () => {
+          const input = document.createElement('input'); input.className='text-input'; input.placeholder='Your guess'; input.style.marginTop='10px';
+          const submit = document.createElement('button'); submit.className='primary-btn'; submit.textContent='Submit guess';
+          submit.addEventListener('click', () => sendOnline({ type:'requestGuess', text: input.value }));
+          guessBtn.replaceWith(input); panel.appendChild(submit);
+          setTimeout(()=>input.focus(),30);
+        });
+        panel.appendChild(guessBtn);
+      }
+    }
+
+    if (g.log.length){
+      const logList = document.createElement('div'); logList.className='log-list';
+      g.log.forEach(entry => {
+        const r = document.createElement('div'); r.className='log-row';
+        r.innerHTML = '<span class="log-q">' + escapeHtml(entry.q) + '</span><span class="log-a ' + entry.a + '">' + (entry.a==='yes'?'YES':entry.a==='no'?'NO':'SOMETIMES') + '</span>';
+        logList.appendChild(r);
+      });
+      panel.appendChild(logList);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineRoundEnd(g, players, viewerId, isHost, body){
+    const answererId = g.order[g.answererIdx];
+    const answerer = players.find(p=>p.id===answererId) || {name:'\u2026'};
+    const winner = g.winnerId ? players.find(p=>p.id===g.winnerId) : null;
+    body.appendChild(onlineScoreboard(players, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+      (winner ? escapeHtml(winner.name) + ' got it!' : escapeHtml(answerer.name) + ' stumped everyone!') + '</h2>' +
+      (g.secret ? '<p style="color:var(--muted);">The secret was: <b style="color:var(--paper);">' + escapeHtml(g.secret) + '</b></p>' : '<p style="color:var(--muted);">(No secret was typed in to reveal.)</p>');
+    if (isHost){
+      const isLast = g.roundIndex >= g.totalRounds - 1;
+      const nextBtn = document.createElement('button'); nextBtn.className='primary-btn'; nextBtn.textContent = isLast ? 'See final scores' : 'Next round';
+      nextBtn.addEventListener('click', () => sendOnline({ type:'nextRound' }));
+      panel.appendChild(nextBtn);
+    } else {
+      const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.textContent='Waiting for the host to continue\u2026';
+      panel.appendChild(p2);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineDone(players, body){
+    const ranked = players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className='scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href='twenty-questions.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ---------------- Join (guest) ----------------
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError'); errEl.textContent='';
+    const waitEl = document.getElementById('joinWaitText'); waitEl.textContent = 'Connecting\u2026';
+    if (!code){ errEl.textContent = 'Enter a room code.'; waitEl.textContent=''; return; }
+    const btn = document.getElementById('joinConnect');
+    btn.disabled = true;
+    let settled = false;
+    const joinTimeout = setTimeout(() => { if (!settled) fail("Couldn't find that room. Check the code and try again."); }, 9000);
+    function fail(msg){
+      settled = true; clearTimeout(joinTimeout);
+      errEl.textContent = msg; waitEl.textContent=''; btn.disabled=false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('twentyq-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          waitEl.textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'gameStart'){
+          showScreen('game');
+        } else if (msg.type === 'state'){
+          renderOnline(msg.game, msg.players, myId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+})();
+</script>
+</body>
+</html>

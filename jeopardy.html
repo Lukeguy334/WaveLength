@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body h4 { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; margin:18px 0 6px; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { margin:0 0 10px; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+  .modal-body .rule-callout { background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3); border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13.5px; color:var(--muted); }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.in-control { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+  .score-chip .pts.neg { color:var(--rose); }
+
+  .jp-board-head { text-align:center; color:var(--muted); font-size:13px; margin-bottom:10px; }
+  .jp-board-head b { color:var(--paper); }
+  .jeopardy-board { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .jp-cat-header { background:#1a2f52; border:2px solid #2f4d82; border-radius:6px; padding:10px 5px; text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.02em; color:var(--brass-bright); display:flex; align-items:center; justify-content:center; min-height:58px; }
+  .jp-cell { background:#1a2f52; border:2px solid #2f4d82; border-radius:6px; padding:16px 4px; text-align:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:19px; color:var(--brass-bright); cursor:pointer; }
+  .jp-cell:hover:not(.used) { border-color:var(--brass); background:#20345c; }
+  .jp-cell.used { visibility:hidden; cursor:default; }
+
+  .jp-clue-card { text-align:center; padding:34px 20px; }
+  .jp-clue-cat { color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; font-size:12px; margin-bottom:8px; }
+  .jp-clue-value { color:var(--brass-bright); font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; margin-bottom:18px; }
+  .jp-clue-text { font-size:21px; line-height:1.55; margin-bottom:26px; }
+  .jp-dd-banner { color:var(--rose); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.06em; margin-bottom:10px; }
+
+  .buzz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:6px; }
+  .buzz-btn { padding:18px 10px; border-radius:10px; border:2px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
+  .buzz-btn:hover:not(:disabled) { border-color:var(--brass); }
+  .buzz-btn .key-hint { display:block; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:4px; }
+  .buzz-btn:disabled { opacity:0.3; cursor:not-allowed; }
+  .buzz-btn.answering { border-color:var(--teal); background:rgba(79,209,197,0.15); }
+
+  .answer-block { max-width:420px; margin:0 auto; }
+  .result-banner { font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin-bottom:8px; }
+  .result-banner.correct { color:var(--teal); }
+  .result-banner.wrong { color:var(--rose); }
+  .real-answer { color:var(--muted); font-size:14px; margin-bottom:16px; }
+  .overrule-row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+  .final-wager-block { max-width:380px; margin:0 auto; text-align:left; }
+  .final-reveal-row { background:var(--ink-2); border:1px solid var(--panel-line); border-radius:10px; padding:14px 16px; margin-bottom:10px; text-align:left; }
+  .final-reveal-row .fr-name { font-weight:700; margin-bottom:4px; }
+  .final-reveal-row .fr-answer { color:var(--muted); font-size:13.5px; margin:4px 0; }
+  .waiting-list { color:var(--muted); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Jeopardy</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Pick a category and value, buzz in first, answer before anyone else. Watch out for the Daily Double.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>The board</h4>
+        <ul>
+          <li>5 categories, 5 clues each, worth 200 to 1000 points. Whoever's "in control" picks the next clue.</li>
+          <li>Once a clue is revealed, buzz in first to get a shot at answering &mdash; only the first person to buzz gets to answer.</li>
+          <li>Answers are graded automatically, but anyone can hit the override button if the grader gets a close call wrong.</li>
+          <li>Correct answers add the clue's value to your score and hand you control of the board. Wrong answers subtract the value and lock you out of that clue &mdash; the buzzer reopens for everyone else.</li>
+          <li>If nobody gets it, the answer is revealed and everyone moves on.</li>
+        </ul>
+        <h4>Daily Double</h4>
+        <ul>
+          <li>One clue on the board is a hidden Daily Double. Whoever picks it, wagers, and answers alone &mdash; no buzzing.</li>
+          <li>Wager at least 5 points, up to your entire current score.</li>
+        </ul>
+        <h4>Final Jeopardy</h4>
+        <ul>
+          <li>Once the board is cleared, everyone secretly wagers on one last category, then answers the same clue.</li>
+          <li>Answers and wagers are revealed together at the end &mdash; the swings can be dramatic.</li>
+        </ul>
+        <div class="rule-callout">Traditionally you're supposed to phrase your answer as a question. We don't require that here &mdash; just get the content right.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Everyone shares one device. Buzz in with your assigned key.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code &mdash; everyone plays from their own device.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;6)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Category set</label>
+      <div class="choice-row" id="localSetChoice">
+        <button class="choice-btn active" data-val="classic">Classic mix</button>
+        <button class="choice-btn" data-val="nfl">NFL Jeopardy</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Category set</label>
+      <div class="choice-row" id="hostSetChoice">
+        <button class="choice-btn active" data-val="classic">Classic mix</button>
+        <button class="choice-btn" data-val="nfl">NFL Jeopardy</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data/jeopardy-clues.js"></script>
+<script>
+(function(){
+  const SETS = window.JEOPARDY_SETS;
+  const VALUES = [200,400,600,800,1000];
+  const BUZZ_KEYS = ['Q','W','E','R','T','Y'];
+
+  // ---------------- Utilities ----------------
+  const STOPWORDS = new Set(['a','an','the','your','you','to','in','on','of','for','with','at','something',
+    'someone','some','and','or','is','are','was','were','it','its','this','that','who','whom','what',
+    'i','me','my','ve','re','ll','d','m','s','been','well']);
+  function normalizeText(s){
+    return String(s).toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function stem(word){
+    if (word.length > 5 && word.endsWith('ing')) return word.slice(0,-3);
+    if (word.length > 4 && word.endsWith('ed')) return word.slice(0,-2);
+    if (word.length > 4 && word.endsWith('es')) return word.slice(0,-2);
+    if (word.length > 3 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0,-1);
+    return word;
+  }
+  function significantWords(s){
+    return normalizeText(s).split(' ').filter(w => w && !STOPWORDS.has(w)).map(stem);
+  }
+  function matchesAnswer(guess, answerText){
+    const gNorm = normalizeText(guess);
+    const aNorm = normalizeText(answerText);
+    if (!gNorm) return false;
+    if (gNorm === aNorm) return true;
+    if (aNorm.includes(gNorm) && gNorm.length >= 3) return true;
+    const gWords = new Set(significantWords(guess));
+    const aWords = significantWords(answerText);
+    if (aWords.length === 0) return false;
+    const overlap = aWords.filter(w => gWords.has(w));
+    if (aWords.length <= 2) return overlap.length >= 1;
+    return overlap.length >= Math.ceil(aWords.length/2);
+  }
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function shuffleArray(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+
+  function buildBoard(setKey){
+    const src = SETS[setKey] || SETS.classic;
+    const cats = src.map(cat => ({
+      category: cat.category,
+      clues: cat.clues.map((c,i) => ({ value: c.value != null ? c.value : VALUES[i], clue: c.clue, answer: c.answer, used:false, isDD:false }))
+    }));
+    const totalClues = cats.reduce((n,c)=>n+c.clues.length, 0);
+    const ddCat = Math.floor(Math.random()*cats.length);
+    const ddClue = Math.floor(Math.random()*cats[ddCat].clues.length);
+    cats[ddCat].clues[ddClue].isDD = true;
+    const finalPool = shuffleArray(cats.flatMap(c => [c.category]));
+    return {
+      cats, totalClues,
+      finalCategory: 'Grab Bag', // replaced below with a distinct final clue
+    };
+  }
+  const FINAL_CLUES = [
+    { category: 'World Capitals', clue: 'This South American capital sits at over 11,000 feet, making it one of the highest capital cities in the world.', answer: 'La Paz' },
+    { category: 'Inventions', clue: 'This device, patented by Alexander Graham Bell in 1876, transmitted the human voice over wires for the first time.', answer: 'the telephone' },
+    { category: 'Classic Literature', clue: 'This Herman Melville novel follows Captain Ahab\'s obsessive hunt for a white whale.', answer: 'Moby-Dick' },
+    { category: 'Music', clue: 'This composer went completely deaf yet continued composing symphonies, including his famous Ninth.', answer: 'Ludwig van Beethoven' },
+    { category: 'The Human Body', clue: 'This is the largest organ of the human body.', answer: 'the skin' }
+  ];
+
+  // ---------------- Screen navigation ----------------
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id==='rulesModal') e.target.classList.add('hidden'); });
+
+  document.querySelectorAll('#localSetChoice .choice-btn, #hostSetChoice .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ---------------- Local player rows ----------------
+  const localPlayerRows = document.getElementById('localPlayerRows');
+  function addLocalPlayerRow(name){
+    const row = document.createElement('div');
+    row.className = 'player-row-input';
+    const input = document.createElement('input');
+    input.className = 'text-input'; input.maxLength = 16; input.placeholder = 'Player name'; input.value = name || '';
+    row.appendChild(input);
+    const rows = localPlayerRows.children.length;
+    if (rows >= 1){
+      const rm = document.createElement('button');
+      rm.className = 'remove-player-btn'; rm.textContent = '\u00d7';
+      rm.addEventListener('click', () => { if (localPlayerRows.children.length > 2) row.remove(); });
+      row.appendChild(rm);
+    }
+    localPlayerRows.appendChild(row);
+  }
+  addLocalPlayerRow('Player 1'); addLocalPlayerRow('Player 2');
+  document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    if (localPlayerRows.children.length >= 6) return;
+    addLocalPlayerRow('Player ' + (localPlayerRows.children.length+1));
+  });
+
+  // ============================================================
+  // LOCAL (pass & play) GAME
+  // ============================================================
+  let game = null; // local game state
+  document.getElementById('localStart').addEventListener('click', () => {
+    const names = [...localPlayerRows.querySelectorAll('input')].map(i => i.value.trim() || 'Player').slice(0,6);
+    const setKey = document.querySelector('#localSetChoice .choice-btn.active').dataset.val;
+    startLocalGame(names, setKey);
+  });
+
+  function startLocalGame(names, setKey){
+    const board = buildBoard(setKey);
+    const finalClue = FINAL_CLUES[Math.floor(Math.random()*FINAL_CLUES.length)];
+    game = {
+      players: names.map((n,i) => ({ id:'l'+i, name:n, score:0, key:BUZZ_KEYS[i] })),
+      board,
+      finalClue,
+      controlIdx: 0,
+      remaining: board.totalClues,
+      phase: 'board', // board | clue | final-intro | final-entry | final-reveal | final-done
+      clue: null, // {catIdx,clueIdx,value,clue,answer,isDD,lockedOut:[ids],answeringId,revealed}
+      final: { entryIdx:0, entries:[], revealIdx:0 }
+    };
+    showScreen('game');
+    renderLocal();
+  }
+
+  function localScoreboard(g, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    g.players.forEach(p => {
+      const chip = document.createElement('span');
+      chip.className = 'score-chip' + (p.id===highlightId ? ' in-control' : '');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts' + (p.score<0?' neg':'') + '">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderLocal(){
+    const g = game;
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    if (g.phase === 'board') return renderLocalBoard(g, body);
+    if (g.phase === 'clue') return renderLocalClue(g, body);
+    if (g.phase === 'final-intro') return renderLocalFinalIntro(g, body);
+    if (g.phase === 'final-entry') return renderLocalFinalEntry(g, body);
+    if (g.phase === 'final-reveal') return renderLocalFinalReveal(g, body);
+    if (g.phase === 'final-done') return renderLocalFinalDone(g, body);
+  }
+
+  function renderLocalBoard(g, body){
+    const control = g.players[g.controlIdx];
+    body.appendChild(localScoreboard(g, control.id));
+    const head = document.createElement('div'); head.className = 'jp-board-head';
+    head.innerHTML = '<b>' + escapeHtml(control.name) + '</b> is picking (' + g.remaining + ' clue' + (g.remaining===1?'':'s') + ' left)';
+    body.appendChild(head);
+
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const grid = document.createElement('div'); grid.className = 'jeopardy-board';
+    g.board.cats.forEach(cat => {
+      const h = document.createElement('div'); h.className = 'jp-cat-header'; h.textContent = cat.category;
+      grid.appendChild(h);
+    });
+    for (let vi=0; vi<VALUES.length; vi++){
+      g.board.cats.forEach((cat, ci) => {
+        const clue = cat.clues[vi];
+        const cell = document.createElement('div');
+        cell.className = 'jp-cell' + (clue.used ? ' used' : '');
+        cell.textContent = '$' + clue.value;
+        if (!clue.used){
+          cell.addEventListener('click', () => pickLocalClue(ci, vi));
+        }
+        grid.appendChild(cell);
+      });
+    }
+    panel.appendChild(grid);
+    body.appendChild(panel);
+  }
+
+  function pickLocalClue(catIdx, clueIdx){
+    const g = game;
+    const clueData = g.board.cats[catIdx].clues[clueIdx];
+    g.clue = {
+      catIdx, clueIdx, value: clueData.value, clue: clueData.clue, answer: clueData.answer,
+      category: g.board.cats[catIdx].category, isDD: clueData.isDD,
+      lockedOut: [], answeringId: null, wager: null, result: null
+    };
+    g.phase = 'clue';
+    renderLocal();
+  }
+
+  function renderLocalClue(g, body){
+    const c = g.clue;
+    body.appendChild(localScoreboard(g, g.players[g.controlIdx].id));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    if (c.isDD && c.wager == null){
+      const control = g.players[g.controlIdx];
+      panel.innerHTML = '<div class="jp-dd-banner">DAILY DOUBLE</div><div class="jp-clue-cat">' + escapeHtml(c.category) + '</div>' +
+        '<p style="margin-bottom:16px;">' + escapeHtml(control.name) + ', how much do you want to wager?</p>';
+      const wrap = document.createElement('div'); wrap.className = 'answer-block';
+      const maxWager = Math.max(control.score, 1000);
+      const input = document.createElement('input');
+      input.className = 'text-input'; input.type = 'number'; input.min = '5'; input.max = String(maxWager); input.value = Math.min(200,maxWager);
+      wrap.appendChild(input);
+      const btn = document.createElement('button'); btn.className = 'primary-btn'; btn.textContent = 'Wager & see clue';
+      btn.addEventListener('click', () => {
+        let w = parseInt(input.value,10); if (isNaN(w) || w < 5) w = 5; if (w > maxWager) w = maxWager;
+        c.wager = w; renderLocal();
+      });
+      wrap.appendChild(btn);
+      panel.appendChild(wrap);
+      body.appendChild(panel);
+      return;
+    }
+    panel.innerHTML = (c.isDD ? '<div class="jp-dd-banner">DAILY DOUBLE &mdash; wager: $' + c.wager + '</div>' : '') +
+      '<div class="jp-clue-cat">' + escapeHtml(c.category) + '</div>' +
+      (c.isDD ? '' : '<div class="jp-clue-value">$' + c.value + '</div>') +
+      '<div class="jp-clue-text">' + escapeHtml(c.clue) + '</div>';
+    body.appendChild(panel);
+
+    if (c.result){
+      renderResultBlock(panel, c, () => {
+        applyLocalResolution();
+      }, (newCorrect) => {
+        c.result.correct = newCorrect;
+      });
+      return;
+    }
+
+    if (c.answeringId){
+      const player = g.players.find(p=>p.id===c.answeringId);
+      const wrap = document.createElement('div'); wrap.className = 'answer-block';
+      const lbl = document.createElement('p'); lbl.style.marginBottom='8px'; lbl.innerHTML = '<b>' + escapeHtml(player.name) + '</b>, your answer:';
+      wrap.appendChild(lbl);
+      const input = document.createElement('input'); input.className = 'text-input'; input.placeholder = 'Type your answer';
+      wrap.appendChild(input);
+      const btn = document.createElement('button'); btn.className = 'primary-btn'; btn.textContent = 'Submit';
+      const submit = () => {
+        const correct = matchesAnswer(input.value, c.answer);
+        c.result = { correct, by: player.id, guess: input.value };
+        renderLocal();
+      };
+      btn.addEventListener('click', submit);
+      input.addEventListener('keydown', e => { if (e.key==='Enter') submit(); });
+      wrap.appendChild(btn);
+      panel.appendChild(wrap);
+      body.appendChild(panel);
+      setTimeout(()=>input.focus(), 30);
+      return;
+    }
+
+    // buzz-open state
+    const hint = document.createElement('p'); hint.style.color='var(--muted)'; hint.style.marginBottom='14px'; hint.textContent = 'Buzz in!';
+    panel.appendChild(hint);
+    const grid = document.createElement('div'); grid.className = 'buzz-grid';
+    g.players.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'buzz-btn';
+      btn.innerHTML = escapeHtml(p.name) + '<span class="key-hint">Press ' + p.key + '</span>';
+      if (c.lockedOut.includes(p.id)) btn.disabled = true;
+      btn.addEventListener('click', () => { c.answeringId = p.id; renderLocal(); });
+      grid.appendChild(btn);
+    });
+    panel.appendChild(grid);
+    body.appendChild(panel);
+
+    const keyHandler = (e) => {
+      if (g.phase !== 'clue' || c.answeringId || c.result) { document.removeEventListener('keydown', keyHandler); return; }
+      const p = g.players.find(pl => pl.key === e.key.toUpperCase());
+      if (p && !c.lockedOut.includes(p.id)){
+        c.answeringId = p.id;
+        document.removeEventListener('keydown', keyHandler);
+        renderLocal();
+      }
+    };
+    document.addEventListener('keydown', keyHandler);
+  }
+
+  function renderResultBlock(panel, c, onContinue){
+    const banner = document.createElement('div');
+    banner.className = 'result-banner ' + (c.result.correct ? 'correct' : 'wrong');
+    banner.textContent = c.result.correct ? 'Correct!' : 'Not quite.';
+    panel.appendChild(banner);
+    const real = document.createElement('div'); real.className = 'real-answer';
+    real.innerHTML = 'Correct answer: <b>' + escapeHtml(c.answer) + '</b>';
+    panel.appendChild(real);
+    const overruleRow = document.createElement('div'); overruleRow.className = 'overrule-row';
+    const overruleBtn = document.createElement('button'); overruleBtn.className = 'secondary-btn'; overruleBtn.style.marginTop='0';
+    overruleBtn.textContent = c.result.correct ? "Actually, that's wrong" : "Actually, that's right";
+    overruleBtn.addEventListener('click', () => { c.result.correct = !c.result.correct; c.result.overruled = true; renderLocal(); });
+    overruleRow.appendChild(overruleBtn);
+    const contBtn = document.createElement('button'); contBtn.className = 'primary-btn';
+    contBtn.textContent = 'Continue';
+    contBtn.addEventListener('click', onContinue);
+    overruleRow.appendChild(contBtn);
+    panel.appendChild(overruleRow);
+  }
+
+  function applyLocalResolution(){
+    const g = game; const c = g.clue;
+    const player = g.players.find(p => p.id === c.result.by);
+    g.board.cats[c.catIdx].clues[c.clueIdx].used = true;
+    g.remaining--;
+    if (c.result.correct){
+      player.score += c.value;
+      g.controlIdx = g.players.indexOf(player);
+    } else {
+      player.score -= c.value;
+      if (c.isDD){
+        // Daily Double misses still end the clue immediately, control stays with picker.
+      } else {
+        c.lockedOut.push(player.id);
+        if (c.lockedOut.length < g.players.length){
+          c.answeringId = null; c.result = null;
+          g.phase = 'clue';
+          renderLocal();
+          return;
+        }
+      }
+    }
+    if (g.remaining <= 0){
+      g.phase = 'final-intro';
+    } else {
+      g.phase = 'board';
+    }
+    renderLocal();
+  }
+
+  function renderLocalFinalIntro(g, body){
+    body.appendChild(localScoreboard(g, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Final Jeopardy</h3>' +
+      '<div class="jp-clue-cat">Category: ' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<p style="color:var(--muted);margin-top:14px;">Each player will privately wager, then everyone answers the same clue. Pass the device around.</p>';
+    const btn = document.createElement('button'); btn.className = 'primary-btn'; btn.textContent = 'Begin';
+    btn.addEventListener('click', () => { g.phase = 'final-entry'; g.final.entryIdx = 0; renderLocal(); });
+    panel.appendChild(btn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalFinalEntry(g, body){
+    const idx = g.final.entryIdx;
+    const player = g.players[idx];
+    const panel = document.createElement('div'); panel.className = 'panel pass-card';
+    panel.innerHTML = '<div class="to-icon">\ud83d\udce4</div><h2>Pass to ' + escapeHtml(player.name) + '</h2><p>Everyone else look away.</p>';
+    const readyBtn = document.createElement('button'); readyBtn.className = 'primary-btn'; readyBtn.textContent = "I'm " + player.name + ", ready";
+    readyBtn.addEventListener('click', () => renderLocalFinalEntryForm(g, body, player));
+    panel.appendChild(readyBtn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalFinalEntryForm(g, body, player){
+    body.innerHTML = '';
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    const maxWager = Math.max(player.score, 0);
+    panel.innerHTML = '<div class="jp-clue-cat">' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<div class="jp-clue-text">' + escapeHtml(g.finalClue.clue) + '</div>';
+    const wrap = document.createElement('div'); wrap.className = 'final-wager-block';
+    wrap.innerHTML = '<label class="field-label">Your wager (0&ndash;' + maxWager + ')</label>';
+    const wagerInput = document.createElement('input');
+    wagerInput.className = 'text-input'; wagerInput.type = 'number'; wagerInput.min='0'; wagerInput.max=String(maxWager); wagerInput.value = '0';
+    wrap.appendChild(wagerInput);
+    const answerLbl = document.createElement('label'); answerLbl.className = 'field-label'; answerLbl.textContent = 'Your answer';
+    wrap.appendChild(answerLbl);
+    const answerInput = document.createElement('input'); answerInput.className = 'text-input'; answerInput.placeholder = 'Type your answer';
+    wrap.appendChild(answerInput);
+    const btn = document.createElement('button'); btn.className = 'primary-btn'; btn.textContent = 'Lock in & pass';
+    btn.addEventListener('click', () => {
+      let w = parseInt(wagerInput.value,10); if (isNaN(w) || w<0) w=0; if (w>maxWager) w=maxWager;
+      g.final.entries.push({ playerId: player.id, wager: w, answer: answerInput.value });
+      g.final.entryIdx++;
+      if (g.final.entryIdx >= g.players.length){
+        g.phase = 'final-reveal'; g.final.revealIdx = 0;
+      }
+      renderLocal();
+    });
+    wrap.appendChild(btn);
+    panel.appendChild(wrap);
+    body.appendChild(panel);
+  }
+
+  function renderLocalFinalReveal(g, body){
+    body.appendChild(localScoreboard(g, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<div class="jp-clue-cat">' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<p style="color:var(--muted);margin-bottom:4px;">Correct answer: <b style="color:var(--paper);">' + escapeHtml(g.finalClue.answer) + '</b></p>';
+    const list = document.createElement('div');
+    for (let i=0; i<g.final.entries.length; i++){
+      const e = g.final.entries[i];
+      const player = g.players.find(p=>p.id===e.playerId);
+      const row = document.createElement('div'); row.className = 'final-reveal-row';
+      if (i <= g.final.revealIdx){
+        if (e.correct === undefined) e.correct = matchesAnswer(e.answer, g.finalClue.answer);
+        row.innerHTML = '<div class="fr-name">' + escapeHtml(player.name) + ' &mdash; wagered $' + e.wager + '</div>' +
+          '<div class="fr-answer">Answered: "' + escapeHtml(e.answer || '(nothing)') + '"</div>' +
+          '<div class="result-banner ' + (e.correct?'correct':'wrong') + '" style="font-size:15px;margin:4px 0 0;">' + (e.correct?'Correct (+':'Wrong (-') + e.wager + ')</div>';
+        const overrule = document.createElement('button'); overrule.className = 'secondary-btn'; overrule.style.marginTop='6px'; overrule.style.fontSize='12px';
+        overrule.textContent = e.correct ? "Actually, that's wrong" : "Actually, that's right";
+        overrule.addEventListener('click', () => { e.correct = !e.correct; renderLocal(); });
+        row.appendChild(overrule);
+      } else {
+        row.innerHTML = '<div class="fr-name">' + escapeHtml(player.name) + '</div><div class="fr-answer">Not revealed yet</div>';
+      }
+      list.appendChild(row);
+    }
+    panel.appendChild(list);
+    if (g.final.revealIdx < g.final.entries.length - 1){
+      const nextBtn = document.createElement('button'); nextBtn.className = 'primary-btn'; nextBtn.textContent = 'Reveal next';
+      nextBtn.addEventListener('click', () => { g.final.revealIdx++; renderLocal(); });
+      panel.appendChild(nextBtn);
+    } else {
+      const doneBtn = document.createElement('button'); doneBtn.className = 'primary-btn'; doneBtn.textContent = 'See final standings';
+      doneBtn.addEventListener('click', () => {
+        g.final.entries.forEach(e => {
+          const player = g.players.find(p=>p.id===e.playerId);
+          player.score += e.correct ? e.wager : -e.wager;
+        });
+        g.phase = 'final-done'; renderLocal();
+      });
+      panel.appendChild(doneBtn);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderLocalFinalDone(g, body){
+    const ranked = g.players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className = 'scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts' + (p.score<0?' neg':'') + '">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href = 'jeopardy.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ============================================================
+  // ONLINE (host-authoritative)
+  // ============================================================
+  let myId = null, myName = '', mode = 'local';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let onlineGame = null;
+
+  document.querySelectorAll('#hostSetChoice .choice-btn').forEach(()=>{});
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('jeopardy-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer) { try{peer.destroy();}catch(e){} }
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    const setKey = document.querySelector('#hostSetChoice .choice-btn.active').dataset.val;
+    const board = buildBoard(setKey);
+    const finalClue = FINAL_CLUES[Math.floor(Math.random()*FINAL_CLUES.length)];
+    onlineGame = {
+      order: hostPlayers.map(p=>p.id),
+      board, finalClue,
+      controlIdx: 0,
+      remaining: board.totalClues,
+      phase: 'board',
+      clue: null,
+      final: { entries: {}, order: [], revealIdx: -1, revealed:false }
+    };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'gameStart' }); });
+    showScreen('game');
+    broadcastOnlineState();
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      return;
+    }
+    if (!onlineGame) return;
+    const g = onlineGame;
+    if (msg.type === 'pickClue'){
+      const controlId = g.order[g.controlIdx];
+      if (conn.__playerId !== controlId || g.phase !== 'board') return;
+      const clueData = g.board.cats[msg.catIdx].clues[msg.clueIdx];
+      if (!clueData || clueData.used) return;
+      g.clue = { catIdx: msg.catIdx, clueIdx: msg.clueIdx, value: clueData.value, clue: clueData.clue, answer: clueData.answer,
+        category: g.board.cats[msg.catIdx].category, isDD: clueData.isDD, lockedOut: [], answeringId: null, wager: null, result: null };
+      g.phase = 'clue';
+      broadcastOnlineState();
+    } else if (msg.type === 'ddWager'){
+      const controlId = g.order[g.controlIdx];
+      if (!g.clue || !g.clue.isDD || g.clue.wager != null || conn.__playerId !== controlId) return;
+      const player = hostPlayers.find(p=>p.id===controlId);
+      const maxWager = Math.max(player.score, 1000);
+      let w = parseInt(msg.wager,10); if (isNaN(w)||w<5) w=5; if (w>maxWager) w=maxWager;
+      g.clue.wager = w;
+      broadcastOnlineState();
+    } else if (msg.type === 'buzz'){
+      if (!g.clue || g.clue.isDD || g.clue.answeringId || g.clue.result) return;
+      if (g.clue.lockedOut.includes(conn.__playerId)) return;
+      g.clue.answeringId = conn.__playerId;
+      broadcastOnlineState();
+    } else if (msg.type === 'submitAnswer'){
+      if (!g.clue) return;
+      const expected = g.clue.isDD ? g.order[g.controlIdx] : g.clue.answeringId;
+      if (conn.__playerId !== expected || g.clue.result) return;
+      const correct = matchesAnswer(msg.answer, g.clue.answer);
+      g.clue.result = { correct, by: conn.__playerId, guess: msg.answer };
+      broadcastOnlineState();
+    } else if (msg.type === 'overrule'){
+      if (!g.clue || !g.clue.result) return;
+      g.clue.result.correct = !g.clue.result.correct;
+      g.clue.result.overruled = true;
+      broadcastOnlineState();
+    } else if (msg.type === 'continueAfterClue'){
+      applyOnlineResolution();
+    } else if (msg.type === 'beginFinal'){
+      if (g.phase !== 'final-intro') return;
+      g.phase = 'final-entry';
+      broadcastOnlineState();
+    } else if (msg.type === 'finalSubmit'){
+      if (g.phase !== 'final-entry') return;
+      const player = hostPlayers.find(p=>p.id===conn.__playerId);
+      if (!player) return;
+      const maxWager = Math.max(player.score, 0);
+      let w = parseInt(msg.wager,10); if (isNaN(w)||w<0) w=0; if (w>maxWager) w=maxWager;
+      g.final.entries[conn.__playerId] = { wager: w, answer: msg.answer, submitted:true };
+      broadcastOnlineState();
+    } else if (msg.type === 'forceReveal' || msg.type === 'revealNext'){
+      if (g.phase === 'final-entry'){
+        g.phase = 'final-reveal';
+        g.final.order = g.order.filter(id => g.final.entries[id]);
+        g.final.revealIdx = -1;
+      }
+      if (g.phase === 'final-reveal'){
+        if (msg.type === 'revealNext' && g.final.revealIdx < g.final.order.length - 1){
+          g.final.revealIdx++;
+          const id = g.final.order[g.final.revealIdx];
+          const entry = g.final.entries[id];
+          if (entry.correct === undefined){
+            entry.correct = matchesAnswer(entry.answer, g.finalClue.answer);
+            const player = hostPlayers.find(p=>p.id===id);
+            player.score += entry.correct ? entry.wager : -entry.wager;
+          }
+        } else if (msg.type === 'forceReveal' && g.final.revealIdx < 0){
+          g.final.revealIdx = 0;
+          const id = g.final.order[0];
+          if (id){
+            const entry = g.final.entries[id];
+            entry.correct = matchesAnswer(entry.answer, g.finalClue.answer);
+            const player = hostPlayers.find(p=>p.id===id);
+            player.score += entry.correct ? entry.wager : -entry.wager;
+          }
+        }
+      }
+      broadcastOnlineState();
+    } else if (msg.type === 'finalOverrule'){
+      if (g.phase !== 'final-reveal') return;
+      const id = g.final.order[g.final.revealIdx];
+      const entry = g.final.entries[id];
+      const player = hostPlayers.find(p=>p.id===id);
+      player.score -= entry.correct ? entry.wager : -entry.wager;
+      entry.correct = !entry.correct;
+      player.score += entry.correct ? entry.wager : -entry.wager;
+      broadcastOnlineState();
+    } else if (msg.type === 'finishGame'){
+      g.phase = 'final-done';
+      broadcastOnlineState();
+    }
+  }
+
+  function applyOnlineResolution(){
+    const g = onlineGame; const c = g.clue;
+    if (!c || !c.result) return;
+    const player = hostPlayers.find(p => p.id === c.result.by);
+    g.board.cats[c.catIdx].clues[c.clueIdx].used = true;
+    g.remaining--;
+    if (c.result.correct){
+      player.score += c.isDD ? c.wager : c.value;
+      g.controlIdx = g.order.indexOf(player.id);
+    } else {
+      player.score -= c.isDD ? c.wager : c.value;
+      if (!c.isDD){
+        c.lockedOut.push(player.id);
+        if (c.lockedOut.length < g.order.length){
+          c.answeringId = null; c.result = null;
+          broadcastOnlineState();
+          return;
+        }
+      }
+    }
+    g.phase = g.remaining <= 0 ? 'final-intro' : 'board';
+    g.clue = null;
+    broadcastOnlineState();
+  }
+
+  function broadcastOnlineState(){
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    // Final-entry phase: never leak other players' wagers/answers before reveal.
+    let final = onlineGame.final;
+    let safeFinal = final;
+    if (onlineGame.phase === 'final-entry'){
+      safeFinal = { entries: {}, order: [], revealIdx:-1 };
+      Object.keys(final.entries).forEach(id => { safeFinal.entries[id] = { submitted: true }; });
+    }
+    const payload = Object.assign({}, onlineGame, { final: safeFinal });
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'state', game: payload, players }); });
+    renderOnline(onlineGame, players, myId, true);
+  }
+
+  function onlineScoreboard(players, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    players.forEach(p => {
+      const chip = document.createElement('span');
+      chip.className = 'score-chip' + (p.id===highlightId ? ' in-control' : '');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts' + (p.score<0?' neg':'') + '">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody');
+    body.innerHTML = '';
+    if (g.phase === 'board') return renderOnlineBoard(g, players, viewerId, isHost, body);
+    if (g.phase === 'clue') return renderOnlineClue(g, players, viewerId, isHost, body);
+    if (g.phase === 'final-intro') return renderOnlineFinalIntro(g, players, viewerId, isHost, body);
+    if (g.phase === 'final-entry') return renderOnlineFinalEntry(g, players, viewerId, isHost, body);
+    if (g.phase === 'final-reveal') return renderOnlineFinalReveal(g, players, viewerId, isHost, body);
+    if (g.phase === 'final-done') return renderOnlineFinalDone(g, players, body);
+  }
+
+  function renderOnlineBoard(g, players, viewerId, isHost, body){
+    const controlId = g.order[g.controlIdx];
+    const controlPl = players.find(p=>p.id===controlId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, controlId));
+    const head = document.createElement('div'); head.className = 'jp-board-head';
+    head.innerHTML = '<b>' + escapeHtml(controlPl.name) + '</b> is picking (' + g.remaining + ' left)' + (controlId===viewerId ? ' &mdash; your pick!' : '');
+    body.appendChild(head);
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const grid = document.createElement('div'); grid.className = 'jeopardy-board';
+    g.board.cats.forEach(cat => {
+      const h = document.createElement('div'); h.className = 'jp-cat-header'; h.textContent = cat.category;
+      grid.appendChild(h);
+    });
+    for (let vi=0; vi<VALUES.length; vi++){
+      g.board.cats.forEach((cat, ci) => {
+        const clue = cat.clues[vi];
+        const cell = document.createElement('div');
+        cell.className = 'jp-cell' + (clue.used ? ' used' : '');
+        cell.textContent = '$' + clue.value;
+        if (!clue.used && controlId===viewerId){
+          cell.addEventListener('click', () => sendOnline({ type:'pickClue', catIdx:ci, clueIdx:vi }));
+        } else if (!clue.used){
+          cell.style.cursor = 'default';
+        }
+        grid.appendChild(cell);
+      });
+    }
+    panel.appendChild(grid);
+    body.appendChild(panel);
+  }
+
+  function sendOnline(msg){
+    if (mode === 'host'){ handleHostMessage({ __playerId: myId, send(){} }, msg); }
+    else if (joinConn) joinConn.send(msg);
+  }
+
+  function renderOnlineClue(g, players, viewerId, isHost, body){
+    const c = g.clue;
+    const controlId = g.order[g.controlIdx];
+    body.appendChild(onlineScoreboard(players, controlId));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+
+    if (c.isDD && c.wager == null){
+      const controlPl = players.find(p=>p.id===controlId) || {name:'\u2026'};
+      panel.innerHTML = '<div class="jp-dd-banner">DAILY DOUBLE</div><div class="jp-clue-cat">' + escapeHtml(c.category) + '</div>';
+      if (controlId === viewerId){
+        panel.innerHTML += '<p style="margin-bottom:16px;">How much do you want to wager?</p>';
+        const wrap = document.createElement('div'); wrap.className = 'answer-block';
+        const myScore = (players.find(p=>p.id===viewerId)||{score:0}).score;
+        const maxWager = Math.max(myScore, 1000);
+        const input = document.createElement('input'); input.className='text-input'; input.type='number'; input.min='5'; input.max=String(maxWager); input.value=Math.min(200,maxWager);
+        wrap.appendChild(input);
+        const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Wager & see clue';
+        btn.addEventListener('click', () => sendOnline({ type:'ddWager', wager: input.value }));
+        wrap.appendChild(btn);
+        panel.appendChild(wrap);
+      } else {
+        panel.innerHTML += '<p style="color:var(--muted);">' + escapeHtml(controlPl.name) + ' is wagering&hellip;</p>';
+      }
+      body.appendChild(panel);
+      return;
+    }
+
+    panel.innerHTML = (c.isDD ? '<div class="jp-dd-banner">DAILY DOUBLE &mdash; wager: $' + c.wager + '</div>' : '') +
+      '<div class="jp-clue-cat">' + escapeHtml(c.category) + '</div>' +
+      (c.isDD ? '' : '<div class="jp-clue-value">$' + c.value + '</div>') +
+      '<div class="jp-clue-text">' + escapeHtml(c.clue) + '</div>';
+    body.appendChild(panel);
+
+    if (c.result){
+      const banner = document.createElement('div'); banner.className = 'result-banner ' + (c.result.correct?'correct':'wrong');
+      banner.textContent = c.result.correct ? 'Correct!' : 'Not quite.';
+      panel.appendChild(banner);
+      const real = document.createElement('div'); real.className='real-answer';
+      real.innerHTML = 'Correct answer: <b>' + escapeHtml(c.answer) + '</b>';
+      panel.appendChild(real);
+      if (isHost){
+        const row = document.createElement('div'); row.className = 'overrule-row';
+        const ov = document.createElement('button'); ov.className='secondary-btn'; ov.style.marginTop='0';
+        ov.textContent = c.result.correct ? "Actually, that's wrong" : "Actually, that's right";
+        ov.addEventListener('click', () => sendOnline({ type:'overrule' }));
+        row.appendChild(ov);
+        const cont = document.createElement('button'); cont.className='primary-btn'; cont.textContent='Continue';
+        cont.addEventListener('click', () => sendOnline({ type:'continueAfterClue' }));
+        row.appendChild(cont);
+        panel.appendChild(row);
+      } else {
+        const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.textContent = 'Waiting for the host to continue\u2026';
+        panel.appendChild(p2);
+      }
+      return;
+    }
+
+    const expected = c.isDD ? controlId : c.answeringId;
+    if (expected){
+      const player = players.find(p=>p.id===expected) || {name:'\u2026'};
+      if (expected === viewerId){
+        const wrap = document.createElement('div'); wrap.className = 'answer-block';
+        const lbl = document.createElement('p'); lbl.style.marginBottom='8px'; lbl.textContent = 'Your answer:';
+        wrap.appendChild(lbl);
+        const input = document.createElement('input'); input.className='text-input'; input.placeholder='Type your answer';
+        wrap.appendChild(input);
+        const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Submit';
+        const submit = () => sendOnline({ type:'submitAnswer', answer: input.value });
+        btn.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key==='Enter') submit(); });
+        wrap.appendChild(btn);
+        panel.appendChild(wrap);
+        setTimeout(()=>input.focus(),30);
+      } else {
+        const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.textContent = escapeHtml(player.name) + ' is answering\u2026';
+        panel.appendChild(p2);
+      }
+      return;
+    }
+
+    // buzz-open
+    const hint = document.createElement('p'); hint.style.color='var(--muted)'; hint.style.marginBottom='14px'; hint.textContent = 'Buzz in!';
+    panel.appendChild(hint);
+    const grid = document.createElement('div'); grid.className = 'buzz-grid';
+    players.forEach(p => {
+      const btn = document.createElement('button'); btn.className = 'buzz-btn';
+      btn.textContent = p.id === viewerId ? 'Buzz!' : p.name;
+      if (p.id !== viewerId){ btn.disabled = true; }
+      if (c.lockedOut.includes(p.id)) btn.disabled = true;
+      if (p.id === viewerId && c.lockedOut.includes(viewerId)) btn.disabled = true;
+      btn.addEventListener('click', () => { if (p.id===viewerId) sendOnline({ type:'buzz' }); });
+      grid.appendChild(btn);
+    });
+    panel.appendChild(grid);
+    body.appendChild(panel);
+
+    if (!c.lockedOut.includes(viewerId)){
+      const buzzHandler = (e) => {
+        if (e.code === 'Space'){ e.preventDefault(); sendOnline({ type:'buzz' }); document.removeEventListener('keydown', buzzHandler); }
+      };
+      document.addEventListener('keydown', buzzHandler, { once:true });
+    }
+  }
+
+  function renderOnlineFinalIntro(g, players, viewerId, isHost, body){
+    body.appendChild(onlineScoreboard(players, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Final Jeopardy</h3>' +
+      '<div class="jp-clue-cat">Category: ' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<p style="color:var(--muted);margin-top:14px;">Everyone will secretly wager and answer from their own device.</p>';
+    if (isHost){
+      const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Begin';
+      btn.addEventListener('click', () => sendOnline({ type:'beginFinal' }));
+      panel.appendChild(btn);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineFinalEntry(g, players, viewerId, isHost, body){
+    body.appendChild(onlineScoreboard(players, null));
+    const submittedIds = Object.keys(g.final.entries);
+    const mySubmitted = submittedIds.includes(viewerId);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<div class="jp-clue-cat">' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<div class="jp-clue-text">' + escapeHtml(g.finalClue.clue) + '</div>';
+    if (mySubmitted){
+      panel.innerHTML += '<p style="color:var(--teal);">Locked in! Waiting for everyone else\u2026</p>';
+    } else {
+      const myScore = (players.find(p=>p.id===viewerId)||{score:0}).score;
+      const maxWager = Math.max(myScore, 0);
+      const wrap = document.createElement('div'); wrap.className = 'final-wager-block';
+      wrap.innerHTML = '<label class="field-label">Your wager (0&ndash;' + maxWager + ')</label>';
+      const wagerInput = document.createElement('input'); wagerInput.className='text-input'; wagerInput.type='number'; wagerInput.min='0'; wagerInput.max=String(maxWager); wagerInput.value='0';
+      wrap.appendChild(wagerInput);
+      const aLbl = document.createElement('label'); aLbl.className='field-label'; aLbl.textContent='Your answer';
+      wrap.appendChild(aLbl);
+      const answerInput = document.createElement('input'); answerInput.className='text-input'; answerInput.placeholder='Type your answer';
+      wrap.appendChild(answerInput);
+      const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Lock in';
+      btn.addEventListener('click', () => sendOnline({ type:'finalSubmit', wager: wagerInput.value, answer: answerInput.value }));
+      wrap.appendChild(btn);
+      panel.appendChild(wrap);
+    }
+    body.appendChild(panel);
+    const waiting = document.createElement('div'); waiting.className = 'waiting-list';
+    waiting.textContent = submittedIds.length + ' of ' + players.length + ' locked in.';
+    body.appendChild(waiting);
+    if (isHost && submittedIds.length < players.length){
+      const forceBtn = document.createElement('button'); forceBtn.className='secondary-btn'; forceBtn.textContent='Reveal now (skip stragglers)';
+      forceBtn.addEventListener('click', () => sendOnline({ type:'forceReveal' }));
+      body.appendChild(forceBtn);
+    }
+  }
+
+  function renderOnlineFinalReveal(g, players, viewerId, isHost, body){
+    body.appendChild(onlineScoreboard(players, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<div class="jp-clue-cat">' + escapeHtml(g.finalClue.category) + '</div>' +
+      '<p style="color:var(--muted);margin-bottom:4px;">Correct answer: <b style="color:var(--paper);">' + escapeHtml(g.finalClue.answer) + '</b></p>';
+    const list = document.createElement('div');
+    g.final.order.forEach((id, i) => {
+      const player = players.find(p=>p.id===id) || {name:'\u2026'};
+      const entry = g.final.entries[id];
+      const row = document.createElement('div'); row.className = 'final-reveal-row';
+      if (i <= g.final.revealIdx){
+        row.innerHTML = '<div class="fr-name">' + escapeHtml(player.name) + ' &mdash; wagered $' + entry.wager + '</div>' +
+          '<div class="fr-answer">Answered: "' + escapeHtml(entry.answer || '(nothing)') + '"</div>' +
+          '<div class="result-banner ' + (entry.correct?'correct':'wrong') + '" style="font-size:15px;margin:4px 0 0;">' + (entry.correct?'Correct (+':'Wrong (-') + entry.wager + ')</div>';
+        list.appendChild(row);
+      } else {
+        row.innerHTML = '<div class="fr-name">' + escapeHtml(player.name) + '</div><div class="fr-answer">Not revealed yet</div>';
+        list.appendChild(row);
+      }
+    });
+    panel.appendChild(list);
+    if (isHost){
+      if (g.final.revealIdx < g.final.order.length - 1){
+        const nextBtn = document.createElement('button'); nextBtn.className='primary-btn'; nextBtn.textContent='Reveal next';
+        nextBtn.addEventListener('click', () => sendOnline({ type:'revealNext' }));
+        panel.appendChild(nextBtn);
+      } else if (g.final.revealIdx >= 0) {
+        const ov = document.createElement('button'); ov.className='secondary-btn'; ov.textContent="Override last reveal";
+        ov.addEventListener('click', () => sendOnline({ type:'finalOverrule' }));
+        panel.appendChild(ov);
+        const doneBtn = document.createElement('button'); doneBtn.className='primary-btn'; doneBtn.textContent='See final standings';
+        doneBtn.addEventListener('click', () => sendOnline({ type:'finishGame' }));
+        panel.appendChild(doneBtn);
+      }
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineFinalDone(g, players, body){
+    const ranked = players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className='scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts' + (p.score<0?' neg':'') + '">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href='jeopardy.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ---------------- Join (guest) ----------------
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError'); errEl.textContent='';
+    const waitEl = document.getElementById('joinWaitText'); waitEl.textContent = 'Connecting\u2026';
+    if (!code){ errEl.textContent = 'Enter a room code.'; waitEl.textContent=''; return; }
+    const btn = document.getElementById('joinConnect');
+    btn.disabled = true;
+    let settled = false;
+    const joinTimeout = setTimeout(() => { if (!settled) fail("Couldn't find that room. Check the code and try again."); }, 9000);
+    function fail(msg){
+      settled = true; clearTimeout(joinTimeout);
+      errEl.textContent = msg; waitEl.textContent=''; btn.disabled=false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('jeopardy-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          waitEl.textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'gameStart'){
+          showScreen('game');
+        } else if (msg.type === 'state'){
+          onlineGame = msg.game;
+          renderOnline(msg.game, msg.players, myId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+})();
+</script>
+</body>
+</html>
