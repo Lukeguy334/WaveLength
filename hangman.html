@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hangman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.in-control { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+
+  .jp-clue-card { text-align:center; padding:34px 20px; }
+
+  .gallows { display:flex; justify-content:center; margin-bottom:14px; }
+  .gallows svg { width:150px; height:150px; }
+  .gallows .part { stroke:var(--rose); stroke-width:4; fill:none; stroke-linecap:round; }
+  .gallows .frame { stroke:var(--muted); }
+
+  .word-display { text-align:center; font-family:'JetBrains Mono',monospace; font-size:clamp(22px,6vw,32px); letter-spacing:0.15em; color:var(--paper); margin:16px 0; word-break:break-all; }
+  .word-display .blank { color:var(--panel-line); }
+
+  .letter-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(38px,1fr)); gap:6px; margin-top:16px; }
+  .letter-btn { padding:10px 0; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; cursor:pointer; }
+  .letter-btn:hover:not(:disabled) { border-color:var(--brass); }
+  .letter-btn.correct { border-color:var(--teal); color:var(--teal); background:rgba(79,209,197,0.12); }
+  .letter-btn.wrong { border-color:var(--rose); color:var(--rose); background:rgba(226,99,122,0.12); }
+  .letter-btn:disabled { cursor:not-allowed; opacity:0.6; }
+
+  .misses-count { text-align:center; color:var(--muted); font-size:13px; margin-top:10px; }
+  .category-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .waiting-list { color:var(--muted); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Hangman</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">One player sets a secret word. Everyone else guesses letters before the drawing is complete.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li>The current setter picks a secret word or phrase &mdash; type your own privately, or draw a random one from a category.</li>
+          <li>Everyone else takes turns guessing one letter at a time.</li>
+          <li>A correct letter reveals every spot it appears. A wrong letter adds a piece to the drawing.</li>
+          <li>Guess the whole word before 6 wrong letters and the guessers win. Miss 6 times and the setter wins.</li>
+          <li>The setter role rotates every round.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Everyone shares one device, taking turns guessing letters.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code &mdash; everyone plays from their own device.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;8)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <label class="field-label">Rounds per player</label>
+      <div class="choice-row" id="localRoundsChoice">
+        <button class="choice-btn active" data-val="1">Once each</button>
+        <button class="choice-btn" data-val="2">Twice each</button>
+      </div>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Rounds per player</label>
+      <div class="choice-row" id="hostRoundsChoice">
+        <button class="choice-btn active" data-val="1">Once each</button>
+        <button class="choice-btn" data-val="2">Twice each</button>
+      </div>
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data/hangman-words.js"></script>
+<script>
+(function(){
+  const CATEGORIES = Object.keys(window.HANGMAN_WORDS);
+  const MAX_MISSES = 6;
+  const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function randomFromCategory(cat){
+    const list = window.HANGMAN_WORDS[cat];
+    return list[Math.floor(Math.random()*list.length)];
+  }
+
+  function gallowsSvg(misses){
+    const parts = [
+      '<line class="part frame" x1="20" y1="140" x2="110" y2="140"/>',
+      '<line class="part frame" x1="45" y1="140" x2="45" y2="20"/>',
+      '<line class="part frame" x1="45" y1="20" x2="100" y2="20"/>',
+      '<line class="part frame" x1="100" y1="20" x2="100" y2="38"/>',
+      '<circle class="part" cx="100" cy="52" r="14"/>',
+      '<line class="part" x1="100" y1="66" x2="100" y2="100"/>',
+      '<line class="part" x1="100" y1="76" x2="82" y2="92"/>',
+      '<line class="part" x1="100" y1="76" x2="118" y2="92"/>',
+      '<line class="part" x1="100" y1="100" x2="85" y2="122"/>',
+      '<line class="part" x1="100" y1="100" x2="115" y2="122"/>'
+    ];
+    // first 4 parts are always the gallows frame; remaining 6 map to misses 1-6
+    const shown = parts.slice(0, 4).concat(parts.slice(4, 4+misses));
+    return '<svg viewBox="0 0 140 150" xmlns="http://www.w3.org/2000/svg">' + shown.join('') + '</svg>';
+  }
+
+  function renderWordDisplay(word, guessed){
+    return word.split('').map(ch => {
+      if (ch === ' ') return '<span style="display:inline-block;width:0.6em;"></span>';
+      const shown = guessed.includes(ch);
+      return '<span class="' + (shown?'':'blank') + '">' + (shown ? escapeHtml(ch) : '_') + '</span>';
+    }).join(' ');
+  }
+
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id==='rulesModal') e.target.classList.add('hidden'); });
+
+  document.querySelectorAll('#localRoundsChoice .choice-btn, #hostRoundsChoice .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  const localPlayerRows = document.getElementById('localPlayerRows');
+  function addLocalPlayerRow(name){
+    const row = document.createElement('div'); row.className = 'player-row-input';
+    const input = document.createElement('input'); input.className='text-input'; input.maxLength=16; input.placeholder='Player name'; input.value = name || '';
+    row.appendChild(input);
+    const rm = document.createElement('button'); rm.className='remove-player-btn'; rm.textContent='\u00d7';
+    rm.addEventListener('click', () => { if (localPlayerRows.children.length > 2) row.remove(); });
+    row.appendChild(rm);
+    localPlayerRows.appendChild(row);
+  }
+  addLocalPlayerRow('Player 1'); addLocalPlayerRow('Player 2');
+  document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    if (localPlayerRows.children.length >= 8) return;
+    addLocalPlayerRow('Player ' + (localPlayerRows.children.length+1));
+  });
+
+  // ============================================================
+  // LOCAL (pass & play)
+  // ============================================================
+  let game = null;
+  document.getElementById('localStart').addEventListener('click', () => {
+    const names = [...localPlayerRows.querySelectorAll('input')].map(i => i.value.trim() || 'Player').slice(0,8);
+    const perPlayer = parseInt(document.querySelector('#localRoundsChoice .choice-btn.active').dataset.val, 10);
+    startLocalGame(names, perPlayer);
+  });
+
+  function startLocalGame(names, perPlayer){
+    game = {
+      players: names.map((n,i) => ({ id:'l'+i, name:n, score:0 })),
+      totalRounds: names.length * perPlayer,
+      roundIndex: 0, setterIdx: 0,
+      phase: 'round-intro', // round-intro | secret-entry | play | round-end | done
+      word: '', guessed: [], misses: 0, turnIdx: 0, winnerSide: null
+    };
+    showScreen('game');
+    renderLocal();
+  }
+  function localOtherPlayers(g){ return g.players.filter((p,i)=>i!==g.setterIdx); }
+
+  function localScoreboard(g, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    g.players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip' + (p.id===highlightId?' in-control':'');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderLocal(){
+    const g = game; const body = document.getElementById('gameBody'); body.innerHTML = '';
+    if (g.phase === 'round-intro') return renderLocalRoundIntro(g, body);
+    if (g.phase === 'secret-entry') return renderLocalSecretEntry(g, body);
+    if (g.phase === 'play') return renderLocalPlay(g, body);
+    if (g.phase === 'round-end') return renderLocalRoundEnd(g, body);
+    if (g.phase === 'done') return renderLocalDone(g, body);
+  }
+
+  function renderLocalRoundIntro(g, body){
+    const setter = g.players[g.setterIdx];
+    body.appendChild(localScoreboard(g, setter.id));
+    const panel = document.createElement('div'); panel.className = 'panel pass-card';
+    panel.innerHTML = '<div class="to-icon">\u270f\ufe0f</div><h2>Pass to ' + escapeHtml(setter.name) + '</h2><p>Round ' + (g.roundIndex+1) + ' of ' + g.totalRounds + ' &mdash; you\'re setting the word.</p>';
+    const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent = "I'm " + setter.name + ", ready";
+    btn.addEventListener('click', () => { g.phase='secret-entry'; renderLocal(); });
+    panel.appendChild(btn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalSecretEntry(g, body){
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Pick a secret word</h3>';
+    const input = document.createElement('input'); input.className='text-input'; input.placeholder='Type your own word or phrase';
+    panel.appendChild(input);
+    const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.style.margin='12px 0 4px'; p2.textContent = 'Or draw one from a category:';
+    panel.appendChild(p2);
+    const chipRow = document.createElement('div'); chipRow.className = 'category-chip-row';
+    CATEGORIES.forEach(cat => {
+      const btn = document.createElement('button'); btn.className='choice-btn'; btn.textContent = cat;
+      btn.addEventListener('click', () => { input.value = randomFromCategory(cat); });
+      chipRow.appendChild(btn);
+    });
+    panel.appendChild(chipRow);
+    const startBtn = document.createElement('button'); startBtn.className='primary-btn'; startBtn.style.display='block'; startBtn.textContent='Start the guessing';
+    startBtn.addEventListener('click', () => {
+      const w = input.value.trim().toUpperCase();
+      if (!w) return;
+      g.word = w; g.guessed = []; g.misses = 0; g.turnIdx = 0; g.winnerSide = null;
+      g.phase = 'play';
+      renderLocal();
+    });
+    panel.appendChild(startBtn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalPlay(g, body){
+    const setter = g.players[g.setterIdx];
+    const others = localOtherPlayers(g);
+    const currentGuesser = others[g.turnIdx % others.length];
+    body.appendChild(localScoreboard(g, setter.id));
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const gw = document.createElement('div'); gw.className = 'gallows'; gw.innerHTML = gallowsSvg(g.misses);
+    panel.appendChild(gw);
+    const wd = document.createElement('div'); wd.className = 'word-display'; wd.innerHTML = renderWordDisplay(g.word, g.guessed);
+    panel.appendChild(wd);
+    const missText = document.createElement('div'); missText.className = 'misses-count'; missText.textContent = g.misses + ' of ' + MAX_MISSES + ' misses';
+    panel.appendChild(missText);
+
+    const turnLabel = document.createElement('p'); turnLabel.style.textAlign='center'; turnLabel.style.color='var(--muted)'; turnLabel.style.marginTop='14px';
+    turnLabel.innerHTML = '<b style="color:var(--paper);">' + escapeHtml(currentGuesser.name) + '</b>\'s turn to guess a letter';
+    panel.appendChild(turnLabel);
+
+    const grid = document.createElement('div'); grid.className='letter-grid';
+    ALPHABET.forEach(letter => {
+      const btn = document.createElement('button'); btn.className='letter-btn'; btn.textContent = letter;
+      const already = g.guessed.includes(letter);
+      if (already){
+        btn.disabled = true;
+        btn.classList.add(g.word.includes(letter) ? 'correct' : 'wrong');
+      }
+      btn.addEventListener('click', () => {
+        if (g.guessed.includes(letter)) return;
+        g.guessed.push(letter);
+        if (g.word.includes(letter)){
+          const complete = g.word.split('').every(ch => ch===' ' || g.guessed.includes(ch));
+          if (complete){ g.winnerSide = 'guessers'; g.phase = 'round-end'; }
+        } else {
+          g.misses++;
+          g.turnIdx++;
+          if (g.misses >= MAX_MISSES){ g.winnerSide = 'setter'; g.phase = 'round-end'; }
+        }
+        renderLocal();
+      });
+      grid.appendChild(btn);
+    });
+    panel.appendChild(grid);
+    body.appendChild(panel);
+  }
+
+  function renderLocalRoundEnd(g, body){
+    const setter = g.players[g.setterIdx];
+    const others = localOtherPlayers(g);
+    if (!g.scored){
+      g.scored = true;
+      if (g.winnerSide === 'guessers') others.forEach(p => p.score += 1);
+      else setter.score += 2;
+    }
+    body.appendChild(localScoreboard(g, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+      (g.winnerSide==='guessers' ? 'The guessers got it!' : escapeHtml(setter.name) + ' wins this round!') + '</h2>' +
+      '<p style="color:var(--muted);">The word was: <b style="color:var(--paper);">' + escapeHtml(g.word) + '</b></p>';
+    const nextBtn = document.createElement('button'); nextBtn.className='primary-btn';
+    const isLast = g.roundIndex >= g.totalRounds - 1;
+    nextBtn.textContent = isLast ? 'See final scores' : 'Next round';
+    nextBtn.addEventListener('click', () => {
+      if (isLast){ g.phase='done'; }
+      else {
+        g.roundIndex++; g.setterIdx = (g.setterIdx+1) % g.players.length;
+        g.phase='round-intro'; g.word=''; g.guessed=[]; g.misses=0; g.turnIdx=0; g.winnerSide=null; g.scored=false;
+      }
+      renderLocal();
+    });
+    panel.appendChild(nextBtn);
+    body.appendChild(panel);
+  }
+
+  function renderLocalDone(g, body){
+    const ranked = g.players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className='scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href='hangman.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ============================================================
+  // ONLINE (host-authoritative)
+  // ============================================================
+  let myId = null, myName = '', mode = 'local';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let onlineGame = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, score: 0, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('hangman-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer){ try{peer.destroy();}catch(e){} }
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    const perPlayer = parseInt(document.querySelector('#hostRoundsChoice .choice-btn.active').dataset.val, 10);
+    onlineGame = {
+      order: hostPlayers.map(p=>p.id),
+      totalRounds: hostPlayers.length * perPlayer,
+      roundIndex: 0, setterIdx: 0,
+      phase: 'round-intro',
+      word: '', guessed: [], misses: 0, turnIdx: 0, winnerSide: null, scored:false
+    };
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'gameStart' }); });
+    showScreen('game');
+    broadcastOnlineState();
+  });
+
+  function onlineOtherOrder(g){ return g.order.filter(id => id !== g.order[g.setterIdx]); }
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn, score:0 });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      return;
+    }
+    if (!onlineGame) return;
+    const g = onlineGame;
+    const setterId = g.order[g.setterIdx];
+    if (msg.type === 'beginSecret'){
+      if (conn.__playerId !== setterId || g.phase !== 'round-intro') return;
+      g.phase = 'secret-entry';
+      broadcastOnlineState();
+    } else if (msg.type === 'setWord'){
+      if (conn.__playerId !== setterId || g.phase !== 'secret-entry') return;
+      const w = (msg.word||'').trim().toUpperCase();
+      if (!w) return;
+      g.word = w; g.guessed = []; g.misses = 0; g.turnIdx = 0; g.winnerSide = null;
+      g.phase = 'play';
+      broadcastOnlineState();
+    } else if (msg.type === 'guessLetter'){
+      if (g.phase !== 'play' || conn.__playerId === setterId) return;
+      const others = onlineOtherOrder(g);
+      const expected = others[g.turnIdx % others.length];
+      if (conn.__playerId !== expected) return;
+      const letter = (msg.letter||'').toUpperCase();
+      if (!letter || g.guessed.includes(letter)) return;
+      g.guessed.push(letter);
+      if (g.word.includes(letter)){
+        const complete = g.word.split('').every(ch => ch===' ' || g.guessed.includes(ch));
+        if (complete){ g.winnerSide = 'guessers'; g.phase = 'round-end'; }
+      } else {
+        g.misses++; g.turnIdx++;
+        if (g.misses >= MAX_MISSES){ g.winnerSide = 'setter'; g.phase = 'round-end'; }
+      }
+      broadcastOnlineState();
+    } else if (msg.type === 'nextRound'){
+      if (g.phase !== 'round-end') return;
+      if (!g.scored){
+        g.scored = true;
+        const setter = hostPlayers.find(p=>p.id===setterId);
+        const others = onlineOtherOrder(g);
+        if (g.winnerSide==='guessers') others.forEach(id => { const p=hostPlayers.find(pl=>pl.id===id); if (p) p.score+=1; });
+        else if (setter) setter.score += 2;
+      }
+      if (g.roundIndex >= g.totalRounds - 1){ g.phase = 'done'; }
+      else {
+        g.roundIndex++; g.setterIdx = (g.setterIdx+1) % g.order.length;
+        g.phase = 'round-intro'; g.word=''; g.guessed=[]; g.misses=0; g.turnIdx=0; g.winnerSide=null; g.scored=false;
+      }
+      broadcastOnlineState();
+    }
+  }
+
+  function broadcastOnlineState(){
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name,score:p.score}));
+    const g = onlineGame;
+    const setterId = g.order[g.setterIdx];
+    hostPlayers.forEach(p => {
+      const safeWord = (p.id === setterId || g.phase === 'round-end' || g.phase === 'done') ? g.word : '';
+      const payload = Object.assign({}, g, { word: safeWord });
+      if (p.conn) p.conn.send({ type:'state', game: payload, players });
+    });
+    const hostSafeWord = (myId === setterId || g.phase === 'round-end' || g.phase === 'done') ? g.word : '';
+    renderOnline(Object.assign({}, g, { word: hostSafeWord }), players, myId, true);
+  }
+
+  function onlineScoreboard(players, highlightId){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip' + (p.id===highlightId?' in-control':'');
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+  function sendOnline(msg){
+    if (mode === 'host'){ handleHostMessage({ __playerId: myId, send(){} }, msg); }
+    else if (joinConn) joinConn.send(msg);
+  }
+
+  function renderOnline(g, players, viewerId, isHost){
+    const body = document.getElementById('gameBody'); body.innerHTML = '';
+    if (g.phase === 'round-intro') return renderOnlineRoundIntro(g, players, viewerId, body);
+    if (g.phase === 'secret-entry') return renderOnlineSecretEntry(g, players, viewerId, body);
+    if (g.phase === 'play') return renderOnlinePlay(g, players, viewerId, body);
+    if (g.phase === 'round-end') return renderOnlineRoundEnd(g, players, viewerId, isHost, body);
+    if (g.phase === 'done') return renderOnlineDone(players, body);
+  }
+
+  function renderOnlineRoundIntro(g, players, viewerId, body){
+    const setterId = g.order[g.setterIdx];
+    const setter = players.find(p=>p.id===setterId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, setterId));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Round ' + (g.roundIndex+1) + ' of ' + g.totalRounds + '</h3>';
+    if (viewerId === setterId){
+      panel.innerHTML += '<p style="color:var(--muted);">You\'re setting the word this round.</p>';
+      const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent='Ready';
+      btn.addEventListener('click', () => sendOnline({ type:'beginSecret' }));
+      panel.appendChild(btn);
+    } else {
+      panel.innerHTML += '<p style="color:var(--muted);">' + escapeHtml(setter.name) + ' is picking a word\u2026</p>';
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineSecretEntry(g, players, viewerId, body){
+    const setterId = g.order[g.setterIdx];
+    const setter = players.find(p=>p.id===setterId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, setterId));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    if (viewerId === setterId){
+      panel.innerHTML = '<h3 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">Pick a secret word</h3>';
+      const input = document.createElement('input'); input.className='text-input'; input.placeholder='Type your own word or phrase';
+      panel.appendChild(input);
+      const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.style.margin='12px 0 4px'; p2.textContent='Or draw one from a category:';
+      panel.appendChild(p2);
+      const chipRow = document.createElement('div'); chipRow.className='category-chip-row';
+      CATEGORIES.forEach(cat => {
+        const btn = document.createElement('button'); btn.className='choice-btn'; btn.textContent = cat;
+        btn.addEventListener('click', () => { input.value = randomFromCategory(cat); });
+        chipRow.appendChild(btn);
+      });
+      panel.appendChild(chipRow);
+      const startBtn = document.createElement('button'); startBtn.className='primary-btn'; startBtn.style.display='block'; startBtn.textContent='Start the guessing';
+      startBtn.addEventListener('click', () => sendOnline({ type:'setWord', word: input.value }));
+      panel.appendChild(startBtn);
+    } else {
+      panel.innerHTML = '<p style="color:var(--muted);">' + escapeHtml(setter.name) + ' is picking a word\u2026</p>';
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlinePlay(g, players, viewerId, body){
+    const setterId = g.order[g.setterIdx];
+    const others = onlineOtherOrder(g);
+    const currentGuesserId = others[g.turnIdx % others.length];
+    const currentGuesser = players.find(p=>p.id===currentGuesserId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, setterId));
+    const panel = document.createElement('div'); panel.className = 'panel';
+    const gw = document.createElement('div'); gw.className='gallows'; gw.innerHTML = gallowsSvg(g.misses);
+    panel.appendChild(gw);
+    const wd = document.createElement('div'); wd.className='word-display'; wd.innerHTML = renderWordDisplay(g.word || '', g.guessed);
+    panel.appendChild(wd);
+    const missText = document.createElement('div'); missText.className='misses-count'; missText.textContent = g.misses + ' of ' + MAX_MISSES + ' misses';
+    panel.appendChild(missText);
+
+    const turnLabel = document.createElement('p'); turnLabel.style.textAlign='center'; turnLabel.style.color='var(--muted)'; turnLabel.style.marginTop='14px';
+    turnLabel.innerHTML = viewerId===currentGuesserId ? 'Your turn to guess a letter!' : '<b style="color:var(--paper);">' + escapeHtml(currentGuesser.name) + '</b>\'s turn to guess a letter';
+    panel.appendChild(turnLabel);
+
+    const grid = document.createElement('div'); grid.className='letter-grid';
+    ALPHABET.forEach(letter => {
+      const btn = document.createElement('button'); btn.className='letter-btn'; btn.textContent = letter;
+      const already = g.guessed.includes(letter);
+      const myTurn = viewerId === currentGuesserId && viewerId !== setterId;
+      if (already){
+        btn.disabled = true;
+        btn.classList.add((g.word||'').includes(letter) ? 'correct' : 'wrong');
+      } else if (!myTurn){
+        btn.disabled = true;
+      }
+      btn.addEventListener('click', () => { if (myTurn && !already) sendOnline({ type:'guessLetter', letter }); });
+      grid.appendChild(btn);
+    });
+    panel.appendChild(grid);
+    body.appendChild(panel);
+  }
+
+  function renderOnlineRoundEnd(g, players, viewerId, isHost, body){
+    const setterId = g.order[g.setterIdx];
+    const setter = players.find(p=>p.id===setterId) || {name:'\u2026'};
+    body.appendChild(onlineScoreboard(players, null));
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+      (g.winnerSide==='guessers' ? 'The guessers got it!' : escapeHtml(setter.name) + ' wins this round!') + '</h2>' +
+      '<p style="color:var(--muted);">The word was: <b style="color:var(--paper);">' + escapeHtml(g.word||'') + '</b></p>';
+    if (isHost){
+      const isLast = g.roundIndex >= g.totalRounds - 1;
+      const nextBtn = document.createElement('button'); nextBtn.className='primary-btn'; nextBtn.textContent = isLast ? 'See final scores' : 'Next round';
+      nextBtn.addEventListener('click', () => sendOnline({ type:'nextRound' }));
+      panel.appendChild(nextBtn);
+    } else {
+      const p2 = document.createElement('p'); p2.style.color='var(--muted)'; p2.textContent='Waiting for the host to continue\u2026';
+      panel.appendChild(p2);
+    }
+    body.appendChild(panel);
+  }
+
+  function renderOnlineDone(players, body){
+    const ranked = players.slice().sort((a,b)=>b.score-a.score);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' + escapeHtml(ranked[0].name) + ' wins!</h2>';
+    const list = document.createElement('div'); list.className='scoreboard'; list.style.justifyContent='center';
+    ranked.forEach(p => {
+      const chip = document.createElement('span'); chip.className='score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + p.score + '</span>';
+      list.appendChild(chip);
+    });
+    panel.appendChild(list);
+    const again = document.createElement('a'); again.href='hangman.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ---------------- Join (guest) ----------------
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError'); errEl.textContent='';
+    const waitEl = document.getElementById('joinWaitText'); waitEl.textContent = 'Connecting\u2026';
+    if (!code){ errEl.textContent = 'Enter a room code.'; waitEl.textContent=''; return; }
+    const btn = document.getElementById('joinConnect');
+    btn.disabled = true;
+    let settled = false;
+    const joinTimeout = setTimeout(() => { if (!settled) fail("Couldn't find that room. Check the code and try again."); }, 9000);
+    function fail(msg){
+      settled = true; clearTimeout(joinTimeout);
+      errEl.textContent = msg; waitEl.textContent=''; btn.disabled=false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('hangman-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          waitEl.textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'gameStart'){
+          showScreen('game');
+        } else if (msg.type === 'state'){
+          renderOnline(msg.game, msg.players, myId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+})();
+</script>
+</body>
+</html>
