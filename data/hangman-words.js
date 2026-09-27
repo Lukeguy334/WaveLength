@@ -1,0 +1,9 @@
+// Word/phrase bank for hangman.html, grouped by category. Players can pick
+// a category to draw a random entry from, or type their own secret instead.
+window.HANGMAN_WORDS = {
+  'Movies': ['JURASSIC PARK', 'THE GODFATHER', 'FINDING NEMO', 'BACK TO THE FUTURE', 'THE LION KING', 'INCEPTION', 'TITANIC', 'THE AVENGERS'],
+  'Animals': ['PLATYPUS', 'HUMMINGBIRD', 'OCTOPUS', 'CHAMELEON', 'RHINOCEROS', 'FLAMINGO', 'PORCUPINE', 'KANGAROO'],
+  'Food': ['SPAGHETTI', 'GUACAMOLE', 'CHEESEBURGER', 'PINEAPPLE', 'CROISSANT', 'BURRITO', 'PANCAKES', 'WATERMELON'],
+  'Places': ['GRAND CANYON', 'EIFFEL TOWER', 'NIAGARA FALLS', 'TIMES SQUARE', 'GREAT WALL OF CHINA', 'AMAZON RAINFOREST'],
+  'Random': ['SKATEBOARD', 'UMBRELLA', 'TELESCOPE', 'SAXOPHONE', 'VOLCANO', 'LIGHTHOUSE', 'HELICOPTER', 'MARSHMALLOW']
+};
