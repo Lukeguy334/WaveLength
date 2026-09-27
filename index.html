@@ -796,8 +796,52 @@
   const emptyState = document.getElementById('emptyState');
   const emptyQuery = document.getElementById('emptyQuery');
 
+  function isEasterEggQuery(q){
+    return q.trim().toLowerCase().replace(/\s+/g, '') === 'gamenight';
+  }
+
+  function buildEasterEggCard(){
+    const card = document.createElement('a');
+    card.className = 'card';
+    card.href = '#';
+    card.innerHTML = `
+      <div class="rivet tl"></div>
+      <div class="rivet tr"></div>
+      <div class="icon"><svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
+        <rect x="38" y="18" width="44" height="44" rx="8" fill="none" stroke="var(--brass)" stroke-width="2.5" transform="rotate(-8 60 40)"/>
+        <circle cx="52" cy="32" r="3" fill="var(--teal)"/>
+        <circle cx="68" cy="30" r="3" fill="var(--rose)"/>
+        <circle cx="50" cy="48" r="3" fill="var(--rose)"/>
+        <circle cx="66" cy="50" r="3" fill="var(--teal)"/>
+      </svg></div>
+      <h2>Easter Egg</h2>
+      <p class="tagline">You found it. Hit play and see what happens.</p>
+      <div class="meta-row">
+        <span class="meta">Players <b>?</b></span>
+        <span class="meta">Time <b>?!</b></span>
+      </div>
+      <span class="play">Play <span class="arrow">&rarr;</span></span>
+    `;
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
+      const searchInput = document.getElementById('searchInput');
+      searchInput.value = '';
+      state.query = '';
+      renderGrid();
+      if (window.__gnEasterEggLaunch) window.__gnEasterEggLaunch();
+    });
+    return card;
+  }
+
   function renderGrid(){
     grid.innerHTML = '';
+
+    if (isEasterEggQuery(state.query)){
+      emptyState.classList.add('hidden');
+      grid.appendChild(buildEasterEggCard());
+      return;
+    }
+
     const filtered = GAMES.filter(matchesFilter);
 
     if (!filtered.length){
@@ -1017,7 +1061,7 @@
 // EASTER EGG -- type "gamenight" anywhere on the page for chaos mode
 // ================================================================
 (function(){
-  let _buf = '', _active = false, _items = [], _bombs = [];
+  let _active = false, _items = [], _bombs = [];
   const _mhist = [];
   let _mouseX = window.innerWidth / 2, _mouseY = window.innerHeight / 2;
   let _gravMode = 0; // 0=normal 1=zero 2=reverse
@@ -1028,24 +1072,17 @@
   let _rainbowT = 0;
 
   function _isMobile(){ return window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024); }
-  function _isTyping(){
-    const a = document.activeElement;
-    if (!a) return false;
-    const tag = a.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || a.isContentEditable;
-  }
+
+  // Triggered from the "Easter Egg" search-result card's Play button
+  // (see the searchInput handler further up), not by typing on the page.
+  window.__gnEasterEggLaunch = function(){
+    if (_isMobile() || _active) return;
+    _launch();
+  };
 
   document.addEventListener('keydown', e => {
     if (_isMobile()) return;
-    if (!_active){
-      if (_isTyping()) return;
-      if (e.key.length === 1){
-        _buf += e.key.toLowerCase();
-        if (_buf.length > 12) _buf = _buf.slice(-12);
-        if (_buf.includes('gamenight')){ _buf=''; _launch(); }
-      }
-      return;
-    }
+    if (!_active) return;
     switch (e.code){
       case 'Space':   e.preventDefault(); _dropBomb(); break;
       case 'KeyG':    _cycleGravity(); break;
@@ -1561,16 +1598,37 @@
     if (hudEl){ [...hudEl.querySelectorAll('div')].forEach(l => { if (l.textContent.includes('NUKE')){ l.style.opacity = '.3'; l.style.textDecoration = 'line-through'; } }); }
   }
 
+  function _shuffled(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
   function _launch(){
     if (_isMobile()) return;
     _active = true;
-    _toast('\ud83c\udfae Chaos mode activated! Grab and throw the cards!');
+    _toast('\ud83c\udfae Chaos mode activated! Grab and throw them around!');
     setTimeout(_showHUD, 600);
 
-    const cardEls = [...document.querySelectorAll('#grid .card')].filter(c => {
+    // Keep it light: just a couple of whole cards, plus a few Play buttons
+    // plucked off other cards, rather than dropping all 16 at once.
+    const allCards = [...document.querySelectorAll('#grid .card')].filter(c => {
       const r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0;
     });
-    cardEls.forEach((card, si) => {
+    const boxCards = _shuffled(allCards).slice(0, Math.min(2, allCards.length));
+    const boxSet = new Set(boxCards);
+
+    const playCandidates = [...document.querySelectorAll('#grid .card .play')].filter(el => {
+      if (boxSet.has(el.closest('.card'))) return false;
+      const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0;
+    });
+    const playEls = _shuffled(playCandidates).slice(0, Math.min(3, playCandidates.length));
+
+    let si = 0;
+    boxCards.forEach(card => {
       const rect = card.getBoundingClientRect();
       const el = document.createElement('div');
       el.className = 'gn-egg-el card';
@@ -1584,7 +1642,36 @@
         vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 8 - 2,
         rot: 0, rotV: (Math.random() - 0.5) * 6, dragging: false, grabOffX: 0, grabOffY: 0,
         origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
-      setTimeout(() => { if (_active) _items.push(p); }, si * 40);
+      const _si = si++;
+      setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
+      el.addEventListener('mousedown', e => {
+        p.dragging = true; p.grabOffX = e.clientX - p.x; p.grabOffY = e.clientY - p.y;
+        p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
+        el.style.cursor = 'grabbing'; el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
+        e.preventDefault(); e.stopPropagation();
+      });
+    });
+
+    playEls.forEach(playEl => {
+      const rect = playEl.getBoundingClientRect();
+      const cs = getComputedStyle(playEl);
+      const el = document.createElement('div');
+      el.className = 'gn-egg-el play';
+      el.innerHTML = playEl.innerHTML;
+      el.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;' +
+        'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;' +
+        'display:' + cs.display + ';align-items:center;justify-content:center;gap:6px;' +
+        'font-family:' + cs.fontFamily + ';font-weight:' + cs.fontWeight + ';font-size:' + cs.fontSize + ';' +
+        'padding:' + cs.padding + ';border-radius:' + cs.borderRadius + ';background:' + cs.background + ';color:' + cs.color + ';' +
+        'box-sizing:border-box;opacity:1;transform:none;animation:none;';
+      document.body.appendChild(el);
+      playEl.style.visibility = 'hidden';
+      const p = { el, x: rect.left, y: rect.top, w: rect.width, h: rect.height,
+        vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 8 - 2,
+        rot: 0, rotV: (Math.random() - 0.5) * 6, dragging: false, grabOffX: 0, grabOffY: 0,
+        origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
+      const _si = si++;
+      setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
       el.addEventListener('mousedown', e => {
         p.dragging = true; p.grabOffX = e.clientX - p.x; p.grabOffY = e.clientY - p.y;
         p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
