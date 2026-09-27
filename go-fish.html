@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go Fish</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+    --card-w: 54px; --card-h: 76px; --card-font: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .title-row h1 { margin:0; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px; }
+  .choice-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .choice-btn { padding:9px 14px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; }
+  .choice-btn.active { border-color:var(--brass); color:var(--brass-bright); background:rgba(201,162,75,0.1); }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .player-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .player-row-input input { flex:1; }
+  .remove-player-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .add-player-btn { background:transparent; border:1px dashed var(--panel-line); color:var(--muted); border-radius:8px; padding:9px 14px; cursor:pointer; font-size:13px; width:100%; margin-top:4px; }
+  .add-player-btn:hover { color:var(--brass-bright); border-color:var(--brass); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:-24px; background:var(--panel); padding-top:2px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .pass-card { text-align:center; padding:50px 24px; }
+  .pass-card .to-icon { font-size:44px; margin-bottom:10px; }
+  .pass-card h2 { font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0 0 8px; color:var(--paper); }
+  .pass-card p { color:var(--muted); margin:0 0 20px; }
+
+  .scoreboard { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .score-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; padding:8px 14px; font-size:13px; }
+  .score-chip.in-control { border-color:var(--brass); background:rgba(201,162,75,0.1); }
+  .score-chip .pts { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-weight:700; margin-left:6px; }
+
+  .jp-clue-card { text-align:center; padding:34px 20px; }
+
+  .card-face {
+    width: var(--card-w); height: var(--card-h); border-radius: 7px; background: #f6f3ea; color: #1a1a1a;
+    border: 1px solid #cfc9b8; display: flex; flex-direction: column; justify-content: space-between; padding: 3px 5px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: var(--card-font); box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    user-select: none; line-height: 1; flex-shrink:0; cursor:pointer;
+  }
+  .card-face.red { color: #b3223c; }
+  .card-face .bottom { align-self: flex-end; transform: rotate(180deg); }
+  .card-face .idx { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.02; gap: 1px; }
+  .card-face .idx .s { font-size: 0.78em; }
+  .card-face .suit-center { font-size: calc(var(--card-font) * 1.6); text-align: center; align-self: center; }
+  .card-back {
+    width: var(--card-w); height: var(--card-h); border-radius: 7px;
+    background: repeating-linear-gradient(135deg, var(--brass) 0 6px, var(--brass-bright) 6px 12px);
+    border: 1px solid #7a5f28; box-shadow: 0 3px 6px rgba(0,0,0,0.4); flex-shrink:0;
+  }
+
+  .pond-zone { text-align:center; margin-bottom: 18px; }
+  .pond-zone .zone-label { color: var(--muted); font-size: 11px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; }
+  .pond-count { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-size:15px; margin-top:6px; }
+
+  .hand-row { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .hand-row.own .card-face:hover { transform: translateY(-6px); }
+
+  .books-row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+  .book-badge { font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(201,162,75,0.14); border:1px solid var(--brass); color:var(--brass-bright); border-radius:8px; padding:4px 9px; }
+
+  .opponents-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:14px; }
+  .opp-box { background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; text-align:center; cursor:pointer; }
+  .opp-box:hover { border-color:var(--brass); }
+  .opp-box.disabled { cursor:default; opacity:0.5; }
+  .opp-box.active-turn { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass) inset; }
+  .opp-box .o-name { font-family:'Space Grotesk',sans-serif; font-weight:600; color:var(--paper); margin-bottom:4px; }
+  .opp-box .o-count { font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:12px; }
+  .opp-box .o-books { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); font-size:12px; margin-top:4px; }
+
+  .rank-picker { display:grid; grid-template-columns:repeat(auto-fit,minmax(46px,1fr)); gap:8px; margin-top:14px; }
+  .rank-btn { padding:10px 0; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; cursor:pointer; }
+  .rank-btn:hover:not(:disabled) { border-color:var(--brass); color:var(--brass-bright); }
+  .rank-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+  .log-line { font-size:13px; color:var(--muted); padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .log-line:last-child { border-bottom:none; }
+  .log-panel { max-height:140px; overflow-y:auto; margin-top:14px; }
+
+  .waiting-list { color:var(--muted); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>Go Fish</h1>
+    <button class="rules-btn" id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Ask for a rank, collect books of four, and empty your hand first.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li>Each player starts with a hand of cards (7 with 2&ndash;3 players, 5 with 4 or more). The rest form the pond.</li>
+          <li>On your turn, ask one opponent for a specific rank you already hold at least one of (e.g. "got any Queens?").</li>
+          <li>If they have any, they hand over all of that rank and you go again. If not, they say "Go Fish" and you draw from the pond &mdash; if you draw the rank you asked for, you go again.</li>
+          <li>Whenever you collect all four of a rank, it becomes a book and comes off your hand.</li>
+          <li>The game ends when all 13 books have been claimed or the pond runs out and no one can move. Most books wins.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Everyone shares one device, taking turns to ask (hands hidden between turns).</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code &mdash; everyone plays from their own device.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Players (2&ndash;6)</label>
+      <div id="localPlayerRows"></div>
+      <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div id="gameBody"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  const SUITS = ['S','H','D','C'];
+  const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const SUIT_SYMBOL = { S:'\u2660', H:'\u2665', D:'\u2666', C:'\u2663' };
+  const SUIT_RED = { S:false, H:true, D:true, C:false };
+
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function shuffleArray(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function makeDeck(){
+    const deck = [];
+    SUITS.forEach(s => RANKS.forEach(r => deck.push({ rank:r, suit:s, id: r+s })));
+    return shuffleArray(deck);
+  }
+  function cardFaceHTML(card){
+    const red = SUIT_RED[card.suit];
+    const idx = '<span class="r">' + card.rank + '</span><span class="s">' + SUIT_SYMBOL[card.suit] + '</span>';
+    return '<div class="card-face ' + (red ? 'red' : '') + '" data-rank="' + card.rank + '">' +
+      '<div class="top idx">' + idx + '</div>' +
+      '<div class="suit-center">' + SUIT_SYMBOL[card.suit] + '</div>' +
+      '<div class="bottom idx">' + idx + '</div>' +
+      '</div>';
+  }
+  function cardBackHTML(){ return '<div class="card-back"></div>'; }
+  function renderHand(cards, opts){
+    opts = opts || {};
+    const row = document.createElement('div'); row.className = 'hand-row' + (opts.own ? ' own':'');
+    cards.forEach(c => {
+      const holder = document.createElement('div');
+      holder.innerHTML = opts.hidden ? cardBackHTML() : cardFaceHTML(c);
+      row.appendChild(holder.firstChild);
+    });
+    return row;
+  }
+
+  const screens = {
+    lobby: document.getElementById('lobbyScreen'),
+    local: document.getElementById('setupLocal'),
+    host: document.getElementById('setupHost'),
+    join: document.getElementById('setupJoin'),
+    game: document.getElementById('gameScreen')
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => {
+      if (k==='game') screens[k].classList.toggle('active', k===name);
+      else screens[k].classList.toggle('hidden', k!==name);
+    });
+  }
+  document.getElementById('pickLocal').addEventListener('click', () => showScreen('local'));
+  document.getElementById('pickHost').addEventListener('click', () => showScreen('host'));
+  document.getElementById('pickJoin').addEventListener('click', () => showScreen('join'));
+  document.getElementById('localBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('hostBack').addEventListener('click', () => showScreen('lobby'));
+  document.getElementById('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  document.getElementById('rulesBtn').addEventListener('click', () => document.getElementById('rulesModal').classList.remove('hidden'));
+  document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesModal').classList.add('hidden'));
+  document.getElementById('rulesModal').addEventListener('click', (e) => { if (e.target.id==='rulesModal') e.target.classList.add('hidden'); });
+
+  const localPlayerRows = document.getElementById('localPlayerRows');
+  function addLocalPlayerRow(name){
+    const row = document.createElement('div'); row.className = 'player-row-input';
+    const input = document.createElement('input'); input.className='text-input'; input.maxLength=16; input.placeholder='Player name'; input.value = name || '';
+    row.appendChild(input);
+    const rm = document.createElement('button'); rm.className='remove-player-btn'; rm.textContent='\u00d7';
+    rm.addEventListener('click', () => { if (localPlayerRows.children.length > 2) row.remove(); });
+    row.appendChild(rm);
+    localPlayerRows.appendChild(row);
+  }
+  addLocalPlayerRow('Player 1'); addLocalPlayerRow('Player 2');
+  document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    if (localPlayerRows.children.length >= 6) return;
+    addLocalPlayerRow('Player ' + (localPlayerRows.children.length+1));
+  });
+
+  // ============================================================
+  // Shared game engine
+  // ============================================================
+  function newGameState(playerIds){
+    const handSize = playerIds.length <= 3 ? 7 : 5;
+    const deck = makeDeck();
+    const state = {
+      playerOrder: playerIds.slice(),
+      hands: {},     // id -> [card,...]
+      books: {},     // id -> [rank,...]
+      pond: deck,
+      turnIdx: 0,
+      phase: 'asking', // asking | goFish (waiting on draw resolution, auto) | done
+      done: false,
+      log: [],
+      lastEvent: null
+    };
+    playerIds.forEach(id => { state.hands[id] = []; state.books[id] = []; });
+    for (let r=0; r<handSize; r++){
+      playerIds.forEach(id => { state.hands[id].push(state.pond.pop()); });
+    }
+    checkForBooks(state, playerIds);
+    beginTurn(state);
+    return state;
+  }
+  function ranksInHand(hand){
+    const counts = {};
+    hand.forEach(c => { counts[c.rank] = (counts[c.rank]||0)+1; });
+    return counts;
+  }
+  function checkForBooks(state, ids){
+    (ids || state.playerOrder).forEach(id => {
+      let changed = true;
+      while (changed){
+        changed = false;
+        const counts = ranksInHand(state.hands[id]);
+        for (const rank in counts){
+          if (counts[rank] === 4){
+            state.hands[id] = state.hands[id].filter(c => c.rank !== rank);
+            state.books[id].push(rank);
+            changed = true;
+            break;
+          }
+        }
+      }
+    });
+  }
+  function totalBooks(state){
+    return state.playerOrder.reduce((sum,id) => sum + state.books[id].length, 0);
+  }
+  function refillIfEmpty(state, id){
+    // if a player's hand is empty and pond has cards, they draw up to continue playing (house rule: draw 1)
+    if (state.hands[id].length === 0 && state.pond.length > 0){
+      state.hands[id].push(state.pond.pop());
+      checkForBooks(state, [id]);
+    }
+  }
+  // Ensures the player about to act has a card to ask with (standard Go Fish rule: an empty
+  // hand at the start of your turn draws from the pond before you do anything else). If the
+  // pond is also empty, skip forward to whoever can act next; if nobody can, end the game.
+  function beginTurn(state){
+    if (state.done) return;
+    let guard = 0;
+    while (guard <= state.playerOrder.length){
+      const id = state.playerOrder[state.turnIdx];
+      if (state.hands[id].length === 0){
+        if (state.pond.length > 0){
+          refillIfEmpty(state, id);
+          if (state.hands[id].length > 0) return; // drew a card (and it may have completed a book, but a lone card can't form a book by itself)
+          // hand still empty (shouldn't happen if pond had a card) - fall through to skip
+        }
+        // hand empty and nothing to draw: this player can't act, move to next
+        state.turnIdx = (state.turnIdx+1) % state.playerOrder.length;
+        guard++;
+        continue;
+      }
+      return; // this player has cards, they're good to act
+    }
+    // nobody can act
+    state.done = true; state.phase = 'done';
+  }
+  function checkGameEnd(state){
+    if (totalBooks(state) >= 13){ state.done = true; state.phase = 'done'; return true; }
+    // if pond empty and someone has an empty hand, and no one can be refilled, game ends
+    if (state.pond.length === 0){
+      const anyCardsLeft = state.playerOrder.some(id => state.hands[id].length > 0);
+      if (!anyCardsLeft){ state.done = true; state.phase='done'; return true; }
+    }
+    if (!state.done) beginTurn(state);
+    return state.done;
+  }
+  function askForRank(state, askerId, targetId, rank){
+    if (state.done) return { error: 'Game is over.' };
+    if (state.playerOrder[state.turnIdx] !== askerId) return { error: "It's not your turn." };
+    if (askerId === targetId) return { error: "You can't ask yourself." };
+    if (!state.hands[askerId].some(c => c.rank === rank)) return { error: "You can only ask for a rank you already hold." };
+    const targetHand = state.hands[targetId];
+    const matches = targetHand.filter(c => c.rank === rank);
+    let event;
+    if (matches.length > 0){
+      state.hands[targetId] = targetHand.filter(c => c.rank !== rank);
+      state.hands[askerId] = state.hands[askerId].concat(matches);
+      event = { type:'gotCards', askerId, targetId, rank, count: matches.length };
+      checkForBooks(state, [askerId]);
+      refillIfEmpty(state, targetId);
+      // asker goes again (same turn) since they got a match
+    } else {
+      const drawn = state.pond.pop();
+      event = { type:'goFish', askerId, targetId, rank, drewMatch:false };
+      if (drawn){
+        state.hands[askerId].push(drawn);
+        if (drawn.rank === rank){ event.drewMatch = true; }
+        checkForBooks(state, [askerId]);
+      }
+      if (!drawn || drawn.rank !== rank){
+        // turn passes to the next player
+        state.turnIdx = (state.turnIdx+1) % state.playerOrder.length;
+      }
+    }
+    state.lastEvent = event;
+    state.log.push(event);
+    checkGameEnd(state); // also calls beginTurn(), which draws or skips as needed for whoever is now up
+    return { ok:true, event };
+  }
+
+  // ============================================================
+  // LOCAL (pass & play)
+  // ============================================================
+  let game = null;
+  document.getElementById('localStart').addEventListener('click', () => {
+    const names = [...localPlayerRows.querySelectorAll('input')].map(i => i.value.trim() || 'Player').slice(0,6);
+    startLocalGame(names);
+  });
+  function startLocalGame(names){
+    game = {
+      players: names.map((n,i) => ({ id:'l'+i, name:n })),
+      state: null,
+      phase: 'passReveal' // passReveal | acting | gameOver
+    };
+    game.state = newGameState(game.players.map(p=>p.id));
+    showScreen('game');
+    renderLocal();
+  }
+
+  function playerName(g, id){ const p = g.players.find(pl=>pl.id===id); return p ? p.name : '?'; }
+
+  function booksBoard(g, s){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    g.players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + s.books[p.id].length + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderLocal(){
+    const g = game; const body = document.getElementById('gameBody'); body.innerHTML = '';
+    if (g.phase === 'passReveal') return renderLocalPassReveal(g, body);
+    if (g.phase === 'acting') return renderLocalActing(g, body);
+    if (g.phase === 'gameOver') return renderLocalGameOver(g, body);
+  }
+
+  function renderLocalPassReveal(g, body){
+    const s = g.state;
+    body.appendChild(booksBoard(g, s));
+    const actorId = s.playerOrder[s.turnIdx];
+    const panel = document.createElement('div'); panel.className = 'panel pass-card';
+    panel.innerHTML = '<div class="to-icon">\ud83c\udccf</div><h2>Pass to ' + escapeHtml(playerName(g, actorId)) + '</h2><p>Tap to see your hand.</p>';
+    if (s.lastEvent){
+      const evtNote = document.createElement('p'); evtNote.style.color='var(--muted)'; evtNote.style.fontSize='13px';
+      evtNote.textContent = describeEvent(g, s.lastEvent);
+      panel.insertBefore(evtNote, panel.querySelector('.primary-btn'));
+    }
+    const btn = document.createElement('button'); btn.className='primary-btn'; btn.textContent = "I'm " + playerName(g, actorId) + ", show me";
+    btn.addEventListener('click', () => { g.phase = 'acting'; renderLocal(); });
+    panel.appendChild(btn);
+    body.appendChild(panel);
+  }
+
+  function describeEvent(g, evt){
+    const asker = playerName(g, evt.askerId), target = playerName(g, evt.targetId);
+    if (evt.type === 'gotCards') return asker + ' asked ' + target + ' for ' + evt.rank + 's and got ' + evt.count + '!';
+    if (evt.drewMatch) return asker + ' asked ' + target + ' for ' + evt.rank + 's, went fishing, and drew one!';
+    return asker + ' asked ' + target + ' for ' + evt.rank + 's \u2014 Go Fish!';
+  }
+
+  function pondZoneEl(s){
+    const zone = document.createElement('div'); zone.className='pond-zone';
+    const label = document.createElement('div'); label.className='zone-label'; label.textContent='The Pond';
+    zone.appendChild(label);
+    const back = document.createElement('div'); back.innerHTML = cardBackHTML();
+    zone.appendChild(back.firstChild);
+    const count = document.createElement('div'); count.className='pond-count'; count.textContent = s.pond.length + ' cards left';
+    zone.appendChild(count);
+    return zone;
+  }
+
+  function renderLocalActing(g, body){
+    const s = g.state;
+    body.appendChild(booksBoard(g, s));
+    const panel = document.createElement('div'); panel.className='panel';
+    panel.appendChild(pondZoneEl(s));
+
+    const actorId = s.playerOrder[s.turnIdx];
+    const myHand = s.hands[actorId];
+    const label = document.createElement('div'); label.className='zone-label'; label.style.textAlign='center'; label.style.marginTop='14px'; label.textContent = 'Your hand';
+    panel.appendChild(label);
+    panel.appendChild(renderHand(myHand, { own:true }));
+
+    if (s.books[actorId].length){
+      const booksRow = document.createElement('div'); booksRow.className='books-row';
+      s.books[actorId].forEach(r => { const b=document.createElement('span'); b.className='book-badge'; b.textContent=r+'s'; booksRow.appendChild(b); });
+      panel.appendChild(booksRow);
+    }
+
+    // opponent picker
+    const oppLabel = document.createElement('div'); oppLabel.className='zone-label'; oppLabel.style.textAlign='center'; oppLabel.style.marginTop='18px'; oppLabel.textContent='Ask someone';
+    panel.appendChild(oppLabel);
+    const oppGrid = document.createElement('div'); oppGrid.className='opponents-grid';
+    let selectedTarget = null;
+    let selectedRank = null;
+    const rankPicker = document.createElement('div'); rankPicker.className='rank-picker'; rankPicker.style.display='none';
+    const askBtn = document.createElement('button'); askBtn.className='primary-btn'; askBtn.style.display='none'; askBtn.textContent='Ask';
+
+    s.playerOrder.filter(id => id !== actorId).forEach(id => {
+      const box = document.createElement('div'); box.className='opp-box';
+      box.innerHTML = '<div class="o-name">' + escapeHtml(playerName(g,id)) + '</div><div class="o-count">' + s.hands[id].length + ' cards</div><div class="o-books">' + s.books[id].length + ' books</div>';
+      box.addEventListener('click', () => {
+        selectedTarget = id;
+        oppGrid.querySelectorAll('.opp-box').forEach(b=>b.classList.remove('active-turn'));
+        box.classList.add('active-turn');
+        showRankPicker();
+      });
+      oppGrid.appendChild(box);
+    });
+    panel.appendChild(oppGrid);
+    panel.appendChild(rankPicker);
+    panel.appendChild(askBtn);
+
+    function showRankPicker(){
+      rankPicker.style.display = 'grid';
+      rankPicker.innerHTML = '';
+      const ranksIHave = [...new Set(myHand.map(c=>c.rank))];
+      RANKS.forEach(r => {
+        const btn = document.createElement('button'); btn.className='rank-btn'; btn.textContent=r;
+        btn.disabled = !ranksIHave.includes(r);
+        btn.addEventListener('click', () => {
+          selectedRank = r;
+          rankPicker.querySelectorAll('.rank-btn').forEach(b=>b.style.borderColor='');
+          btn.style.borderColor = 'var(--brass)';
+          askBtn.style.display = 'block';
+        });
+        rankPicker.appendChild(btn);
+      });
+    }
+
+    askBtn.addEventListener('click', () => {
+      if (!selectedTarget || !selectedRank) return;
+      const res = askForRank(s, actorId, selectedTarget, selectedRank);
+      if (res.error) return;
+      afterLocalAction(g);
+    });
+
+    body.appendChild(panel);
+  }
+
+  function afterLocalAction(g){
+    const s = g.state;
+    if (s.done){ g.phase = 'gameOver'; renderLocal(); return; }
+    const actorId = s.playerOrder[s.turnIdx];
+    // if the same player is still up (got a match / drew a match), stay on acting screen with fresh state
+    if (s.lastEvent && ((s.lastEvent.type==='gotCards' && s.lastEvent.askerId===actorId) || (s.lastEvent.type==='goFish' && s.lastEvent.drewMatch && s.lastEvent.askerId===actorId))){
+      renderLocal();
+      return;
+    }
+    g.phase = 'passReveal';
+    renderLocal();
+  }
+
+  function renderLocalGameOver(g, body){
+    const s = g.state;
+    body.appendChild(booksBoard(g, s));
+    const maxBooks = Math.max(...g.players.map(p=>s.books[p.id].length));
+    const winners = g.players.filter(p => s.books[p.id].length === maxBooks);
+    const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+    panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+      (winners.length>1 ? winners.map(w=>escapeHtml(w.name)).join(' & ') + ' tie!' : escapeHtml(winners[0].name) + ' wins!') +
+      '</h2><p style="color:var(--muted);">' + g.players.map(p=>escapeHtml(p.name)+': '+s.books[p.id].length+' books').join(' \u00b7 ') + '</p>';
+    const again = document.createElement('a'); again.href='go-fish.html'; again.className='primary-btn'; again.style.display='inline-block'; again.style.textDecoration='none'; again.textContent='Play again';
+    panel.appendChild(again);
+    body.appendChild(panel);
+  }
+
+  // ============================================================
+  // ONLINE (host-authoritative)
+  // ============================================================
+  let myId = null, myName = '', mode = 'local';
+  let peer = null, joinConn = null;
+  let hostPlayers = [];
+  let onlineState = null;
+
+  document.getElementById('hostOpenRoom').addEventListener('click', () => {
+    const name = document.getElementById('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, conn: null }];
+    document.getElementById('hostRoomCode').textContent = roomCode;
+    document.getElementById('hostConfigPanel').classList.add('hidden');
+    document.getElementById('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('gofish-'+roomCode, { debug:0 });
+    let openTimeout = setTimeout(() => { document.getElementById('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode='host'; clearTimeout(openTimeout); });
+    peer.on('connection', (c) => {
+      c.on('data', (msg) => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type:'awaitingName' }));
+      c.on('close', () => { hostPlayers = hostPlayers.filter(p => p.conn !== c); renderHostPlayerList(); });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  function renderHostPlayerList(){
+    document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
+    document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+  }
+  document.getElementById('hostCancelRoom').addEventListener('click', () => {
+    if (peer){ try{peer.destroy();}catch(e){} }
+    document.getElementById('hostConfigPanel').classList.remove('hidden');
+    document.getElementById('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  document.getElementById('hostStartGame').addEventListener('click', () => {
+    onlineState = newGameState(hostPlayers.map(p=>p.id));
+    hostPlayers.forEach(p => { if (p.conn) p.conn.send({ type:'gameStart' }); });
+    showScreen('game');
+    broadcastOnlineState();
+  });
+
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      const id = uid();
+      hostPlayers.push({ id, name:(msg.name||'Player').slice(0,16), conn });
+      conn.__playerId = id;
+      conn.send({ type:'joined', yourId: id });
+      renderHostPlayerList();
+      return;
+    }
+    if (!onlineState) return;
+    const s = onlineState;
+    const pid = conn.__playerId;
+    if (msg.type === 'ask'){
+      const res = askForRank(s, pid, msg.targetId, msg.rank);
+      if (res.error) return;
+      broadcastOnlineState();
+    }
+  }
+
+  function onlinePlayerName(players, id){ const p = players.find(pl=>pl.id===id); return p ? p.name : '?'; }
+
+  function redactStateFor(s, viewerId, players){
+    const hands = {};
+    Object.keys(s.hands).forEach(id => { hands[id] = id === viewerId ? s.hands[id] : s.hands[id].map(()=>({hidden:true})); });
+    return Object.assign({}, s, { hands });
+  }
+
+  function broadcastOnlineState(){
+    const s = onlineState;
+    const players = hostPlayers.map(p=>({id:p.id,name:p.name}));
+    hostPlayers.forEach(p => {
+      const payload = redactStateFor(s, p.id, players);
+      if (p.conn) p.conn.send({ type:'state', game: payload, players, viewerId: p.id });
+    });
+    renderOnline(redactStateFor(s, myId, players), players, myId, true);
+  }
+  function sendOnline(msg){
+    if (mode === 'host'){ handleHostMessage({ __playerId: myId, send(){} }, msg); }
+    else if (joinConn) joinConn.send(msg);
+  }
+
+  function onlineBooksBoard(s, players){
+    const sb = document.createElement('div'); sb.className = 'scoreboard';
+    players.forEach(p => {
+      const chip = document.createElement('span'); chip.className = 'score-chip';
+      chip.innerHTML = escapeHtml(p.name) + '<span class="pts">' + s.books[p.id].length + '</span>';
+      sb.appendChild(chip);
+    });
+    return sb;
+  }
+
+  function renderOnline(s, players, viewerId, isHost){
+    const body = document.getElementById('gameBody'); body.innerHTML = '';
+    body.appendChild(onlineBooksBoard(s, players));
+
+    if (s.done){
+      const maxBooks = Math.max(...players.map(p=>s.books[p.id].length));
+      const winners = players.filter(p => s.books[p.id].length === maxBooks);
+      const panel = document.createElement('div'); panel.className = 'panel jp-clue-card';
+      panel.innerHTML = '<h2 style="font-family:\'Space Grotesk\',sans-serif;color:var(--brass-bright);margin-top:0;">' +
+        (winners.length>1 ? winners.map(w=>escapeHtml(w.name)).join(' & ') + ' tie!' : escapeHtml(winners[0].name) + ' wins!') +
+        '</h2><p style="color:var(--muted);">' + players.map(p=>escapeHtml(p.name)+': '+s.books[p.id].length+' books').join(' \u00b7 ') + '</p>';
+      body.appendChild(panel);
+      return;
+    }
+
+    const panel = document.createElement('div'); panel.className='panel';
+    panel.appendChild(pondZoneEl(s));
+
+    if (s.lastEvent){
+      const evtP = document.createElement('p'); evtP.style.textAlign='center'; evtP.style.color='var(--muted)'; evtP.style.fontSize='13px'; evtP.style.marginTop='8px';
+      const evt = s.lastEvent;
+      const asker = onlinePlayerName(players, evt.askerId), target = onlinePlayerName(players, evt.targetId);
+      if (evt.type==='gotCards') evtP.textContent = asker + ' asked ' + target + ' for ' + evt.rank + 's and got ' + evt.count + '!';
+      else if (evt.drewMatch) evtP.textContent = asker + ' asked ' + target + ' for ' + evt.rank + 's, went fishing, and drew one!';
+      else evtP.textContent = asker + ' asked ' + target + ' for ' + evt.rank + 's \u2014 Go Fish!';
+      panel.appendChild(evtP);
+    }
+
+    const myHand = s.hands[viewerId] || [];
+    const label = document.createElement('div'); label.className='zone-label'; label.style.textAlign='center'; label.style.marginTop='14px'; label.textContent='Your hand';
+    panel.appendChild(label);
+    panel.appendChild(renderHand(myHand, { own:true }));
+    if ((s.books[viewerId]||[]).length){
+      const booksRow = document.createElement('div'); booksRow.className='books-row';
+      s.books[viewerId].forEach(r => { const b=document.createElement('span'); b.className='book-badge'; b.textContent=r+'s'; booksRow.appendChild(b); });
+      panel.appendChild(booksRow);
+    }
+
+    const actorId = s.playerOrder[s.turnIdx];
+    if (actorId === viewerId){
+      const oppLabel = document.createElement('div'); oppLabel.className='zone-label'; oppLabel.style.textAlign='center'; oppLabel.style.marginTop='18px'; oppLabel.textContent='Ask someone';
+      panel.appendChild(oppLabel);
+      const oppGrid = document.createElement('div'); oppGrid.className='opponents-grid';
+      let selectedTarget = null, selectedRank = null;
+      const rankPicker = document.createElement('div'); rankPicker.className='rank-picker'; rankPicker.style.display='none';
+      const askBtn = document.createElement('button'); askBtn.className='primary-btn'; askBtn.style.display='none'; askBtn.textContent='Ask';
+
+      players.filter(p=>p.id!==viewerId).forEach(p => {
+        const box = document.createElement('div'); box.className='opp-box';
+        box.innerHTML = '<div class="o-name">' + escapeHtml(p.name) + '</div><div class="o-count">' + (s.hands[p.id]?s.hands[p.id].length:0) + ' cards</div><div class="o-books">' + (s.books[p.id]?s.books[p.id].length:0) + ' books</div>';
+        box.addEventListener('click', () => {
+          selectedTarget = p.id;
+          oppGrid.querySelectorAll('.opp-box').forEach(b=>b.classList.remove('active-turn'));
+          box.classList.add('active-turn');
+          showRankPicker();
+        });
+        oppGrid.appendChild(box);
+      });
+      panel.appendChild(oppGrid);
+      panel.appendChild(rankPicker);
+      panel.appendChild(askBtn);
+
+      function showRankPicker(){
+        rankPicker.style.display = 'grid';
+        rankPicker.innerHTML = '';
+        const ranksIHave = [...new Set(myHand.map(c=>c.rank))];
+        RANKS.forEach(r => {
+          const btn = document.createElement('button'); btn.className='rank-btn'; btn.textContent=r;
+          btn.disabled = !ranksIHave.includes(r);
+          btn.addEventListener('click', () => {
+            selectedRank = r;
+            rankPicker.querySelectorAll('.rank-btn').forEach(b=>b.style.borderColor='');
+            btn.style.borderColor = 'var(--brass)';
+            askBtn.style.display = 'block';
+          });
+          rankPicker.appendChild(btn);
+        });
+      }
+      askBtn.addEventListener('click', () => {
+        if (!selectedTarget || !selectedRank) return;
+        sendOnline({ type:'ask', targetId: selectedTarget, rank: selectedRank });
+      });
+    } else {
+      const waiting = document.createElement('p'); waiting.style.textAlign='center'; waiting.style.color='var(--muted)'; waiting.style.marginTop='14px';
+      waiting.textContent = 'Waiting for ' + onlinePlayerName(players, actorId) + ' to ask\u2026';
+      panel.appendChild(waiting);
+    }
+
+    body.appendChild(panel);
+  }
+
+  // ---------------- Join (guest) ----------------
+  document.getElementById('joinConnect').addEventListener('click', () => {
+    const name = document.getElementById('joinName').value.trim() || 'Player';
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError'); errEl.textContent='';
+    const waitEl = document.getElementById('joinWaitText'); waitEl.textContent = 'Connecting\u2026';
+    if (!code){ errEl.textContent = 'Enter a room code.'; waitEl.textContent=''; return; }
+    const btn = document.getElementById('joinConnect');
+    btn.disabled = true;
+    let settled = false;
+    const joinTimeout = setTimeout(() => { if (!settled) fail("Couldn't find that room. Check the code and try again."); }, 9000);
+    function fail(msg){
+      settled = true; clearTimeout(joinTimeout);
+      errEl.textContent = msg; waitEl.textContent=''; btn.disabled=false;
+      if (peer){ try{peer.destroy();}catch(e){} }
+    }
+    peer = new Peer({ debug:0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('gofish-'+code, { reliable:true });
+      joinConn.on('open', () => { settled=true; clearTimeout(joinTimeout); errEl.textContent=''; btn.disabled=false; });
+      joinConn.on('data', (msg) => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type:'joinName', name });
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          waitEl.textContent = "You're in! Waiting for the host to start\u2026";
+        } else if (msg.type === 'gameStart'){
+          showScreen('game');
+        } else if (msg.type === 'state'){
+          renderOnline(msg.game, msg.players, msg.viewerId, false);
+        }
+      });
+      joinConn.on('error', () => fail("Couldn't connect. Check the code and try again."));
+      joinConn.on('close', () => fail('Connection closed before the game could start.'));
+    });
+    peer.on('error', () => fail("Couldn't connect. Check the code and try again."));
+  });
+})();
+</script>
+</body>
+</html>
