@@ -311,6 +311,15 @@
 <script src="data/pictionary-categories.js"></script>
 <script>
 (function(){
+  if (!window.PICTIONARY_WORDS || !window.PICTIONARY_CATEGORY_WORDS){
+    const missing = [];
+    if (!window.PICTIONARY_WORDS) missing.push('data/pictionary-words.js');
+    if (!window.PICTIONARY_CATEGORY_WORDS) missing.push('data/pictionary-categories.js');
+    document.body.innerHTML = '<div style="max-width:560px;margin:80px auto;padding:24px;font-family:sans-serif;background:#2a1a1a;color:#f5b5b5;border-radius:12px;border:1px solid #7a3a3a;">'
+      + '<h2 style="margin-top:0;">Missing game data</h2>'
+      + '<p>This page could not load: <code>' + missing.join('</code>, <code>') + '</code>. Make sure ' + (missing.length>1?'those files exist':'that file exists') + ' in the <code>data/</code> folder next to this page and ' + (missing.length>1?'are':'is') + ' spelled exactly that way (check ' + (missing.length>1?'they were':'it was') + ' actually uploaded/committed).</p></div>';
+    return;
+  }
   // Add your own prompt words here, one string per entry. Any tier can be left empty;
   // "Mixed" difficulty will just skip empty tiers automatically.
 const WORDS = window.PICTIONARY_WORDS;;
@@ -517,6 +526,9 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
       return { x: (cx - rect.left) * scale, y: (cy - rect.top) * scale };
     }
   let shapeStartPoint = null;
+  let shapeSnapshot = null; // canvas pixels captured right before a shape drag, so the
+                             // live size preview can be drawn and erased without touching
+                             // whatever was already on the canvas.
   canvas.addEventListener('pointerdown', (e) => {
       const p = getPos(e);
       if (SHAPE_TYPES.includes(curTool)){
@@ -525,6 +537,7 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
           if (onLocalStroke) onLocalStroke({ shape:'stickman', x1:p.x, y1:p.y, x2:p.x, y2:p.y, color:curColor, size:curSize });
         } else {
           shapeStartPoint = p;
+          shapeSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
         return;
       }
@@ -536,6 +549,14 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
       if (onLocalStroke) onLocalStroke({ x:p.x, y:p.y, color:strokeColor, size:strokeSize, newStroke:true });
     });
     canvas.addEventListener('pointermove', (e) => {
+      if (shapeStartPoint && shapeSnapshot){
+        // Live preview: restore the pre-drag pixels, then draw the shape at its
+        // current drag size on top, so you can see how big it'll be before releasing.
+        const p = getPos(e);
+        ctx.putImageData(shapeSnapshot, 0, 0);
+        drawShape(ctx, curTool, shapeStartPoint, p, curColor, curSize);
+        return;
+      }
       if (!drawing) return;
       const p = getPos(e);
       const strokeColor = curTool === 'eraser' ? CANVAS_BG : curColor;
@@ -548,9 +569,11 @@ const CATEGORY_WORDS = window.PICTIONARY_CATEGORY_WORDS;;
       drawing = false; lastPoint = null;
       if (shapeStartPoint && canvas){
         const p = getPos(e);
+        if (shapeSnapshot) ctx.putImageData(shapeSnapshot, 0, 0);
         drawShape(ctx, curTool, shapeStartPoint, p, curColor, curSize);
         if (onLocalStroke) onLocalStroke({ shape:curTool, x1:shapeStartPoint.x, y1:shapeStartPoint.y, x2:p.x, y2:p.y, color:curColor, size:curSize });
         shapeStartPoint = null;
+        shapeSnapshot = null;
       }
     });
   }
