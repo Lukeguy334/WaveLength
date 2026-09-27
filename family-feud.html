@@ -162,6 +162,19 @@
       <label class="field-label">Players (2&ndash;8)</label>
       <div id="localPlayerRows"></div>
       <button class="add-player-btn" id="addPlayerBtn">+ Add player</button>
+      <div id="localGmBlock" class="hidden" style="margin-top:16px;">
+        <label class="field-label">3+ players: who's the Game Master?</label>
+        <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px;">The Game Master sees the board and judges every guess &mdash; they sit out that round instead of competing. The role rotates each round so everyone gets a turn.</p>
+        <div class="choice-row" id="localGmMethod">
+          <button class="choice-btn active" data-val="order">Rotate from Player 1</button>
+          <button class="choice-btn" data-val="random">Random</button>
+          <button class="choice-btn" data-val="chosen">I'll choose</button>
+        </div>
+        <div id="localGmChooseBlock" class="hidden" style="margin-top:10px;">
+          <label class="field-label">Starting Game Master</label>
+          <select class="text-input" id="localGmChoice"></select>
+        </div>
+      </div>
       <div>
         <button class="primary-btn" id="localStart">Start &rarr;</button>
         <button class="secondary-btn" id="localBack">Back</button>
@@ -182,6 +195,19 @@
       <div class="room-code-display" id="hostRoomCode">&mdash;</div>
       <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for players to join&hellip; (need at least 2)</p>
       <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <div id="hostGmBlock" class="hidden" style="margin:14px 0;">
+        <label class="field-label">3+ players: who's the Game Master?</label>
+        <p style="color:var(--muted);font-size:12.5px;margin:0 0 8px;">The Game Master sees the board and judges every guess &mdash; they sit out that round instead of competing. The role rotates each round so everyone gets a turn.</p>
+        <div class="choice-row" id="hostGmMethod">
+          <button class="choice-btn active" data-val="order">Rotate from Player 1</button>
+          <button class="choice-btn" data-val="random">Random</button>
+          <button class="choice-btn" data-val="chosen">I'll choose</button>
+        </div>
+        <div id="hostGmChooseBlock" class="hidden" style="margin-top:10px;">
+          <label class="field-label">Starting Game Master</label>
+          <select class="text-input" id="hostGmChoice"></select>
+        </div>
+      </div>
       <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
       <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
     </div>
@@ -335,6 +361,35 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
   // ---------------- Local setup: dynamic player rows ----------------
   let localPlayerCount = 0;
   const localRowsEl = document.getElementById('localPlayerRows');
+  const localGmBlockEl = document.getElementById('localGmBlock');
+  const localGmChooseBlockEl = document.getElementById('localGmChooseBlock');
+  const localGmChoiceEl = document.getElementById('localGmChoice');
+  function refreshLocalGmUi(){
+    const show = localPlayerCount >= 3;
+    localGmBlockEl.classList.toggle('hidden', !show);
+    if (!show) return;
+    const method = document.querySelector('#localGmMethod .choice-btn.active').dataset.val;
+    localGmChooseBlockEl.classList.toggle('hidden', method !== 'chosen');
+    if (method === 'chosen'){
+      const inputs = Array.from(localRowsEl.querySelectorAll('input'));
+      const prevVal = localGmChoiceEl.value;
+      localGmChoiceEl.innerHTML = '';
+      inputs.forEach((inp, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = inp.value.trim() || ('Player ' + (i+1));
+        localGmChoiceEl.appendChild(opt);
+      });
+      if (prevVal && Number(prevVal) < inputs.length) localGmChoiceEl.value = prevVal;
+    }
+  }
+  document.querySelectorAll('#localGmMethod .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#localGmMethod .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshLocalGmUi();
+    });
+  });
   function addPlayerRow(){
     if (localPlayerCount >= 8) return;
     localPlayerCount++;
@@ -344,18 +399,42 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     input.className = 'text-input';
     input.placeholder = 'Player ' + localPlayerCount;
     input.maxLength = 16;
+    input.addEventListener('input', refreshLocalGmUi);
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-player-btn';
     removeBtn.textContent = '\u00d7';
     removeBtn.addEventListener('click', () => {
       if (localRowsEl.children.length <= 2) return;
       row.remove(); localPlayerCount--;
+      refreshLocalGmUi();
     });
     row.appendChild(input); row.appendChild(removeBtn);
     localRowsEl.appendChild(row);
+    refreshLocalGmUi();
   }
   addPlayerRow(); addPlayerRow();
   document.getElementById('addPlayerBtn').addEventListener('click', addPlayerRow);
+
+  // ---------------- Role rotation (shared by local + online) ----------------
+  // playerCount: total seats. roundIndex: 0-based round number. gmStartSeat: seat (0-based)
+  // that is Game Master on round 0 (ignored for 2-player games, which have no GM).
+  // Returns { gmSeat: number|null, aSeat, bSeat, spectatorSeats: number[] }
+  function computeRoles(playerCount, roundIndex, gmStartSeat){
+    if (playerCount === 2){
+      const aSeat = roundIndex % 2;
+      const bSeat = 1 - aSeat;
+      return { gmSeat: null, aSeat, bSeat, spectatorSeats: [] };
+    }
+    const N = playerCount;
+    const start = ((gmStartSeat % N) + N) % N;
+    const gmSeat = (start + roundIndex) % N;
+    const aSeat = (gmSeat + 1) % N;
+    const bSeat = (gmSeat + 2) % N;
+    const spectatorSeats = [];
+    for (let i=0;i<N;i++){ if (i!==gmSeat && i!==aSeat && i!==bSeat) spectatorSeats.push(i); }
+    return { gmSeat, aSeat, bSeat, spectatorSeats };
+  }
+  function matchLengthFor(playerCount){ return playerCount === 2 ? 4 : playerCount; }
 
   // ============================================================
   // MAIN GAME: SOLO + LOCAL MODE
@@ -383,7 +462,10 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
       players: [{ id: uid(), name: 'You', score: 0 }],
       currentIndex: 0,
       round: null,
-      solo: true
+      solo: true,
+      roundIndex: 0,
+      matchLength: 1,
+      gmStartSeat: 0
     };
     localState.round = newRoundData(null);
     showScreen('game');
@@ -394,24 +476,62 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     const inputs = Array.from(localRowsEl.querySelectorAll('input'));
     const names = inputs.map((inp,i) => inp.value.trim() || ('Player ' + (i+1)));
     mode = 'local';
+    let gmStartSeat = 0;
+    if (names.length >= 3){
+      const method = document.querySelector('#localGmMethod .choice-btn.active').dataset.val;
+      if (method === 'random') gmStartSeat = Math.floor(Math.random() * names.length);
+      else if (method === 'chosen') gmStartSeat = Number(localGmChoiceEl.value) || 0;
+      else gmStartSeat = 0;
+    }
     localState = {
       players: names.map(n => ({ id: uid(), name: n, score: 0 })),
       currentIndex: 0,
       round: null,
-      solo: false
+      solo: false,
+      roundIndex: 0,
+      gmStartSeat,
+      matchLength: matchLengthFor(names.length)
     };
+    syncLocalSeatForRound();
     localState.round = newRoundData(null);
     showScreen('game');
     renderLocal();
   });
 
+  // Roles for the CURRENT round of a local match. For 2 players there's no GM;
+  // for 3+ a neutral Game Master rotates in and judges every guess (no auto-match,
+  // no biased peer-judging), which is also what makes steals safe to keep.
+  function localRoles(){
+    const st = localState;
+    return computeRoles(st.players.length, st.roundIndex, st.gmStartSeat || 0);
+  }
+  // Keeps currentIndex (the contestant "in control") in sync with this round's role
+  // rotation. Call at the start of every round (new match, next question).
+  function syncLocalSeatForRound(){
+    const st = localState;
+    if (st.solo || st.players.length < 2) return;
+    const roles = localRoles();
+    st.currentIndex = roles.aSeat;
+  }
   function currentPlayer(){ return localState.players[localState.currentIndex]; }
-  function otherPlayerIndex(){ return (localState.currentIndex + 1) % localState.players.length; }
+  function otherPlayerIndex(){
+    if (localState.players.length === 2) return (localState.currentIndex + 1) % 2;
+    const roles = localRoles();
+    return localState.currentIndex === roles.aSeat ? roles.bSeat : roles.aSeat;
+  }
+  function gmIndexLocal(){
+    return localState.players.length >= 3 ? localRoles().gmSeat : null;
+  }
   function guesserIndexFor(r){
     return r.isStealAttempt ? otherPlayerIndex() : localState.currentIndex;
   }
   function judgeIndexFor(r){
-    // whoever is NOT currently guessing judges; for steal, the original player judges the stealer
+    // 3+ players: the neutral Game Master judges every guess. 2 players: no GM exists,
+    // so the non-guessing player judges (every guess is human-judged in 2-player games,
+    // not just steals - see submitGuessLocal).
+    if (localState.players.length >= 3){
+      return gmIndexLocal();
+    }
     return r.isStealAttempt ? localState.currentIndex : otherPlayerIndex();
   }
 
@@ -424,16 +544,24 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
 
     if (r.phase === 'guessing' || r.phase === 'steal'){
       if (!st.solo){
+        const gmIdx = gmIndexLocal();
         const scoreboard = document.createElement('div');
         scoreboard.className = 'scoreboard';
         st.players.forEach((pl,i) => {
           const isControl = r.phase==='steal' ? i===otherPlayerIndex() : i===st.currentIndex;
+          const isGm = gmIdx !== null && i === gmIdx;
           const chip = document.createElement('span');
           chip.className = 'score-chip' + (isControl?' in-control':'');
-          chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+          chip.innerHTML = escapeHtml(pl.name) + (isGm ? ' <span style="color:var(--muted);font-size:11px;">(GM)</span>' : '') + '<span class="pts">' + pl.score + '</span>';
           scoreboard.appendChild(chip);
         });
         body.appendChild(scoreboard);
+        if (st.matchLength){
+          const roundHud = document.createElement('div');
+          roundHud.style.textAlign = 'center'; roundHud.style.color = 'var(--muted)'; roundHud.style.fontSize = '12px'; roundHud.style.marginBottom = '4px';
+          roundHud.textContent = 'Round ' + (st.roundIndex+1) + ' of ' + st.matchLength;
+          body.appendChild(roundHud);
+        }
       }
 
       const hud = document.createElement('div');
@@ -583,12 +711,21 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
         scoreLine.textContent = 'Total score: ' + st.players[0].score;
         card.appendChild(scoreLine);
       }
+      const matchOver = st.matchLength && (st.roundIndex + 1) >= st.matchLength;
       const btn = document.createElement('button');
       btn.className = 'primary-btn';
-      btn.textContent = 'Next question \u2192';
+      btn.textContent = matchOver ? 'See final score \u2192' : 'Next question \u2192';
       btn.addEventListener('click', () => {
         const prevQ = r.question;
-        if (!st.solo) st.currentIndex = (st.currentIndex + 1) % st.players.length;
+        if (matchOver){
+          r.phase = 'matchEnd';
+          renderLocal();
+          return;
+        }
+        if (!st.solo){
+          st.roundIndex = (st.roundIndex || 0) + 1;
+          syncLocalSeatForRound();
+        }
         st.round = newRoundData(prevQ);
         renderLocal();
       });
@@ -601,16 +738,44 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
       body.appendChild(card);
       return;
     }
+
+    if (r.phase === 'matchEnd'){
+      const sorted = st.players.map((p,i)=>({...p,idx:i})).sort((a,b)=>b.score-a.score);
+      const topScore = sorted[0].score;
+      const winners = sorted.filter(p=>p.score===topScore);
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      const title = winners.length > 1 ? "It's a tie!" : (winners[0].name + ' wins the match!');
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + escapeHtml(title) + '</h3>';
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      scoreboard.style.marginTop = '14px';
+      sorted.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (pl.score===topScore?' in-control':'');
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.style.marginTop = '16px';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
   }
 
   function submitGuessLocal(guessText){
     const st = localState;
     const r = st.round;
 
-    if (r.phase === 'guessing'){
-      // Normal guesses are auto-matched so the opponent is never exposed to the board -
-      // that exposure is exactly what would make a later steal unfair.
-      const guesser = st.players[localState.currentIndex];
+    if (r.phase === 'guessing' && st.solo){
+      // Solo mode has no peer to judge, so it keeps the auto-matcher.
+      const guesser = st.players[0];
       const hiddenAnswers = r.answers.filter(a => !a.revealed);
       const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
       if (match){
@@ -628,49 +793,93 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
         r.strikes++;
         r.lastResult = { hit:false, guess:guessText };
         if (r.strikes >= 3){
-          if (st.solo){
-            r.roundWinnerName = 'Out of strikes';
-            r.phase = 'roundEnd';
-          } else {
-            r.phase = 'steal';
-            r.lastResult = null;
-          }
+          r.roundWinnerName = 'Out of strikes';
+          r.phase = 'roundEnd';
         }
       }
       renderLocal();
       return;
     }
 
-    // Steal attempts are peer-judged: the original player (who's been blind all round,
-    // since normal guesses never revealed the board to anyone) reviews this one guess.
-    r.pendingGuess = guessText;
-    r.judgePassed = false;
-    r.lastResult = null;
-    r.isStealAttempt = true;
-    r.phase = 'judging';
-    renderLocal();
+    // Multiplayer (2+ players): every guess is human-judged, never auto-matched.
+    // 2 players: there's no steal, so the OTHER player judges every one of the active
+    // player's guesses directly (safe now that there's no later steal for that board
+    // knowledge to unfairly benefit). 3+ players: a neutral rotating Game Master, who
+    // never competes that round, judges every guess including steal attempts.
+    if (r.phase === 'guessing' || r.phase === 'steal'){
+      r.pendingGuess = guessText;
+      r.judgePassed = false;
+      r.lastResult = null;
+      if (r.phase === 'steal') r.isStealAttempt = true;
+      r.phase = 'judging';
+      renderLocal();
+      return;
+    }
   }
 
   function resolveJudgmentLocal(matchedIdx){
     const st = localState;
     const r = st.round;
-    const stealer = st.players[otherPlayerIndex()];
-    const originalPlayer = st.players[localState.currentIndex];
     const hit = matchedIdx >= 0;
+    const isTwoPlayer = st.players.length === 2;
 
+    if (r.isStealAttempt){
+      // 3+ player steal: GM judged the stealer's guess.
+      const stealer = st.players[otherPlayerIndex()];
+      const originalPlayer = st.players[localState.currentIndex];
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        r.stealAnswerIdx = matchedIdx;
+        r.boardTotal += ans.points;
+        stealer.score += r.boardTotal;
+        r.roundWinnerName = stealer.name + ' stole it!';
+      } else {
+        originalPlayer.score += r.boardTotal;
+        r.roundWinnerName = originalPlayer.name + ' keeps the board';
+      }
+      r.phase = 'roundEnd';
+      r.pendingGuess = null;
+      renderLocal();
+      return;
+    }
+
+    // Regular guess, human-judged.
+    const guesser = st.players[localState.currentIndex];
     if (hit){
       const ans = r.answers[matchedIdx];
       ans.revealed = true;
-      r.stealAnswerIdx = matchedIdx;
       r.boardTotal += ans.points;
-      stealer.score += r.boardTotal;
-      r.roundWinnerName = stealer.name + ' stole it!';
-    } else {
-      originalPlayer.score += r.boardTotal;
-      r.roundWinnerName = originalPlayer.name + ' keeps the board';
+      r.lastResult = { hit:true, guess:r.pendingGuess };
+      r.pendingGuess = null;
+      if (r.answers.every(a=>a.revealed)){
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = guesser.name + ' cleared the board!';
+        r.phase = 'roundEnd';
+      } else {
+        r.phase = 'guessing';
+      }
+      renderLocal();
+      return;
     }
-    r.phase = 'roundEnd';
+
+    r.strikes++;
+    r.lastResult = { hit:false, guess:r.pendingGuess };
     r.pendingGuess = null;
+    if (r.strikes >= 3){
+      if (isTwoPlayer){
+        // No steal in 2-player games; the active player just banks nothing further
+        // and the board's remaining value is lost (matching the classic 3-strike rule),
+        // credit goes to whoever already revealed points this round.
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = r.boardTotal > 0 ? (guesser.name + ' keeps ' + r.boardTotal + ' points') : 'Out of strikes';
+        r.phase = 'roundEnd';
+      } else {
+        r.phase = 'steal';
+      }
+    } else {
+      r.phase = 'guessing';
+    }
     renderLocal();
   }
 
@@ -876,16 +1085,55 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     });
     peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
   });
-  // NOTE: r.isStealAttempt is only set once a steal guess is actually submitted
-  // (inside submitGuessOnline), so while the round is still in the 'steal' phase
-  // waiting for that guess, r.isStealAttempt isn't true yet - r.phase is the only
-  // reliable signal at that point. Once judging starts, r.phase has moved on to
-  // 'judging' so r.isStealAttempt (now set) is what tells us it was a steal.
+
+  // ---------------- Host wait panel: Game Master method (3+ players) ----------------
+  const hostGmBlockEl = document.getElementById('hostGmBlock');
+  const hostGmChooseBlockEl = document.getElementById('hostGmChooseBlock');
+  const hostGmChoiceEl = document.getElementById('hostGmChoice');
+  function refreshHostGmUi(){
+    const show = hostPlayers.length >= 3;
+    hostGmBlockEl.classList.toggle('hidden', !show);
+    if (!show) return;
+    const method = document.querySelector('#hostGmMethod .choice-btn.active').dataset.val;
+    hostGmChooseBlockEl.classList.toggle('hidden', method !== 'chosen');
+    if (method === 'chosen'){
+      const prevVal = hostGmChoiceEl.value;
+      hostGmChoiceEl.innerHTML = '';
+      hostPlayers.forEach((p, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = p.name;
+        hostGmChoiceEl.appendChild(opt);
+      });
+      if (prevVal && Number(prevVal) < hostPlayers.length) hostGmChoiceEl.value = prevVal;
+    }
+  }
+  document.querySelectorAll('#hostGmMethod .choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#hostGmMethod .choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshHostGmUi();
+    });
+  });
+
+  // Roles for the current round of an online match (mirrors localRoles()).
+  function onlineRoles(g){
+    return computeRoles(g.order.length, g.roundIndex, g.gmStartSeat || 0);
+  }
+  function onlineOtherIndex(g){
+    if (g.order.length === 2) return (g.currentIndex + 1) % 2;
+    const roles = onlineRoles(g);
+    return g.currentIndex === roles.aSeat ? roles.bSeat : roles.aSeat;
+  }
+  function onlineGmIndex(g){
+    return g.order.length >= 3 ? onlineRoles(g).gmSeat : null;
+  }
   function onlineGuesserIndex(g){
-    return (g.round.phase === 'steal' || g.round.isStealAttempt) ? (g.currentIndex+1)%g.order.length : g.currentIndex;
+    return g.round.isStealAttempt ? onlineOtherIndex(g) : g.currentIndex;
   }
   function onlineJudgeIndex(g){
-    return (g.round.phase === 'steal' || g.round.isStealAttempt) ? g.currentIndex : (g.currentIndex+1)%g.order.length;
+    if (g.order.length >= 3) return onlineGmIndex(g);
+    return g.round.isStealAttempt ? g.currentIndex : onlineOtherIndex(g);
   }
   function handleHostMessage(conn, msg){
     if (msg.type === 'joinName'){
@@ -895,8 +1143,10 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
       conn.send({ type:'joined', yourId: id });
       renderHostPlayerList();
     } else if (msg.type === 'guess'){
-      const controlId = onlineGame.order[onlineGuesserIndex(onlineGame)];
-      if (controlId === conn.__playerId) submitGuessOnline(msg.text);
+      const controlId = onlineGame.order[onlineGame.currentIndex];
+      const stealerId = onlineGame.round.phase === 'steal' ? onlineGame.order[onlineOtherIndex(onlineGame)] : null;
+      const expectedId = onlineGame.round.phase === 'steal' ? stealerId : controlId;
+      if (expectedId === conn.__playerId) submitGuessOnline(msg.text);
     } else if (msg.type === 'judgeDecision'){
       const judgeId = onlineGame.order[onlineJudgeIndex(onlineGame)];
       if (judgeId === conn.__playerId) resolveJudgmentOnline(msg.matchedIdx);
@@ -908,6 +1158,7 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     document.getElementById('hostPlayerList').textContent = hostPlayers.map(p=>p.name).join(', ');
     document.getElementById('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
     document.getElementById('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for players to join\u2026 (need at least 2)' : (hostPlayers.length + ' players ready.');
+    refreshHostGmUi();
   }
   document.getElementById('hostCancelRoom').addEventListener('click', () => {
     if (peer) peer.destroy();
@@ -917,73 +1168,118 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
   });
   document.getElementById('hostStartGame').addEventListener('click', () => {
     showScreen('game');
-    onlineGame = { order: hostPlayers.map(p=>p.id), currentIndex: 0, round: newRoundData(null) };
+    let gmStartSeat = 0;
+    if (hostPlayers.length >= 3){
+      const method = document.querySelector('#hostGmMethod .choice-btn.active').dataset.val;
+      if (method === 'random') gmStartSeat = Math.floor(Math.random() * hostPlayers.length);
+      else if (method === 'chosen') gmStartSeat = Number(hostGmChoiceEl.value) || 0;
+      else gmStartSeat = 0;
+    }
+    onlineGame = {
+      order: hostPlayers.map(p=>p.id),
+      currentIndex: 0,
+      roundIndex: 0,
+      gmStartSeat,
+      matchLength: matchLengthFor(hostPlayers.length),
+      round: newRoundData(null)
+    };
+    const roles = onlineRoles(onlineGame);
+    onlineGame.currentIndex = roles.aSeat;
     broadcastOnlineState();
   });
   function advanceOnlineRound(){
-    const prevQ = onlineGame.round.question;
-    onlineGame.currentIndex = (onlineGame.currentIndex + 1) % onlineGame.order.length;
-    onlineGame.round = newRoundData(prevQ);
+    const g = onlineGame;
+    const matchOver = g.matchLength && (g.roundIndex + 1) >= g.matchLength;
+    if (matchOver){
+      g.round.phase = 'matchEnd';
+      broadcastOnlineState();
+      return;
+    }
+    const prevQ = g.round.question;
+    g.roundIndex = (g.roundIndex || 0) + 1;
+    const roles = onlineRoles(g);
+    g.currentIndex = roles.aSeat;
+    g.round = newRoundData(prevQ);
     broadcastOnlineState();
   }
   function submitGuessOnline(guessText){
     const g = onlineGame;
     const r = g.round;
 
-    if (r.phase === 'guessing'){
-      const guesser = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
-      const hiddenAnswers = r.answers.filter(a => !a.revealed);
-      const match = hiddenAnswers.find(a => matchesAnswer(guessText, a.text));
-      if (match){
-        const idx = r.answers.indexOf(match);
-        r.answers[idx].revealed = true;
-        r.boardTotal += match.points;
-        r.lastResult = { hit:true, guess:guessText };
-        if (r.answers.every(a=>a.revealed)){
-          guesser.score += r.boardTotal;
-          r.roundWinnerName = guesser.name + ' cleared the board!';
-          r.phase = 'roundEnd';
-        }
+    if (g.order.length === 1){
+      // shouldn't happen (min 2 to start), guard anyway
+      return;
+    }
+
+    if (r.phase === 'guessing' || r.phase === 'steal'){
+      // Every guess is human-judged: 2 players -> the other player judges directly;
+      // 3+ players -> the neutral rotating Game Master judges (also handles steals).
+      r.pendingGuess = guessText;
+      r.judgePassed = false;
+      r.lastResult = null;
+      if (r.phase === 'steal') r.isStealAttempt = true;
+      r.phase = 'judging';
+      broadcastOnlineState();
+    }
+  }
+  function resolveJudgmentOnline(matchedIdx){
+    const g = onlineGame;
+    const r = g.round;
+    const hit = matchedIdx >= 0;
+    const isTwoPlayer = g.order.length === 2;
+
+    if (r.isStealAttempt){
+      const stealer = hostPlayers.find(p=>p.id===g.order[onlineOtherIndex(g)]);
+      const originalPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+      if (hit){
+        const ans = r.answers[matchedIdx];
+        ans.revealed = true;
+        r.stealAnswerIdx = matchedIdx;
+        r.boardTotal += ans.points;
+        stealer.score += r.boardTotal;
+        r.roundWinnerName = stealer.name + ' stole it!';
       } else {
-        r.strikes++;
-        r.lastResult = { hit:false, guess:guessText };
-        if (r.strikes >= 3){
-          r.phase = 'steal';
-          r.lastResult = null;
-        }
+        originalPlayer.score += r.boardTotal;
+        r.roundWinnerName = originalPlayer.name + ' keeps the board';
+      }
+      r.phase = 'roundEnd';
+      r.pendingGuess = null;
+      broadcastOnlineState();
+      return;
+    }
+
+    const guesser = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
+    if (hit){
+      const ans = r.answers[matchedIdx];
+      ans.revealed = true;
+      r.boardTotal += ans.points;
+      r.lastResult = { hit:true, guess:r.pendingGuess };
+      r.pendingGuess = null;
+      if (r.answers.every(a=>a.revealed)){
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = guesser.name + ' cleared the board!';
+        r.phase = 'roundEnd';
+      } else {
+        r.phase = 'guessing';
       }
       broadcastOnlineState();
       return;
     }
 
-    // Steal: peer-judged by the original player, who's been blind all round since
-    // normal guesses are auto-matched and never reveal the board to anyone.
-    r.pendingGuess = guessText;
-    r.isStealAttempt = true;
-    r.lastResult = null;
-    r.phase = 'judging';
-    broadcastOnlineState();
-  }
-  function resolveJudgmentOnline(matchedIdx){
-    const g = onlineGame;
-    const r = g.round;
-    const stealer = hostPlayers.find(p=>p.id===g.order[onlineGuesserIndex(g)]);
-    const originalPlayer = hostPlayers.find(p=>p.id===g.order[g.currentIndex]);
-    const hit = matchedIdx >= 0;
-
-    if (hit){
-      const ans = r.answers[matchedIdx];
-      ans.revealed = true;
-      r.stealAnswerIdx = matchedIdx;
-      r.boardTotal += ans.points;
-      stealer.score += r.boardTotal;
-      r.roundWinnerName = stealer.name + ' stole it!';
-    } else {
-      originalPlayer.score += r.boardTotal;
-      r.roundWinnerName = originalPlayer.name + ' keeps the board';
-    }
-    r.phase = 'roundEnd';
+    r.strikes++;
+    r.lastResult = { hit:false, guess:r.pendingGuess };
     r.pendingGuess = null;
+    if (r.strikes >= 3){
+      if (isTwoPlayer){
+        guesser.score += r.boardTotal;
+        r.roundWinnerName = r.boardTotal > 0 ? (guesser.name + ' keeps ' + r.boardTotal + ' points') : 'Out of strikes';
+        r.phase = 'roundEnd';
+      } else {
+        r.phase = 'steal';
+      }
+    } else {
+      r.phase = 'guessing';
+    }
     broadcastOnlineState();
   }
   function broadcastOnlineState(){
@@ -996,9 +1292,11 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
     const body = document.getElementById('gameBody');
     body.innerHTML = '';
     const r = g.round;
-    const controlId = r.phase==='steal' ? g.order[(g.currentIndex+1)%g.order.length] : g.order[g.currentIndex];
+    const controlId = r.phase==='steal' ? g.order[onlineOtherIndex(g)] : g.order[g.currentIndex];
     const iAmControl = controlId === viewerId;
     const controlPl = players.find(p=>p.id===controlId) || {name:'\u2026'};
+    const gmIdxOnline = onlineGmIndex(g);
+    const gmIdOnline = gmIdxOnline !== null ? g.order[gmIdxOnline] : null;
 
     if (r.phase === 'guessing' || r.phase === 'steal'){
       const scoreboard = document.createElement('div');
@@ -1006,10 +1304,16 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
       players.forEach(pl => {
         const chip = document.createElement('span');
         chip.className = 'score-chip' + (pl.id===controlId?' in-control':'');
-        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        chip.innerHTML = escapeHtml(pl.name) + (pl.id===gmIdOnline ? ' <span style="color:var(--muted);font-size:11px;">(GM)</span>' : '') + '<span class="pts">' + pl.score + '</span>';
         scoreboard.appendChild(chip);
       });
       body.appendChild(scoreboard);
+      if (g.matchLength){
+        const roundHud = document.createElement('div');
+        roundHud.style.textAlign = 'center'; roundHud.style.color = 'var(--muted)'; roundHud.style.fontSize = '12px'; roundHud.style.marginBottom = '4px';
+        roundHud.textContent = 'Round ' + ((g.roundIndex||0)+1) + ' of ' + g.matchLength;
+        body.appendChild(roundHud);
+      }
 
       const hud = document.createElement('div');
       hud.className = 'hud-row';
@@ -1162,10 +1466,11 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
         scoreboard.appendChild(chip);
       });
       card.appendChild(scoreboard);
+      const matchOver = g.matchLength && ((g.roundIndex||0) + 1) >= g.matchLength;
       if (isHost){
         const btn = document.createElement('button');
         btn.className = 'primary-btn';
-        btn.textContent = 'Next question \u2192';
+        btn.textContent = matchOver ? 'See final score \u2192' : 'Next question \u2192';
         btn.addEventListener('click', () => advanceOnlineRound());
         card.appendChild(btn);
       } else {
@@ -1176,6 +1481,35 @@ const QUESTIONS = window.FAMILY_FEUD_QUESTIONS;;
       }
       const lobbyBtn = document.createElement('button');
       lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.textContent = 'Back to lobby';
+      lobbyBtn.addEventListener('click', () => location.reload());
+      card.appendChild(lobbyBtn);
+      body.appendChild(card);
+      return;
+    }
+
+    if (r.phase === 'matchEnd'){
+      const sorted = players.map(p=>({...p})).sort((a,b)=>b.score-a.score);
+      const topScore = sorted[0].score;
+      const winners = sorted.filter(p=>p.score===topScore);
+      const card = document.createElement('div');
+      card.className = 'panel round-end-card';
+      const title = winners.length > 1 ? "It's a tie!" : (winners[0].name + ' wins the match!');
+      card.innerHTML = '<h3 style="margin:0;font-family:\'Space Grotesk\',sans-serif;">' + escapeHtml(title) + '</h3>';
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'scoreboard';
+      scoreboard.style.justifyContent = 'center';
+      scoreboard.style.marginTop = '14px';
+      sorted.forEach(pl => {
+        const chip = document.createElement('span');
+        chip.className = 'score-chip' + (pl.score===topScore?' in-control':'');
+        chip.innerHTML = escapeHtml(pl.name) + '<span class="pts">' + pl.score + '</span>';
+        scoreboard.appendChild(chip);
+      });
+      card.appendChild(scoreboard);
+      const lobbyBtn = document.createElement('button');
+      lobbyBtn.className = 'secondary-btn';
+      lobbyBtn.style.marginTop = '16px';
       lobbyBtn.textContent = 'Back to lobby';
       lobbyBtn.addEventListener('click', () => location.reload());
       card.appendChild(lobbyBtn);
