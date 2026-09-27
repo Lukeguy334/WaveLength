@@ -1,0 +1,35 @@
+// Real (but obscure) English words and their real definitions, written in
+// original wording for balderdash.html. Players write believable fake
+// definitions and everyone votes for the one they think is real.
+window.BALDERDASH_WORDS = [
+  { word: 'GALUMPH', definition: 'To move in a clumsy, heavy-footed, triumphant way.' },
+  { word: 'CRAPULENCE', definition: 'The sick, queasy feeling that comes from eating or drinking too much.' },
+  { word: 'PSITHURISM', definition: 'The soft rustling sound of wind blowing through leaves.' },
+  { word: 'ULOTRICHOUS', definition: 'Having tightly curled or woolly hair.' },
+  { word: 'SNOLLYGOSTER', definition: 'A shrewd, unprincipled person, especially a scheming politician.' },
+  { word: 'GONGOOZLE', definition: 'To stare idly at something for a long time, especially at activity on a canal.' },
+  { word: 'MUMPSIMUS', definition: 'A traditional custom or belief that a person stubbornly clings to, even after it is proven wrong.' },
+  { word: 'FLOCCINAUCINIHILIPILIFICATION', definition: 'The act of judging something to be worthless.' },
+  { word: 'PANDICULATION', definition: 'The act of stretching and yawning, especially right after waking up.' },
+  { word: 'ZUGZWANG', definition: 'A situation, originally from chess, where any move a player makes will worsen their position.' },
+  { word: 'NIDIFUGOUS', definition: 'Leaving the nest shortly after hatching or birth.' },
+  { word: 'LETHOLOGICA', definition: 'The frustrating inability to remember a specific word you know you know.' },
+  { word: 'SIALOQUENT', definition: 'Spraying saliva while speaking enthusiastically.' },
+  { word: 'GROAK', definition: 'To silently watch someone eat, hoping they will offer you some.' },
+  { word: 'BORBORYGMUS', definition: 'The rumbling or gurgling sound made by gas moving through the intestines.' },
+  { word: 'ABLUTOPHOBIA', definition: 'An irrational fear of bathing or washing.' },
+  { word: 'CACHINNATE', definition: 'To laugh loudly and without restraint.' },
+  { word: 'DEIPNOSOPHIST', definition: 'A person who is especially skilled at making conversation at the dinner table.' },
+  { word: 'ERINACEOUS', definition: 'Resembling or relating to a hedgehog.' },
+  { word: 'FUDDLE', definition: 'To confuse or muddle someone, especially by making them mildly drunk.' },
+  { word: 'GRESSORIAL', definition: 'Adapted for walking, as opposed to jumping, flying, or swimming.' },
+  { word: 'HYPNOPOMPIC', definition: 'The drowsy, semi-conscious state between sleep and full wakefulness.' },
+  { word: 'ILLECEBROUS', definition: 'Alluring or enticing in an attractive way.' },
+  { word: 'JENTACULAR', definition: 'Relating to breakfast, or eaten first thing in the morning.' },
+  { word: 'KAKISTOCRACY', definition: 'A system of government run by the worst, least qualified people.' },
+  { word: 'LOLLYGAG', definition: 'To spend time aimlessly, dawdling instead of doing something useful.' },
+  { word: 'MATUTINAL', definition: 'Happening in, or relating to, the early morning.' },
+  { word: 'NUDIUSTERTIAN', definition: 'Relating to the day before yesterday.' },
+  { word: 'OBSTREPEROUS', definition: 'Noisy and stubbornly resistant to control.' },
+  { word: 'PETRICHOR', definition: 'The pleasant earthy smell produced when rain falls on dry ground.' }
+];
