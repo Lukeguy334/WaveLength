@@ -885,6 +885,23 @@
         <path d="M40 46 Q60 58 84 50" fill="none" stroke="var(--brass-bright)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 6"/>
         <circle cx="38" cy="46" r="3" fill="var(--brass-bright)"/>
       </svg>`
+    },
+    {
+      title: '8-Ball Pool',
+      tagline: 'Top-down pool with aim guides. Sink your group, then the 8-ball.',
+      players: '2',
+      time: '~20 min',
+      href: 'pool.html',
+      category: 'Board', playerMin: 2, playerMax: 2, timeMin: 15, vibes: ['challenge', 'brain'],
+      icon: `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
+        <rect x="14" y="12" width="92" height="46" rx="8" fill="none" stroke="var(--teal)" stroke-width="2.5"/>
+        <circle cx="14" cy="12" r="5" fill="var(--brass-bright)"/>
+        <circle cx="106" cy="58" r="5" fill="var(--brass-bright)"/>
+        <circle cx="38" cy="38" r="5" fill="var(--paper)"/>
+        <circle cx="76" cy="30" r="5" fill="var(--rose)"/>
+        <circle cx="86" cy="38" r="5" fill="var(--brass-bright)"/>
+        <path d="M43 37 L69 31" stroke="var(--paper)" stroke-width="1.6" stroke-dasharray="3 3" stroke-linecap="round"/>
+      </svg>`
     }
   ];
 
@@ -1225,7 +1242,7 @@
   // Triggered from the "Easter Egg" search-result card's Play button
   // (see the searchInput handler further up), not by typing on the page.
   window.__gnEasterEggLaunch = function(){
-    if (_isMobile() || _active) return;
+    if (_active) return;
     _launch();
   };
 
@@ -1253,8 +1270,10 @@
   // holes, etc.) live in PAGE space (document-relative), not viewport
   // space, and spawned elements use position:absolute so they scroll
   // naturally with the page instead of staying pinned to the viewport.
-  document.addEventListener('mousemove', e => {
-    _mouseX = e.clientX + window.scrollX; _mouseY = e.clientY + window.scrollY;
+  // _pointerMove/_pointerUp are shared by both mouse and touch input so
+  // dragging and throwing work the same way on a touchscreen.
+  function _pointerMove(clientX, clientY){
+    _mouseX = clientX + window.scrollX; _mouseY = clientY + window.scrollY;
     _mhist.push({ x: _mouseX, y: _mouseY, t: performance.now() });
     if (_mhist.length > 8) _mhist.shift();
     if (!_active) return;
@@ -1265,9 +1284,15 @@
       p.el.style.left = p.x + 'px';
       p.el.style.top = p.y + 'px';
     }
-  });
+  }
+  document.addEventListener('mousemove', e => _pointerMove(e.clientX, e.clientY));
+  document.addEventListener('touchmove', e => {
+    if (_active && _items.some(p => p.dragging) && e.cancelable) e.preventDefault();
+    const t = e.touches[0];
+    if (t) _pointerMove(t.clientX, t.clientY);
+  }, { passive: false });
 
-  document.addEventListener('mouseup', () => {
+  function _pointerUp(){
     if (!_active) return;
     let tvx = 0, tvy = 0;
     if (_mhist.length >= 2){
@@ -1287,7 +1312,10 @@
       }
       p.el.style.cursor = 'grab'; p.el.style.boxShadow = '';
     }
-  });
+  }
+  document.addEventListener('mouseup', _pointerUp);
+  document.addEventListener('touchend', _pointerUp);
+  document.addEventListener('touchcancel', _pointerUp);
 
   function _collide(a, b){
     const cxa = a.x + a.w / 2, cya = a.y + a.h / 2;
@@ -1766,11 +1794,36 @@
     return a;
   }
 
+  // Wires up both mouse and touch "grab" for a spawned falling item.
+  // Mirrors the old inline mousedown handler exactly, plus a touchstart
+  // twin so dragging and throwing work the same way on a touchscreen.
+  function _attachDrag(el, p){
+    function grab(clientX, clientY){
+      const mx = clientX + window.scrollX, my = clientY + window.scrollY;
+      p.dragging = true; p.grabOffX = mx - p.x; p.grabOffY = my - p.y;
+      p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
+      el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
+    }
+    el.addEventListener('mousedown', e => {
+      grab(e.clientX, e.clientY);
+      el.style.cursor = 'grabbing';
+      e.preventDefault(); e.stopPropagation();
+    });
+    el.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      if (!t) return;
+      grab(t.clientX, t.clientY);
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+  }
+
   function _launch(){
-    if (_isMobile()) return;
     _active = true;
     _toast('\ud83c\udfae Chaos mode activated! Grab and throw them around!');
-    setTimeout(_showHUD, 600);
+    // The keyboard-shortcut HUD (bomb, gravity, black hole, etc.) only
+    // applies to keyboard input, so it's skipped on touch; touch users
+    // still get the core drag-and-throw physics.
+    if (!_isMobile()) setTimeout(_showHUD, 600);
 
     // Capture the floor height ONCE, before any chaos elements are added
     // to the page. The falling pieces are position:absolute on <body>, so
@@ -1808,7 +1861,7 @@
       el.className = 'gn-egg-el card';
       el.innerHTML = card.innerHTML;
       el.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;' +
-        'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;' +
+        'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;touch-action:none;' +
         'box-sizing:border-box;opacity:1;transform:none;animation:none;';
       document.body.appendChild(el);
       card.style.visibility = 'hidden';
@@ -1818,13 +1871,7 @@
         origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
       const _si = si++;
       setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
-      el.addEventListener('mousedown', e => {
-        const mx = e.clientX + window.scrollX, my = e.clientY + window.scrollY;
-        p.dragging = true; p.grabOffX = mx - p.x; p.grabOffY = my - p.y;
-        p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
-        el.style.cursor = 'grabbing'; el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
-        e.preventDefault(); e.stopPropagation();
-      });
+      _attachDrag(el, p);
     });
 
     playEls.forEach(playEl => {
@@ -1835,7 +1882,7 @@
       el.className = 'gn-egg-el play';
       el.innerHTML = playEl.innerHTML;
       el.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;' +
-        'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;' +
+        'width:' + rect.width + 'px;height:' + rect.height + 'px;margin:0;z-index:9999;cursor:grab;touch-action:none;' +
         'display:' + cs.display + ';align-items:center;justify-content:center;gap:6px;' +
         'font-family:' + cs.fontFamily + ';font-weight:' + cs.fontWeight + ';font-size:' + cs.fontSize + ';' +
         'padding:' + cs.padding + ';border-radius:' + cs.borderRadius + ';background:' + cs.background + ';color:' + cs.color + ';' +
@@ -1848,13 +1895,7 @@
         origStyle: { bg: el.style.background, color: el.style.color, border: el.style.border } };
       const _si = si++;
       setTimeout(() => { if (_active) _items.push(p); }, _si * 60);
-      el.addEventListener('mousedown', e => {
-        const mx = e.clientX + window.scrollX, my = e.clientY + window.scrollY;
-        p.dragging = true; p.grabOffX = mx - p.x; p.grabOffY = my - p.y;
-        p.vx = 0; p.vy = 0; p.rotV = 0; _mhist.length = 0;
-        el.style.cursor = 'grabbing'; el.style.boxShadow = '0 20px 50px rgba(0,0,0,.6)';
-        e.preventDefault(); e.stopPropagation();
-      });
+      _attachDrag(el, p);
     });
 
     const BOUNCE = 0.55, FRIC = 0.973, RFRIC = 0.93, BASE_G = 0.5;
