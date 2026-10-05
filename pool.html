@@ -84,6 +84,23 @@
   .over-panel h2 { font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); margin:0 0 6px; }
   .over-panel p { color:var(--muted); margin:0 0 4px; }
   .lost-conn { color:var(--rose); }
+
+  .cue-picker { margin-top:6px; }
+  .cue-head { display:flex; align-items:center; gap:8px; }
+  .cue-cur { flex:1; text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--brass-bright); }
+  .cue-nav { width:38px; height:34px; border-radius:8px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); cursor:pointer; font-size:14px; touch-action:manipulation; }
+  .cue-nav:hover { border-color:var(--brass); }
+  .cue-scroll { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px calc(50% - 150px); margin-top:6px; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+  .cue-card { flex:0 0 300px; scroll-snap-align:center; border:2px solid var(--panel-line); border-radius:12px; background:linear-gradient(180deg,#232c3a,#161c26); padding:8px 6px 6px; cursor:pointer; text-align:center; }
+  .cue-card canvas { width:288px; height:44px; display:block; margin:0 auto; pointer-events:none; }
+  .cue-card .cue-name { font-size:12px; color:var(--muted); margin-top:4px; }
+  .cue-card.sel { border-color:var(--brass); background:linear-gradient(180deg,#34302a,#1d1b17); box-shadow:0 0 0 1px var(--brass) inset; }
+  .cue-card.sel .cue-name { color:var(--brass-bright); }
+  .seg { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .seg button { flex:1 1 90px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; padding:11px 10px; border-radius:10px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); cursor:pointer; }
+  .seg button.on { border-color:var(--brass); background:rgba(201,162,75,0.16); color:var(--brass-bright); box-shadow:0 0 0 1px var(--brass) inset; }
+  .seg-desc { color:var(--muted); font-size:13px; margin:8px 0 0; min-height:20px; }
+  .opp-cue { color:var(--muted); font-size:13px; margin-top:12px; }
 </style>
 </head>
 <body>
@@ -119,6 +136,7 @@
     <div class="panel">
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
       <div class="mode-grid">
+        <button class="mode-card" id="pickAI"><h3>Vs Computer</h3><p>Play solo against the computer. Easy, medium, or hard (Pool Shark).</p></button>
         <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Two players share one device and take turns at the table.</p></button>
         <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code with a friend.</p></button>
         <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
@@ -131,11 +149,36 @@
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
       <label class="field-label">Player 1 (breaks first)</label>
       <input class="text-input" id="localName1" placeholder="Player 1" maxlength="16">
+      <label class="field-label">Player 1 cue</label>
+      <div id="pickerL1"></div>
       <label class="field-label">Player 2</label>
       <input class="text-input" id="localName2" placeholder="Player 2" maxlength="16">
+      <label class="field-label">Player 2 cue</label>
+      <div id="pickerL2"></div>
       <div>
         <button class="primary-btn" id="localStart">Start &rarr;</button>
         <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupAI" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play the computer</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="aiName" placeholder="You" maxlength="16">
+      <label class="field-label">Difficulty</label>
+      <div class="seg" id="aiLevelSeg">
+        <button type="button" data-level="easy">Easy</button>
+        <button type="button" data-level="medium" class="on">Medium</button>
+        <button type="button" data-level="hard">Hard</button>
+      </div>
+      <p class="seg-desc" id="aiLevelDesc"></p>
+      <label class="field-label">Your cue</label>
+      <div id="pickerA"></div>
+      <div>
+        <button class="primary-btn" id="aiStart">Start &rarr;</button>
+        <button class="secondary-btn" id="aiBack">Back</button>
       </div>
     </div>
   </div>
@@ -145,6 +188,8 @@
       <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
       <label class="field-label">Your name</label>
       <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Your cue</label>
+      <div id="pickerH"></div>
       <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
       <button class="secondary-btn" id="hostBack">Back</button>
     </div>
@@ -165,6 +210,8 @@
       <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
       <label class="field-label">Room code</label>
       <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <label class="field-label">Your cue</label>
+      <div id="pickerJ"></div>
       <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
       <button class="secondary-btn" id="joinBack">Back</button>
       <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
@@ -206,12 +253,14 @@ const MAX_SPEED = 2800, MIN_SPEED = 90;   // shot speed range (units / second)
 const FRICTION_A = 100;                   // constant rolling deceleration (units / s^2)
 const DAMP = 0.45;                        // extra proportional damping per second
 const WALL_E = 0.8, BALL_E = 0.96;       // restitution
+const COLLISION_ITERS = 4;                // solver passes per step (lets impulses spread through a tight rack)
+const CONTACT_TOL = 0.06;                 // balls this close count as touching
 const STOP_V = 8;                         // below this speed a ball stops
 const MAX_STEPS = 480 * 40;               // hard stop for any single shot
 const POCKETS = [
-  { x: 0, y: 0, r: 29 }, { x: W, y: 0, r: 29 },
-  { x: 0, y: H, r: 29 }, { x: W, y: H, r: 29 },
-  { x: W / 2, y: -4, r: 30 }, { x: W / 2, y: H + 4, r: 30 }
+  { x: 0, y: 0, r: 27 }, { x: W, y: 0, r: 27 },
+  { x: 0, y: H, r: 27 }, { x: W, y: H, r: 27 },
+  { x: W / 2, y: -4, r: 26 }, { x: W / 2, y: H + 4, r: 26 }
 ];
 
 function groupOf(n) { return n === 0 ? 'cue' : (n === 8 ? 'eight' : (n < 8 ? 'solid' : 'stripe')); }
@@ -226,8 +275,8 @@ function shuffleWith(arr, rng) {
 }
 
 function makeBalls(rng) {
-  const dxRow = Math.sqrt(3) * R + 0.3;
-  const gap = 2 * R + 0.3;
+  const dxRow = Math.sqrt(3) * R + 0.05;
+  const gap = 2 * R + 0.05;
   const slots = [];
   for (let r = 0; r < 5; r++) for (let i = 0; i <= r; i++) slots.push({ x: FOOT_X + r * dxRow, y: H / 2 + (i - r / 2) * gap });
   const solids = shuffleWith([1, 2, 3, 4, 5, 6, 7], rng);
@@ -250,7 +299,7 @@ function newGameState(players, starterIdx, rng) {
   players.forEach(p => { groups[p.id] = null; });
   return {
     balls: makeBalls(rng),
-    players: players.map(p => ({ id: p.id, name: p.name })),
+    players: players.map(p => ({ id: p.id, name: p.name, cue: p.cue || 'classic' })),
     turnIdx: starterIdx || 0,
     groups: groups,
     phase: 'aim',            // 'aim' | 'moving' | 'over'
@@ -349,16 +398,18 @@ function stepSim(s) {
     if (b.p) continue;
     b.x += b.vx * dt; b.y += b.vy * dt;
   }
-  // ball vs ball
+  // ball vs ball (several passes so a hit travels through touching balls)
+  for (let it = 0; it < COLLISION_ITERS; it++)
   for (let i = 0; i < balls.length; i++) {
     const a = balls[i];
     if (a.p) continue;
     for (let j = i + 1; j < balls.length; j++) {
       const b = balls[j];
       if (b.p) continue;
+      if (a.vx === 0 && a.vy === 0 && b.vx === 0 && b.vy === 0) continue;   // two resting balls cannot interact
       const dx = b.x - a.x, dy = b.y - a.y;
       const d2 = dx * dx + dy * dy;
-      if (d2 >= 4 * R * R || d2 === 0) continue;
+      if (d2 >= (2 * R + CONTACT_TOL) * (2 * R + CONTACT_TOL) || d2 === 0) continue;
       const d = Math.sqrt(d2);
       // Collision normal from where the centres were at the moment of first
       // contact (not from the slightly overlapping end-of-step positions), so
@@ -381,7 +432,7 @@ function stepSim(s) {
           }
         }
       }
-      const corr = (2 * R - d) / 2;
+      const corr = Math.max(0, (2 * R - d) / 2);
       const sx = dx / d, sy = dy / d;
       a.x -= sx * corr; a.y -= sy * corr;
       b.x += sx * corr; b.y += sy * corr;
@@ -580,6 +631,279 @@ function computeGuide(s, dx, dy) {
 }
 // ==POOL-CORE-END==
 
+// ==POOL-AI-START==
+// Computer opponent. Uses the same physics as the game: it tries candidate shots
+// on a copy of the table, then keeps the one that scores best. Difficulty only
+// changes how many shots it tries, how it values leaving a good next shot, and
+// how much random error it adds to the aim and power when it finally shoots.
+const AI_LEVELS = {
+  easy:   { label: 'Easy',       sims: 0,  angSigma: 0.050,  powSigma: 0.22, position: 0,   robust: 0 },
+  medium: { label: 'Medium',     sims: 10, angSigma: 0.0220, powSigma: 0.12, position: 0.25, robust: 0 },
+  hard:   { label: 'Pool Shark', sims: 44, angSigma: 0.0012, powSigma: 0.012, position: 1, robust: 5 }
+};
+
+function aiGauss(rng) {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// distance a ball travels from speed v until it stops (matches the friction model)
+function aiStopDist(v) { return v / DAMP - (FRICTION_A / (DAMP * DAMP)) * Math.log(1 + DAMP * v / FRICTION_A); }
+function aiSpeedForDist(d) {
+  let lo = 0, hi = MAX_SPEED * 2;
+  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (aiStopDist(mid) < d) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+function aiPowerForSpeed(v) { return Math.max(1, Math.min(100, ((v - MIN_SPEED) / (MAX_SPEED - MIN_SPEED)) * 100)); }
+
+// balls the player at idx is allowed to hit first
+function aiTargets(s, idx) {
+  const me = s.players[idx], g = s.groups[me.id];
+  const rem = remainingCounts(s);
+  if (!g) return s.balls.filter(b => !b.p && b.n > 0 && b.n !== 8);
+  if (rem[g] > 0) return s.balls.filter(b => !b.p && b.n > 0 && b.n !== 8 && groupOf(b.n) === g);
+  return s.balls.filter(b => !b.p && b.n === 8);
+}
+
+function aiSegDist2(px, py, ax, ay, bx, by) {
+  const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby;
+  let t = l2 > 0 ? ((px - ax) * abx + (py - ay) * aby) / l2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + abx * t - px, cy = ay + aby * t - py;
+  return cx * cx + cy * cy;
+}
+function aiClear(s, ax, ay, bx, by, ignoreA, ignoreB, rad) {
+  const r2 = rad * rad;
+  for (let i = 0; i < s.balls.length; i++) {
+    const b = s.balls[i];
+    if (b.p || b.n === ignoreA || b.n === ignoreB) continue;
+    if (aiSegDist2(b.x, b.y, ax, ay, bx, by) < r2) return false;
+  }
+  return true;
+}
+
+// Geometric shot ideas from a cue position: [{T, P, dx, dy, ease, d1, d2, cos}], best first
+function aiPotIdeas(s, idx, cx, cy) {
+  const out = [];
+  const targets = aiTargets(s, idx);
+  for (const T of targets) {
+    for (const P of POCKETS) {
+      let ux = P.x - T.x, uy = P.y - T.y;
+      const d2 = Math.sqrt(ux * ux + uy * uy);
+      if (d2 < 1) continue;
+      ux /= d2; uy /= d2;
+      const gx = T.x - ux * 2 * R, gy = T.y - uy * 2 * R;
+      if (gx < R - 1 || gx > W - R + 1 || gy < R - 1 || gy > H - R + 1) continue;
+      let dx = gx - cx, dy = gy - cy;
+      const d1 = Math.sqrt(dx * dx + dy * dy);
+      if (d1 < 1) continue;
+      dx /= d1; dy /= d1;
+      const cs = dx * ux + dy * uy;
+      if (cs < 0.22) continue;
+      if (!aiClear(s, cx, cy, gx, gy, 0, T.n, 2 * R - 1.5)) continue;
+      const pend = Math.max(0, d2 - 22);
+      if (!aiClear(s, T.x, T.y, T.x + ux * pend, T.y + uy * pend, T.n, 0, 2 * R - 1.5)) continue;
+      const ease = cs * cs / (1 + (d1 + d2) / 520);
+      out.push({ T: T, P: P, dx: dx, dy: dy, ease: ease, d1: d1, d2: d2, cs: cs });
+    }
+  }
+  out.sort((a, b) => b.ease - a.ease);
+  return out;
+}
+
+function aiBestEase(s, idx, cx, cy) {
+  const ideas = aiPotIdeas(s, idx, cx, cy);
+  return ideas.length ? ideas[0].ease : 0;
+}
+
+function aiIdeaPower(idea, mult) {
+  const vImp = aiSpeedForDist(idea.d2 + 70) / (idea.cs * 0.97);
+  const v0 = aiSpeedForDist(idea.d1 + aiStopDist(vImp));
+  return aiPowerForSpeed(v0 * (mult || 1));
+}
+
+function aiSimulate(s, shot) {
+  const c = JSON.parse(JSON.stringify(s));
+  const r = beginShot(c, shot.dx, shot.dy, shot.power, shot.cue);
+  if (!r.ok) return null;
+  runToCompletion(c);
+  resolveShot(c);
+  return c;
+}
+
+// how good was that shot for player `me` (a number, bigger is better)
+function aiScore(before, after, meIdx, level) {
+  const meId = before.players[meIdx].id;
+  if (after.phase === 'over') return after.winnerId === meId ? 10000 : -10000;
+  const gAfter = after.groups[meId];
+  let mine = 0, theirs = 0;
+  if (gAfter) {
+    const og = gAfter === 'solid' ? 'stripe' : 'solid';
+    const cnt = (st, g) => st.balls.filter(b => !b.p && b.n !== 8 && groupOf(b.n) === g).length;
+    mine = cnt(before, gAfter) - cnt(after, gAfter);
+    theirs = cnt(before, og) - cnt(after, og);
+  }
+  const keep = after.players[after.turnIdx].id === meId;
+  const foul = after.ballInHand;
+  let sc = 0;
+  sc += 120 * mine;
+  sc -= 55 * theirs;
+  if (foul) sc -= 160;
+  if (keep && !foul) sc += 45;
+  const posW = level.position;
+  if (posW > 0) {
+    const cb = after.balls[0];
+    if (keep && !foul) sc += posW * 70 * aiBestEase(after, after.turnIdx, cb.x, cb.y);
+    else if (!foul) sc -= posW * 55 * aiBestEase(after, after.turnIdx, cb.x, cb.y);
+  }
+  return sc;
+}
+
+function aiBreakShot(s, levelKey, rng) {
+  const lv = AI_LEVELS[levelKey];
+  const spread = levelKey === 'easy' ? 90 : (levelKey === 'medium' ? 40 : 14);
+  let y = H / 2 + (rng() - 0.5) * 2 * spread;
+  let x = HEAD_X - 20 - (levelKey === 'hard' ? 0 : rng() * 60);
+  if (!validCuePos(s, x, y)) { x = HEAD_X - 20; y = H / 2; }
+  const tx = FOOT_X - 4, ty = H / 2;
+  let dx = tx - x, dy = ty - y;
+  const l = Math.sqrt(dx * dx + dy * dy); dx /= l; dy /= l;
+  const power = levelKey === 'easy' ? 55 + rng() * 20 : (levelKey === 'medium' ? 78 + rng() * 12 : 96);
+  return { dx: dx, dy: dy, power: power, cue: { x: x, y: y }, noisy: true };
+}
+
+// pick where to put the cue ball when it is in hand
+function aiPickCuePos(s, levelKey, rng) {
+  const me = s.turnIdx;
+  const lv = AI_LEVELS[levelKey];
+  const cands = [];
+  const xMax = s.headOnly ? HEAD_X : W - R;
+  const tries = levelKey === 'easy' ? 1 : (levelKey === 'medium' ? 40 : 120);
+  for (let i = 0; i < tries; i++) {
+    const x = R + 4 + rng() * (xMax - R - 4), y = R + 4 + rng() * (H - 2 * R - 8);
+    if (validCuePos(s, x, y)) cands.push({ x: x, y: y });
+  }
+  if (!cands.length) { const f = findFreeSpot(s, HEAD_X - 40, H / 2, 0); return { x: f.x, y: f.y }; }
+  if (levelKey === 'easy') return cands[0];
+  let best = cands[0], bs = -1;
+  cands.forEach(c => { const e = aiBestEase(s, me, c.x, c.y); if (e > bs) { bs = e; best = c; } });
+  return best;
+}
+
+// Generator: yields while it searches (so the page stays responsive) and
+// returns { dx, dy, power, cue }.
+function* aiPlanIter(state, levelKey, rng) {
+  rng = rng || Math.random;
+  const lv = AI_LEVELS[levelKey];
+  const s = JSON.parse(JSON.stringify(state));
+  const me = s.turnIdx;
+  if (s.breakShot) return aiBreakShot(s, levelKey, rng);
+
+  let cue;
+  if (s.ballInHand) { cue = aiPickCuePos(s, levelKey, rng); s.balls[0].x = cue.x; s.balls[0].y = cue.y; }
+  const cb = s.balls[0];
+
+  const ideas = aiPotIdeas(s, me, cb.x, cb.y);
+  let cands = [];
+
+  if (levelKey === 'easy') {
+    // no search: take one of the better looking pots, or just hit a legal ball
+    if (ideas.length) {
+      const pick = ideas[Math.min(ideas.length - 1, Math.floor(rng() * Math.min(3, ideas.length)))];
+      cands.push({ dx: pick.dx, dy: pick.dy, power: aiIdeaPower(pick, 1 + (rng() - 0.5) * 0.5), cue: cue });
+    } else {
+      const ts = aiTargets(s, me);
+      const T = ts[Math.floor(rng() * ts.length)];
+      let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
+      cands.push({ dx: dx / l, dy: dy / l, power: 30 + rng() * 40, cue: cue });
+    }
+    return Object.assign(cands[0], { noisy: true });
+  }
+
+  // pot ideas at a few power levels
+  const mults = levelKey === 'hard' ? [0.8, 0.9, 1, 1.12, 1.3] : [0.95, 1.1];
+  ideas.slice(0, lv.sims).forEach(id => {
+    mults.forEach(m => cands.push({ dx: id.dx, dy: id.dy, power: aiIdeaPower(id, m), cue: cue, ease: id.ease }));
+  });
+  // hitting a legal ball directly at a few speeds (safeties / fallbacks)
+  aiTargets(s, me).forEach(T => {
+    let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
+    [32, 55, 80].forEach(pw => cands.push({ dx: dx / l, dy: dy / l, power: pw, cue: cue, ease: 0 }));
+  });
+  if (cands.length > lv.sims * 3) cands = cands.slice(0, lv.sims * 3);
+
+  const scored = [];
+  for (let i = 0; i < cands.length; i++) {
+    const c = cands[i];
+    const res = aiSimulate(s, c);
+    if (res) scored.push({ c: c, sc: aiScore(s, res, me, lv) });
+    yield null;
+  }
+  if (!scored.length) {
+    const T = aiTargets(s, me)[0] || s.balls[1];
+    let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { dx: dx / l, dy: dy / l, power: 50, cue: cue, noisy: true };
+  }
+  scored.sort((a, b) => b.sc - a.sc);
+  let best = scored[0];
+
+  if (lv.robust > 0) {
+    // re-test the top few with the aim wobble this level really has, keep the most dependable
+    let bestAvg = -Infinity;
+    const top = scored.slice(0, lv.robust);
+    for (let i = 0; i < top.length; i++) {
+      const t = top[i];
+      let sum = 0; const N = 4;
+      for (let k = 0; k < N; k++) {
+        const ang = aiGauss(rng) * lv.angSigma, cs = Math.cos(ang), sn = Math.sin(ang);
+        const shot = { dx: t.c.dx * cs - t.c.dy * sn, dy: t.c.dx * sn + t.c.dy * cs, power: Math.max(1, Math.min(100, t.c.power * (1 + aiGauss(rng) * lv.powSigma))), cue: cue };
+        const res = aiSimulate(s, shot);
+        sum += res ? aiScore(s, res, me, lv) : -500;
+        yield null;
+      }
+      const avg = sum / N;
+      if (avg > bestAvg) { bestAvg = avg; best = t; }
+    }
+  }
+  return { dx: best.c.dx, dy: best.c.dy, power: best.c.power, cue: cue, noisy: true };
+}
+
+// add the human-like wobble for this level
+function aiApplyNoise(shot, levelKey, rng) {
+  const lv = AI_LEVELS[levelKey];
+  const ang = aiGauss(rng) * lv.angSigma, cs = Math.cos(ang), sn = Math.sin(ang);
+  return {
+    dx: shot.dx * cs - shot.dy * sn,
+    dy: shot.dx * sn + shot.dy * cs,
+    power: Math.max(1, Math.min(100, shot.power * (1 + aiGauss(rng) * lv.powSigma))),
+    cue: shot.cue
+  };
+}
+
+// Run the search without blocking the page for long. cb(shot) gets the final shot.
+function aiPlan(state, levelKey, rng, cb, syncMode) {
+  const it = aiPlanIter(state, levelKey, rng);
+  if (syncMode) {
+    let r = it.next();
+    while (!r.done) r = it.next();
+    cb(aiApplyNoise(r.value, levelKey, rng || Math.random));
+    return;
+  }
+  function pump() {
+    const t0 = Date.now();
+    let r;
+    do {
+      r = it.next();
+      if (r.done) { cb(aiApplyNoise(r.value, levelKey, rng || Math.random)); return; }
+    } while (Date.now() - t0 < 10);
+    setTimeout(pump, 0);
+  }
+  pump();
+}
+// ==POOL-AI-END==
+
 
   // ================= helpers =================
   const $ = id => document.getElementById(id);
@@ -593,7 +917,7 @@ function computeGuide(s, dx, dy) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  const PAD = 40, VIEW_L = W + PAD * 2, VIEW_S = H + PAD * 2;   // 1080 x 580 drawing space
+  const PAD = 46, VIEW_L = W + PAD * 2, VIEW_S = H + PAD * 2;   // 1080 x 580 drawing space
   const BALL_COLORS = { 1:'#f2c230', 2:'#2352b8', 3:'#d63a2f', 4:'#6a2c91', 5:'#ec7a1c', 6:'#1d8a4a', 7:'#7a1f2b', 8:'#16161a' };
   function ballColor(n){ return BALL_COLORS[n > 8 ? n - 8 : n]; }
 
@@ -610,14 +934,17 @@ function computeGuide(s, dx, dy) {
   let localSimDone = false;   // guest finished simulating, waiting for the host's result
   let connLost = false;
   let ffOn = false;
+  const DROP_MS = 520;
   let dropFx = [];
   let prevPocketed = {};
+  let aiLevel = 'medium', aiBusy = false, aiAnim = null, aiToken = 0;
 
-  const screens = { lobby:$('lobbyScreen'), local:$('setupLocal'), host:$('setupHost'), join:$('setupJoin'), game:$('gameScreen') };
+  const screens = { lobby:$('lobbyScreen'), local:$('setupLocal'), ai:$('setupAI'), host:$('setupHost'), join:$('setupJoin'), game:$('gameScreen') };
   function showScreen(name){
     Object.keys(screens).forEach(k => { if (k === 'game') screens[k].classList.toggle('active', k === name); else screens[k].classList.toggle('hidden', k !== name); });
     document.body.classList.toggle('in-game', name === 'game');
     if (name === 'game') needLayout = true;
+    pickers.forEach(p => p.refresh());
   }
 
   $('rulesBtn').addEventListener('click', () => $('rulesModal').classList.remove('hidden'));
@@ -669,55 +996,452 @@ function computeGuide(s, dx, dy) {
     c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
     c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
   }
+
+  // One cushion strip. a and b are the two ends of the nose (the edge the balls
+  // bounce off); (nx, ny) points away from the table.
+  const CUSHION_H = 20;
+  function cushionSeg(c, ax, ay, bx, by, nx, ny){
+    let ux = bx - ax, uy = by - ay; const l = Math.sqrt(ux * ux + uy * uy); ux /= l; uy /= l;
+    const flare = 15;
+    // rubber body
+    const mx = (ax + bx) / 2, my = (ay + by) / 2;
+    const g = c.createLinearGradient(mx, my, mx + nx * CUSHION_H, my + ny * CUSHION_H);
+    g.addColorStop(0, '#1f8a68'); g.addColorStop(0.18, '#136b50'); g.addColorStop(1, '#073a2b');
+    c.beginPath();
+    c.moveTo(ax, ay); c.lineTo(bx, by);
+    c.lineTo(bx + nx * CUSHION_H + ux * flare, by + ny * CUSHION_H + uy * flare);
+    c.lineTo(ax + nx * CUSHION_H - ux * flare, ay + ny * CUSHION_H - uy * flare);
+    c.closePath();
+    c.fillStyle = g; c.fill();
+    c.lineWidth = 1.2; c.strokeStyle = 'rgba(0,0,0,0.55)'; c.stroke();
+    // bright nose line so the bounce edge is easy to see
+    c.lineCap = 'round';
+    c.lineWidth = 2; c.strokeStyle = 'rgba(236,246,240,0.78)';
+    c.beginPath(); c.moveTo(ax + ux * 1.5, ay + uy * 1.5); c.lineTo(bx - ux * 1.5, by - uy * 1.5); c.stroke();
+    c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,0.35)';
+    c.beginPath(); c.moveTo(ax + nx * 1.6 + ux * 1.5, ay + ny * 1.6 + uy * 1.5); c.lineTo(bx + nx * 1.6 - ux * 1.5, by + ny * 1.6 - uy * 1.5); c.stroke();
+  }
   function drawTable(c){
-    // wooden frame
+    // wooden frame with a little grain
     const wood = c.createLinearGradient(0, 0, 0, VIEW_S);
-    wood.addColorStop(0, '#6b4226'); wood.addColorStop(0.5, '#4f2f19'); wood.addColorStop(1, '#6b4226');
-    roundRectPath(c, 0, 0, VIEW_L, VIEW_S, 26); c.fillStyle = wood; c.fill();
-    c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.stroke();
-    // cushions
-    roundRectPath(c, PAD - 17, PAD - 17, W + 34, H + 34, 10); c.fillStyle = '#10463a'; c.fill();
+    wood.addColorStop(0, '#7b4b2a'); wood.addColorStop(0.5, '#593319'); wood.addColorStop(1, '#7b4b2a');
+    roundRectPath(c, 0, 0, VIEW_L, VIEW_S, 28); c.fillStyle = wood; c.fill();
+    c.save(); roundRectPath(c, 0, 0, VIEW_L, VIEW_S, 28); c.clip();
+    c.strokeStyle = 'rgba(0,0,0,0.10)'; c.lineWidth = 1;
+    for (let i = 0; i < 30; i++){
+      const y = (i * 37 + 11) % VIEW_S;
+      c.beginPath(); c.moveTo(0, y); c.bezierCurveTo(VIEW_L * 0.3, y + 7 * Math.sin(i), VIEW_L * 0.6, y - 7 * Math.cos(i), VIEW_L, y + 3); c.stroke();
+    }
+    c.restore();
+    roundRectPath(c, 2.5, 2.5, VIEW_L - 5, VIEW_S - 5, 26); c.lineWidth = 2; c.strokeStyle = 'rgba(255,225,185,0.22)'; c.stroke();
+    roundRectPath(c, 0, 0, VIEW_L, VIEW_S, 28); c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.stroke();
+
+    // dark bed that the cushions sit on
+    roundRectPath(c, PAD - CUSHION_H - 1, PAD - CUSHION_H - 1, W + 2 * CUSHION_H + 2, H + 2 * CUSHION_H + 2, 9);
+    c.fillStyle = '#04201a'; c.fill();
+    c.lineWidth = 2; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.stroke();
+
     // felt
-    const felt = c.createRadialGradient(PAD + W / 2, PAD + H / 2, 60, PAD + W / 2, PAD + H / 2, W * 0.62);
-    felt.addColorStop(0, '#1f8362'); felt.addColorStop(1, '#14624a');
+    const felt = c.createRadialGradient(PAD + W / 2, PAD + H / 2, 40, PAD + W / 2, PAD + H / 2, W * 0.6);
+    felt.addColorStop(0, '#23906b'); felt.addColorStop(0.7, '#17694e'); felt.addColorStop(1, '#115240');
     c.fillStyle = felt; c.fillRect(PAD, PAD, W, H);
-    c.lineWidth = 2; c.strokeStyle = 'rgba(0,0,0,0.35)'; c.strokeRect(PAD, PAD, W, H);
-    // diamonds
-    c.fillStyle = '#d9c9a0';
-    function diamond(x, y){ c.beginPath(); c.moveTo(x, y - 5); c.lineTo(x + 3.5, y); c.lineTo(x, y + 5); c.lineTo(x - 3.5, y); c.closePath(); c.fill(); }
-    for (let k = 1; k < 8; k++){ if (k === 4) continue; diamond(PAD + W * k / 8, PAD - 29); diamond(PAD + W * k / 8, PAD + H + 29); }
-    for (let k = 1; k < 4; k++){ diamond(PAD - 29, PAD + H * k / 4); diamond(PAD + W + 29, PAD + H * k / 4); }
+    // soft shadow where the cushions meet the felt
+    c.save(); c.beginPath(); c.rect(PAD, PAD, W, H); c.clip();
+    c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 14; c.lineWidth = 14; c.strokeStyle = '#000';
+    c.strokeRect(PAD - 7, PAD - 7, W + 14, H + 14);
+    c.restore();
+
+    // cushions (they stop short of the pockets)
+    const cg = 36, sg = 31;
+    cushionSeg(c, PAD + cg, PAD, PAD + W / 2 - sg, PAD, 0, -1);
+    cushionSeg(c, PAD + W / 2 + sg, PAD, PAD + W - cg, PAD, 0, -1);
+    cushionSeg(c, PAD + cg, PAD + H, PAD + W / 2 - sg, PAD + H, 0, 1);
+    cushionSeg(c, PAD + W / 2 + sg, PAD + H, PAD + W - cg, PAD + H, 0, 1);
+    cushionSeg(c, PAD, PAD + cg, PAD, PAD + H - cg, -1, 0);
+    cushionSeg(c, PAD + W, PAD + cg, PAD + W, PAD + H - cg, 1, 0);
+
+    // diamonds on the wooden rail
+    c.fillStyle = '#eadfc4'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 0.8;
+    function diamond(x, y){ c.beginPath(); c.moveTo(x, y - 5); c.lineTo(x + 3.6, y); c.lineTo(x, y + 5); c.lineTo(x - 3.6, y); c.closePath(); c.fill(); c.stroke(); }
+    const dOff = CUSHION_H + (PAD - CUSHION_H) / 2;
+    for (let k = 1; k < 8; k++){ if (k === 4) continue; diamond(PAD + W * k / 8, PAD - dOff); diamond(PAD + W * k / 8, PAD + H + dOff); }
+    for (let k = 1; k < 4; k++){ diamond(PAD - dOff, PAD + H * k / 4); diamond(PAD + W + dOff, PAD + H * k / 4); }
+
     // spots
     c.fillStyle = 'rgba(255,255,255,0.28)';
     c.beginPath(); c.arc(PAD + FOOT_X, PAD + H / 2, 3, 0, Math.PI * 2); c.fill();
     c.beginPath(); c.arc(PAD + HEAD_X, PAD + H / 2, 3, 0, Math.PI * 2); c.fill();
-    // pockets
-    const pk = [[PAD - 7, PAD - 7, 31], [PAD + W + 7, PAD - 7, 31], [PAD - 7, PAD + H + 7, 31], [PAD + W + 7, PAD + H + 7, 31], [PAD + W / 2, PAD - 12, 26], [PAD + W / 2, PAD + H + 12, 26]];
-    pk.forEach(p => {
-      c.beginPath(); c.arc(p[0], p[1], p[2], 0, Math.PI * 2); c.fillStyle = '#07090b'; c.fill();
-      c.lineWidth = 3; c.strokeStyle = '#8a6a2c'; c.stroke();
+
+    // pockets: smaller dark holes with a thin metal lip
+    POCKETS.forEach(p => {
+      const cx = PAD + p.x, cy = PAD + p.y, rv = p.r - 2;
+      // darken the felt around the mouth so the corner blends into the cushions
+      c.save(); c.beginPath(); c.rect(PAD, PAD, W, H); c.clip();
+      const sh = c.createRadialGradient(cx, cy, rv, cx, cy, rv + 34);
+      sh.addColorStop(0, 'rgba(0,0,0,0.5)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = sh; c.fillRect(cx - rv - 40, cy - rv - 40, 2 * rv + 80, 2 * rv + 80);
+      c.restore();
+      c.beginPath(); c.arc(cx, cy, rv + 4.5, 0, Math.PI * 2); c.fillStyle = '#120b06'; c.fill();
+      const hg = c.createRadialGradient(cx, cy, 2, cx, cy, rv);
+      hg.addColorStop(0, '#000'); hg.addColorStop(0.75, '#050607'); hg.addColorStop(1, '#16191c');
+      c.beginPath(); c.arc(cx, cy, rv, 0, Math.PI * 2); c.fillStyle = hg; c.fill();
+      c.lineWidth = 2; c.strokeStyle = '#8f7a49'; c.stroke();
     });
   }
+
+  // The table never changes, so it is painted once and reused.
+  let tableLayer = null, tableKey = '';
+  function ensureTableLayer(){
+    const key = canvas.width + 'x' + canvas.height + '|' + rot;
+    if (tableLayer && tableKey === key) return;
+    tableKey = key;
+    tableLayer = document.createElement('canvas');
+    tableLayer.width = canvas.width; tableLayer.height = canvas.height;
+    const tc = tableLayer.getContext('2d');
+    tc.setTransform(scaleF, 0, 0, scaleF, 0, 0);
+    if (rot){ tc.translate(VIEW_S, 0); tc.rotate(Math.PI / 2); }
+    drawTable(tc);
+  }
+
+  // ---------- rolling balls ----------
+  // Each ball keeps a 3D orientation. When it moves, it rotates as if rolling
+  // without slipping, and a small sphere sprite is repainted from that
+  // orientation. This is only for looks; the physics does not use it.
+  const ballRS = {};
+  const WHITE = [244, 241, 230];
+  const digitMasks = {};
+  const DIGIT_N = 32;
+  function digitMask(n){
+    if (digitMasks[n]) return digitMasks[n];
+    const cv = document.createElement('canvas'); cv.width = cv.height = DIGIT_N;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#000'; g.font = 'bold ' + (n > 9 ? 18 : 25) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(n), DIGIT_N / 2, DIGIT_N / 2 + 1);
+    const d = g.getImageData(0, 0, DIGIT_N, DIGIT_N).data;
+    const m = new Uint8Array(DIGIT_N * DIGIT_N);
+    for (let i = 0; i < m.length; i++) m[i] = d[i * 4 + 3];
+    digitMasks[n] = m; return m;
+  }
+  function hexRGB(h){ return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+  function rotAbout(v, k, a){
+    const cs = Math.cos(a), sn = Math.sin(a), d = v[0] * k[0] + v[1] * k[1] + v[2] * k[2];
+    const cx = k[1] * v[2] - k[2] * v[1], cy = k[2] * v[0] - k[0] * v[2], cz = k[0] * v[1] - k[1] * v[0];
+    return [v[0] * cs + cx * sn + k[0] * d * (1 - cs), v[1] * cs + cy * sn + k[1] * d * (1 - cs), v[2] * cs + cz * sn + k[2] * d * (1 - cs)];
+  }
+  function newRS(n){
+    let ex = [1, 0, 0], ey = [0, 1, 0], ez = [0, 0, 1];
+    const steps = [[[0, 0, 1], Math.random() * 6.283], [[1, 0, 0], (Math.random() - 0.5) * 1.3], [[0, 1, 0], (Math.random() - 0.5) * 1.3]];
+    steps.forEach(s => { ex = rotAbout(ex, s[0], s[1]); ey = rotAbout(ey, s[0], s[1]); ez = rotAbout(ez, s[0], s[1]); });
+    return { ex: ex, ey: ey, ez: ez, lx: null, ly: null, dirty: true, S: 0, cv: null, img: null, lkey: '', cnt: 0 };
+  }
+  function orthonormalize(rs){
+    function norm(v){ const l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+    let ez = norm(rs.ez);
+    let ex = rs.ex; const d = ex[0] * ez[0] + ex[1] * ez[1] + ex[2] * ez[2];
+    ex = norm([ex[0] - d * ez[0], ex[1] - d * ez[1], ex[2] - d * ez[2]]);
+    const ey = [ez[1] * ex[2] - ez[2] * ex[1], ez[2] * ex[0] - ez[0] * ex[2], ez[0] * ex[1] - ez[1] * ex[0]];
+    // keep handedness the same as the stored ey
+    const s = ey[0] * rs.ey[0] + ey[1] * rs.ey[1] + ey[2] * rs.ey[2] < 0 ? -1 : 1;
+    rs.ex = ex; rs.ey = [ey[0] * s, ey[1] * s, ey[2] * s]; rs.ez = ez;
+  }
+  function rollStep(rs, dx, dy){
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / dist, uy = dy / dist, th = dist / R, cs = Math.cos(th), sn = Math.sin(th);
+    ['ex', 'ey', 'ez'].forEach(k => {
+      const v = rs[k], a = v[2], b = v[0] * ux + v[1] * uy;
+      rs[k] = [v[0] + (cs - 1) * b * ux + sn * a * ux, v[1] + (cs - 1) * b * uy + sn * a * uy, v[2] + (cs - 1) * a - sn * b];
+    });
+    rs.dirty = true;
+    if (++rs.cnt % 48 === 0) orthonormalize(rs);
+  }
+  function rollBall(n, x, y){
+    let rs = ballRS[n];
+    if (!rs){ rs = ballRS[n] = newRS(n); rs.lx = x; rs.ly = y; return rs; }
+    const dx = x - rs.lx, dy = y - rs.ly, d2 = dx * dx + dy * dy;
+    if (d2 > 0.0001){
+      rs.lx = x; rs.ly = y;
+      if (d2 < 150 * 150) rollStep(rs, dx, dy);
+    }
+    return rs;
+  }
+  // light direction in table coordinates (screen light, un-rotated when the table is drawn sideways)
+  function lightVec(){
+    let lx = -0.36, ly = -0.46, lz = 0.81;
+    if (rot){ const t = lx; lx = ly; ly = -t; }
+    const l = Math.sqrt(lx * lx + ly * ly + lz * lz);
+    return [lx / l, ly / l, lz / l];
+  }
+  const COS_D = Math.cos(0.5), SIN_D = Math.sin(0.5);
+  function paintSprite(rs, n, S){
+    if (!rs.cv || rs.S !== S){
+      rs.cv = document.createElement('canvas'); rs.cv.width = rs.cv.height = S;
+      rs.img = rs.cv.getContext('2d').createImageData(S, S); rs.S = S;
+    }
+    const L = lightVec();
+    const hx = L[0], hy = L[1], hz = L[2] + 1, hl = Math.sqrt(hx * hx + hy * hy + hz * hz);
+    const Hx = hx / hl, Hy = hy / hl, Hz = hz / hl;
+    const col = n === 0 ? WHITE : hexRGB(ballColor(n));
+    const mask = n > 0 ? digitMask(n) : null;
+    const data = rs.img.data;
+    const ex = rs.ex, ey = rs.ey, ez = rs.ez;
+    const rad = (S - 2) / 2, c0 = S / 2;
+    let idx = 0;
+    for (let j = 0; j < S; j++){
+      const v = (j + 0.5 - c0) / rad;
+      for (let i = 0; i < S; i++, idx += 4){
+        const u = (i + 0.5 - c0) / rad;
+        const rr = u * u + v * v;
+        if (rr >= 1.12){ data[idx + 3] = 0; continue; }
+        const rn = Math.sqrt(rr);
+        const w = rr < 1 ? Math.sqrt(1 - rr) : 0;
+        const edge = Math.max(0, Math.min(1, (1 - rn) * rad + 0.5));
+        // point on the sphere in view space is (u, v, w); find it in body space
+        const qx = ex[0] * u + ex[1] * v + ex[2] * w;
+        const qy = ey[0] * u + ey[1] * v + ey[2] * w;
+        const qz = ez[0] * u + ez[1] * v + ez[2] * w;
+        let r, g, b;
+        if (n === 0){
+          r = WHITE[0]; g = WHITE[1]; b = WHITE[2];
+          if (Math.abs(qx) > 0.975 || Math.abs(qy) > 0.975 || Math.abs(qz) > 0.975){ r = 205; g = 52; b = 52; }
+        } else {
+          if (n > 8 && Math.abs(qy) >= 0.52){ r = WHITE[0]; g = WHITE[1]; b = WHITE[2]; }
+          else { r = col[0]; g = col[1]; b = col[2]; }
+          const az = Math.abs(qz);
+          if (az > COS_D){
+            const lx = (qz > 0 ? qx : -qx) / SIN_D, ly = qy / SIN_D;
+            r = 247; g = 244; b = 234;
+            const mx = Math.floor((lx * 0.5 + 0.5) * DIGIT_N), my = Math.floor((ly * 0.5 + 0.5) * DIGIT_N);
+            if (mx >= 0 && mx < DIGIT_N && my >= 0 && my < DIGIT_N){
+              const a = mask[my * DIGIT_N + mx] / 255;
+              r = r * (1 - a) + 20 * a; g = g * (1 - a) + 20 * a; b = b * (1 - a) + 20 * a;
+            }
+          }
+        }
+        const lam = Math.max(0, u * L[0] + v * L[1] + w * L[2]);
+        let shade = (0.42 + 0.68 * lam) * (0.72 + 0.28 * w);
+        const sp = Math.pow(Math.max(0, u * Hx + v * Hy + w * Hz), 46) * 0.7;
+        r = Math.min(255, r * shade + 255 * sp); g = Math.min(255, g * shade + 255 * sp); b = Math.min(255, b * shade + 255 * sp);
+        data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = edge * 255;
+      }
+    }
+    rs.cv.getContext('2d').putImageData(rs.img, 0, 0);
+    rs.dirty = false; rs.lkey = rot ? 'r' : 'n';
+  }
   function drawBall(c, b, scale, alpha){
-    const col = b.n === 0 ? '#f4f1e6' : ballColor(b.n);
+    const rs = rollBall(b.n, b.x, b.y);
+    const S = Math.ceil(2 * R * scaleF) + 2;
+    const key = rot ? 'r' : 'n';
+    if (rs.dirty || rs.S !== S || rs.lkey !== key) paintSprite(rs, b.n, S);
     c.save();
     c.globalAlpha = alpha === undefined ? 1 : alpha;
     c.translate(PAD + b.x, PAD + b.y);
     if (scale && scale !== 1) c.scale(scale, scale);
-    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.arc(1.5, 2.5, R, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.closePath();
-    if (b.n > 8){
-      c.fillStyle = '#f4f1e6'; c.fill();
-      c.save(); c.clip(); c.fillStyle = col; c.fillRect(-R, -R * 0.58, 2 * R, R * 1.16); c.restore();
-    } else { c.fillStyle = col; c.fill(); }
-    if (b.n > 0){
-      c.beginPath(); c.arc(0, 0, R * 0.5, 0, Math.PI * 2); c.fillStyle = '#f7f4ea'; c.fill();
-      c.fillStyle = '#111'; c.font = 'bold ' + Math.round(R * 0.62) + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(String(b.n), 0, 0.5);
-    }
-    const g = c.createRadialGradient(-R * 0.35, -R * 0.4, 1, 0, 0, R * 1.05);
-    g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(0.35, 'rgba(255,255,255,0.08)'); g.addColorStop(1, 'rgba(0,0,0,0.28)');
-    c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.fillStyle = g; c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.30)'; c.beginPath(); c.arc(1.8, 2.8, R * 0.98, 0, Math.PI * 2); c.fill();
+    const D = S / scaleF;
+    c.drawImage(rs.cv, -D / 2, -D / 2, D, D);
+    c.restore();
+  }
+
+  // ---------- cues ----------
+  // Every cue is drawn in its own little frame: x runs from the tip (0) to the butt (L),
+  // and y is across the cue. paint() is clipped to the shaft; extra() can draw past it.
+  function cuePath(c, L){ c.beginPath(); c.moveTo(0, -2.6); c.lineTo(L, -6.4); c.lineTo(L, 6.4); c.lineTo(0, 2.6); c.closePath(); }
+  function lgrad(c, x0, x1, stops){ const g = c.createLinearGradient(x0, 0, x1, 0); stops.forEach(s => g.addColorStop(s[0], s[1])); return g; }
+  function fillAll(c, L, stops){ c.fillStyle = lgrad(c, 0, L, stops); c.fillRect(-2, -8, L + 4, 16); }
+  function band(c, L, f0, f1, col){ c.fillStyle = col; c.fillRect(L * f0, -8, L * (f1 - f0), 16); }
+  function ring(c, L, f, col){ band(c, L, f - 0.008, f + 0.008, col); }
+  function pseudo(i){ const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  const CUES = [
+    { id: 'classic', name: 'Classic Maple', paint(c, L){
+      fillAll(c, L, [[0, '#f3e3b8'], [0.5, '#dcb97a'], [0.5, '#6a3d1c'], [1, '#2a170a']]);
+      ring(c, L, 0.5, '#d9b25a');
+      band(c, L, 0.6, 0.78, '#16110d');
+      c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 0.8;
+      for (let x = L * 0.6; x < L * 0.78; x += 5){ c.beginPath(); c.moveTo(x, -6); c.lineTo(x + 4, 6); c.stroke(); }
+      ring(c, L, 0.945, '#d9b25a');
+    } },
+    { id: 'ebony', name: 'Midnight Ebony', paint(c, L){
+      fillAll(c, L, [[0, '#3a3a44'], [1, '#08080b']]);
+      ring(c, L, 0.5, '#c9ccd2'); ring(c, L, 0.56, '#c9ccd2'); ring(c, L, 0.95, '#c9ccd2');
+      c.fillStyle = '#c9ccd2';
+      for (let x = L * 0.64; x < L * 0.9; x += 14){ c.save(); c.translate(x, 0); c.rotate(Math.PI / 4); c.fillRect(-2, -2, 4, 4); c.restore(); }
+    } },
+    { id: 'racer', name: 'Racing Red', paint(c, L){
+      fillAll(c, L, [[0, '#e53935'], [1, '#8e0f14']]);
+      band(c, L, 0.28, 0.31, '#fff'); band(c, L, 0.34, 0.355, '#fff');
+      for (let i = 0; i < 10; i++) for (let r = 0; r < 4; r++){ c.fillStyle = (i + r) % 2 ? '#111' : '#f5f5f5'; c.fillRect(L * 0.56 + i * 7, -8 + r * 4, 7, 4); }
+      band(c, L, 0.9, 0.93, '#111');
+    } },
+    { id: 'ocean', name: 'Ocean Waves', paint(c, L, t){
+      fillAll(c, L, [[0, '#8be6ff'], [0.5, '#1f8fd0'], [1, '#0a3470']]);
+      c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 1.1;
+      for (let k = 0; k < 4; k++){
+        c.beginPath();
+        for (let x = 0; x <= L; x += 4){ const y = -4.5 + k * 3 + Math.sin(x * 0.09 + t * 0.004 + k) * 1.3; if (x === 0) c.moveTo(x, y); else c.lineTo(x, y); }
+        c.stroke();
+      }
+    } },
+    { id: 'neon', name: 'Neon Nights', paint(c, L, t){
+      fillAll(c, L, [[0, '#101535'], [1, '#05061a']]);
+      const pulse = 0.65 + 0.35 * Math.sin(t * 0.005);
+      c.lineWidth = 1.6; c.shadowBlur = 9;
+      c.shadowColor = '#18f0ff'; c.strokeStyle = 'rgba(80,245,255,' + pulse + ')'; c.beginPath(); c.moveTo(0, -1.8); c.lineTo(L, -2.6); c.stroke();
+      c.shadowColor = '#ff2fd0'; c.strokeStyle = 'rgba(255,90,225,' + (1.1 - pulse) + ')'; c.beginPath(); c.moveTo(0, 1.8); c.lineTo(L, 2.6); c.stroke();
+      c.shadowBlur = 0;
+    } },
+    { id: 'gold', name: 'Golden Emperor', paint(c, L, t){
+      fillAll(c, L, [[0, '#fff3b8'], [0.3, '#e6b83e'], [0.62, '#b8861f'], [1, '#6d4a0e']]);
+      const sx = ((t * 0.18) % (L + 120)) - 60;
+      const sg = c.createLinearGradient(sx - 18, 0, sx + 18, 0);
+      sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.7)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = sg; c.fillRect(sx - 18, -8, 36, 16);
+      [['#e0245e', 0.6], ['#2a7fff', 0.72], ['#18c47a', 0.84]].forEach(g => {
+        c.beginPath(); c.arc(L * g[1], 0, 2.7, 0, 6.283); c.fillStyle = g[0]; c.fill(); c.lineWidth = 0.9; c.strokeStyle = '#4a3208'; c.stroke();
+      });
+    } },
+    { id: 'candy', name: 'Candy Cane', paint(c, L){
+      fillAll(c, L, [[0, '#ffffff'], [1, '#f2f2f2']]);
+      c.fillStyle = '#d7263d';
+      for (let x = -12; x < L; x += 16){ c.beginPath(); c.moveTo(x, -8); c.lineTo(x + 8, -8); c.lineTo(x + 16, 8); c.lineTo(x + 8, 8); c.closePath(); c.fill(); }
+      band(c, L, 0.92, 1, '#1b8a3b');
+    } },
+    { id: 'bamboo', name: 'Bamboo Stalk', paint(c, L){
+      fillAll(c, L, [[0, '#c3dd7a'], [1, '#5f9330']]);
+      for (let k = 1; k < 6; k++){ band(c, L, k / 6 - 0.012, k / 6 + 0.012, '#3d5e1b'); band(c, L, k / 6 + 0.014, k / 6 + 0.02, 'rgba(255,255,255,0.25)'); }
+      c.strokeStyle = 'rgba(40,70,15,0.35)'; c.lineWidth = 0.8;
+      for (let k = 0; k < 14; k++){ const x = pseudo(k) * L; c.beginPath(); c.moveTo(x, -4 + pseudo(k + 9) * 8); c.lineTo(x + 10, -4 + pseudo(k + 9) * 8); c.stroke(); }
+    }, extra(c, L){
+      c.fillStyle = '#4fae3c';
+      [[-0.5, 26], [0.2, 32], [0.8, 22]].forEach(a => { c.save(); c.translate(L, 0); c.rotate(a[0]); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(a[1] * 0.5, -6, a[1], 0); c.quadraticCurveTo(a[1] * 0.5, 6, 0, 0); c.fill(); c.restore(); });
+    } },
+    { id: 'carrot', name: 'Giant Carrot', paint(c, L){
+      fillAll(c, L, [[0, '#ffb852'], [0.6, '#f07a1e'], [1, '#d4540a']]);
+      c.strokeStyle = 'rgba(140,50,0,0.45)'; c.lineWidth = 1;
+      for (let k = 0; k < 11; k++){ const x = 12 + k * (L / 12) + pseudo(k) * 8, y = -4 + pseudo(k + 5) * 8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 9 + pseudo(k + 2) * 5, y); c.stroke(); }
+    }, extra(c, L){
+      c.fillStyle = '#3fae49';
+      [[-0.55, 34], [-0.18, 40], [0.2, 38], [0.55, 32]].forEach(a => { c.save(); c.translate(L - 2, 0); c.rotate(a[0]); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(a[1] * 0.5, -5.5, a[1], 0); c.quadraticCurveTo(a[1] * 0.5, 5.5, 0, 0); c.fill(); c.restore(); });
+    } },
+    { id: 'laser', name: 'Laser Beam', noFerrule: true, paint(c, L, t){
+      fillAll(c, L, [[0, '#3a3e48'], [1, '#14161b']]);
+      const pulse = 0.8 + 0.2 * Math.sin(t * 0.012);
+      c.shadowBlur = 14; c.shadowColor = '#2cff6a';
+      c.fillStyle = 'rgba(190,255,205,' + pulse + ')'; c.fillRect(-4, -2.4, L * 0.66 + 4, 4.8);
+      c.shadowBlur = 0;
+      c.fillStyle = '#c6cad3'; c.fillRect(L * 0.66, -8, L * 0.035, 16);
+      c.fillStyle = '#090a0d';
+      for (let x = L * 0.74; x < L * 0.96; x += 9) c.fillRect(x, -8, 4, 16);
+      band(c, L, 0.965, 1, '#aab0bb');
+    } },
+    { id: 'baguette', name: 'French Baguette', paint(c, L){
+      fillAll(c, L, [[0, '#ecc582'], [0.5, '#d49c4e'], [1, '#b87a34']]);
+      c.strokeStyle = '#f6dfa6'; c.lineWidth = 2.4; c.lineCap = 'round';
+      for (let k = 0; k < 7; k++){ const x = 24 + k * (L - 60) / 6; c.beginPath(); c.moveTo(x, -3.4); c.quadraticCurveTo(x + 6, -1, x + 11, 3.2); c.stroke(); }
+      c.fillStyle = 'rgba(100,55,10,0.3)';
+      for (let k = 0; k < 24; k++){ c.beginPath(); c.arc(pseudo(k) * L, -5 + pseudo(k + 3) * 10, 0.9, 0, 6.283); c.fill(); }
+    } },
+    { id: 'rainbow', name: 'Rainbow Runner', paint(c, L, t){
+      for (let x = -2; x < L + 4; x += 3){ c.fillStyle = 'hsl(' + ((x / L * 360 + t * 0.09) % 360) + ',90%,56%)'; c.fillRect(x, -8, 3.6, 16); }
+    } },
+    { id: 'bone', name: 'Old Bone', paint(c, L){
+      fillAll(c, L, [[0, '#fbf5e4'], [1, '#d9caa3']]);
+      c.strokeStyle = 'rgba(110,80,40,0.4)'; c.lineWidth = 0.9;
+      [[0.2, 4], [0.38, -3], [0.64, 3], [0.8, -2]].forEach(k => { c.beginPath(); c.moveTo(L * k[0], k[1]); c.lineTo(L * k[0] + 9, k[1] - 2); c.lineTo(L * k[0] + 13, k[1] + 1.5); c.stroke(); });
+    }, extra(c, L){
+      [-4.6, 4.6].forEach(y => { c.beginPath(); c.arc(L + 2.5, y, 4.6, 0, 6.283); c.fillStyle = '#e6d9b8'; c.fill(); c.lineWidth = 0.9; c.strokeStyle = 'rgba(0,0,0,0.5)'; c.stroke(); });
+    } },
+    { id: 'thunder', name: 'Thunderbolt', paint(c, L, t){
+      fillAll(c, L, [[0, '#7d4cff'], [1, '#26106a']]);
+      const flash = Math.sin(t * 0.011) > 0.93;
+      c.lineWidth = 2.3; c.lineJoin = 'miter'; c.shadowBlur = flash ? 14 : 6; c.shadowColor = '#ffe14a';
+      c.strokeStyle = flash ? '#ffffff' : '#ffe14a';
+      c.beginPath(); c.moveTo(-2, 0);
+      for (let x = 12, s = 1; x < L + 16; x += 15, s = -s) c.lineTo(x, s * 3.4);
+      c.stroke(); c.shadowBlur = 0;
+    } },
+    { id: 'pencil', name: 'Giant Pencil', noTip: true, paint(c, L){
+      fillAll(c, L, [[0, '#f9d535'], [1, '#e8b800']]);
+      c.strokeStyle = 'rgba(150,100,0,0.55)'; c.lineWidth = 0.9;
+      [-2.2, 2.2].forEach(y => { c.beginPath(); c.moveTo(0, y); c.lineTo(L, y * 2.1); c.stroke(); });
+      band(c, L, 0, 0.075, '#efd3a2');
+      band(c, L, 0, 0.03, '#2f2f33');
+      band(c, L, 0.9, 0.95, '#c4c9d1');
+      c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 0.8;
+      for (let x = L * 0.905; x < L * 0.95; x += 4){ c.beginPath(); c.moveTo(x, -8); c.lineTo(x, 8); c.stroke(); }
+      band(c, L, 0.95, 1, '#f08aa2');
+    } },
+    { id: 'viper', name: 'Viper', paint(c, L){
+      fillAll(c, L, [[0, '#a6dc63'], [1, '#2f7d34']]);
+      c.fillStyle = 'rgba(15,60,20,0.55)';
+      for (let x = 0; x < L; x += 13){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 6.5, -4.4); c.lineTo(x + 13, 0); c.lineTo(x + 6.5, 4.4); c.closePath(); c.fill(); }
+    }, extra(c, L, t){
+      c.fillStyle = '#3d9444'; c.beginPath(); c.ellipse(L + 7, 0, 12, 7.5, 0, 0, 6.283); c.fill();
+      c.lineWidth = 0.9; c.strokeStyle = 'rgba(0,0,0,0.5)'; c.stroke();
+      [-3.4, 3.4].forEach(y => { c.beginPath(); c.arc(L + 11, y, 2.1, 0, 6.283); c.fillStyle = '#ffe94a'; c.fill(); c.fillStyle = '#111'; c.fillRect(L + 10.3, y - 1.6, 1.4, 3.2); });
+      const len = 6 + 5 * Math.max(0, Math.sin(t * 0.008));
+      c.strokeStyle = '#e0243a'; c.lineWidth = 1.2; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(L + 18, 0); c.lineTo(L + 18 + len, 0); c.moveTo(L + 18 + len, 0); c.lineTo(L + 22 + len, -2.5); c.moveTo(L + 18 + len, 0); c.lineTo(L + 22 + len, 2.5); c.stroke();
+    } },
+    { id: 'inferno', name: 'Inferno', paint(c, L, t){
+      fillAll(c, L, [[0, '#ffe36b'], [0.45, '#ff7a1a'], [1, '#5a0a0a']]);
+      for (let k = 0; k < 9; k++){
+        const x = k * L / 8, h = 3 + 3 * Math.sin(t * 0.012 + k * 1.9);
+        c.fillStyle = 'rgba(255,235,130,0.75)';
+        c.beginPath(); c.moveTo(x - 6, 8); c.quadraticCurveTo(x - 1, 8 - h * 2.4, x + 2 + Math.sin(t * 0.01 + k) * 2, 8 - h * 2.8); c.quadraticCurveTo(x + 5, 8 - h, x + 8, 8); c.closePath(); c.fill();
+        c.fillStyle = 'rgba(255,90,20,0.55)';
+        c.beginPath(); c.moveTo(x - 4, -8); c.quadraticCurveTo(x + 1, -8 + h * 2, x + 4, -8 + h * 2.4); c.quadraticCurveTo(x + 7, -8 + h * 0.8, x + 10, -8); c.closePath(); c.fill();
+      }
+    } },
+    { id: 'frost', name: 'Frostbite', paint(c, L, t){
+      fillAll(c, L, [[0, '#f2fdff'], [0.5, '#a5def5'], [1, '#5eb0e4']]);
+      c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 0.8;
+      for (let x = 10; x < L; x += 22){ c.beginPath(); c.moveTo(x, -6); c.lineTo(x + 12, 6); c.stroke(); }
+      [0.14, 0.33, 0.52, 0.71, 0.9].forEach((f, i) => {
+        const a = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.004 + i * 1.7)), x = L * f, y = (i % 2 ? 1.6 : -1.6);
+        c.strokeStyle = 'rgba(255,255,255,' + a + ')'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(x - 3.6, y); c.lineTo(x + 3.6, y); c.moveTo(x, y - 3.6); c.lineTo(x, y + 3.6); c.stroke();
+      });
+    } },
+    { id: 'cactus', name: 'Prickly Cactus', paint(c, L){
+      fillAll(c, L, [[0, '#3aa063'], [1, '#216b3c']]);
+      c.strokeStyle = 'rgba(150,230,170,0.5)'; c.lineWidth = 0.9;
+      [-3, 0, 3].forEach(y => { c.beginPath(); c.moveTo(0, y); c.lineTo(L, y * 2); c.stroke(); });
+      c.strokeStyle = '#f7f3d0'; c.lineWidth = 0.9;
+      for (let x = 8; x < L; x += 11){ [-1, 1].forEach(s => { c.beginPath(); c.moveTo(x, s * 1.3 * (1 + x / L)); c.lineTo(x + 3, s * 3.6 * (1 + x / L)); c.stroke(); }); }
+    }, extra(c, L){
+      c.fillStyle = '#ff6fa3';
+      for (let k = 0; k < 5; k++){ const a = k * 1.2566; c.beginPath(); c.arc(L + 8 + Math.cos(a) * 4.2, Math.sin(a) * 4.2, 3.4, 0, 6.283); c.fill(); }
+      c.beginPath(); c.arc(L + 8, 0, 2.6, 0, 6.283); c.fillStyle = '#ffd93b'; c.fill();
+    } },
+    { id: 'galaxy', name: 'Galaxy', paint(c, L, t){
+      fillAll(c, L, [[0, '#2d1160'], [0.5, '#4b1d92'], [1, '#0f0630']]);
+      const ng = c.createRadialGradient(L * 0.45, 0, 2, L * 0.45, 0, 70);
+      ng.addColorStop(0, 'rgba(255,110,200,0.55)'); ng.addColorStop(1, 'rgba(255,110,200,0)');
+      c.fillStyle = ng; c.fillRect(0, -8, L, 16);
+      for (let i = 0; i < 22; i++){
+        const a = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.004 + i)), x = pseudo(i) * L, y = -4.5 + pseudo(i + 40) * 9;
+        c.fillStyle = 'rgba(255,255,255,' + a + ')'; c.beginPath(); c.arc(x, y, 0.6 + pseudo(i + 7) * 0.7, 0, 6.283); c.fill();
+      }
+    } }
+  ];
+  const CUE_BY_ID = {};
+  CUES.forEach(cu => { CUE_BY_ID[cu.id] = cu; });
+  function cueById(id){ return CUE_BY_ID[id] || CUES[0]; }
+
+  // Draw one cue in its local frame (tip at the origin, butt towards +x).
+  function drawCueShape(c, cu, L, t){
+    c.save();
+    cuePath(c, L); c.save(); c.clip();
+    cu.paint(c, L, t);
+    if (!cu.noFerrule && !cu.noTip) band(c, L, 0.012, 0.045, '#f1ede0');
+    if (!cu.noTip){ c.fillStyle = '#5aa6d6'; c.fillRect(-2, -8, 5, 16); }
+    // round-cylinder shading
+    const sh = c.createLinearGradient(0, -6, 0, 6);
+    sh.addColorStop(0, 'rgba(255,255,255,0.34)'); sh.addColorStop(0.4, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.42)');
+    c.fillStyle = sh; c.fillRect(-2, -8, L + 4, 16);
+    c.restore();
+    cuePath(c, L); c.lineWidth = 0.9; c.strokeStyle = 'rgba(0,0,0,0.55)'; c.stroke();
+    if (cu.extra) cu.extra(c, L, t);
     c.restore();
   }
   function drawGuide(c){
@@ -754,19 +1478,18 @@ function computeGuide(s, dx, dy) {
     }
     c.restore();
   }
-  function drawCue(c){
+  function drawCue(c, pw){
     const cb = G.balls[0];
-    const pull = 6 + (power / 100) * 46;
+    const cu = cueById(G.players[G.turnIdx].cue);
+    const pull = 6 + (pw / 100) * 46;
     const sx = PAD + cb.x - aim.x * (R + 4 + pull), sy = PAD + cb.y - aim.y * (R + 4 + pull);
-    const ex = sx - aim.x * 330, ey = sy - aim.y * 330;
-    const px = -aim.y, py = aim.x;
-    const grad = c.createLinearGradient(sx, sy, ex, ey);
-    grad.addColorStop(0, '#e9d9b0'); grad.addColorStop(0.1, '#d8b26a'); grad.addColorStop(0.7, '#8b5a2b'); grad.addColorStop(1, '#3a2412');
     c.save();
-    c.beginPath(); c.moveTo(sx + px * 2.2, sy + py * 2.2); c.lineTo(ex + px * 5.4, ey + py * 5.4); c.lineTo(ex - px * 5.4, ey - py * 5.4); c.lineTo(sx - px * 2.2, sy - py * 2.2); c.closePath();
-    c.fillStyle = grad; c.fill();
-    c.lineCap = 'round'; c.lineWidth = 4.4; c.strokeStyle = '#6fb3d9';
-    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + aim.x * 0.01, sy + aim.y * 0.01); c.stroke();
+    c.translate(sx, sy);
+    c.rotate(Math.atan2(-aim.y, -aim.x));
+    // soft shadow under the cue
+    c.save(); c.translate(2, 4); c.globalAlpha = 0.25; c.fillStyle = '#000';
+    c.beginPath(); c.moveTo(0, -2.6); c.lineTo(290, -6.4); c.lineTo(290, 6.4); c.lineTo(0, 2.6); c.closePath(); c.fill(); c.restore();
+    drawCueShape(c, cu, 290, performance.now());
     c.restore();
   }
   function nearestPocket(x, y){
@@ -776,10 +1499,12 @@ function computeGuide(s, dx, dy) {
   }
   function draw(){
     if (!G) return;
+    ensureTableLayer();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(tableLayer, 0, 0);
     ctx.setTransform(scaleF, 0, 0, scaleF, 0, 0);
-    ctx.clearRect(0, 0, curVW, curVH);
     if (rot){ ctx.translate(VIEW_S, 0); ctx.rotate(Math.PI / 2); }
-    drawTable(ctx);
 
     const control = canControl();
     if (control && G.ballInHand && G.headOnly){
@@ -790,13 +1515,24 @@ function computeGuide(s, dx, dy) {
       ctx.restore();
     }
     G.balls.forEach(b => { if (!b.p) drawBall(ctx, b); });
-    // pocket drop animations
+    // balls dropping into pockets: slide to the middle of the hole, shrink and fade to black
     const now = performance.now();
-    dropFx = dropFx.filter(f => now - f.t0 < 260);
+    dropFx = dropFx.filter(f => now - f.t0 < DROP_MS);
     dropFx.forEach(f => {
-      const k = (now - f.t0) / 260;
-      const ball = { n: f.n, x: f.x + (f.px - f.x) * k, y: f.y + (f.py - f.y) * k };
-      drawBall(ctx, ball, 1 - 0.55 * k, 1 - k);
+      const k = (now - f.t0) / DROP_MS, e = k * k * (3 - 2 * k);
+      const ball = { n: f.n, x: f.x + (f.px - f.x) * e, y: f.y + (f.py - f.y) * e };
+      drawBall(ctx, ball, 1 - 0.42 * e, 1 - 0.55 * k * k);
+      ctx.save();
+      ctx.translate(PAD + ball.x, PAD + ball.y); ctx.scale(1 - 0.42 * e, 1 - 0.42 * e);
+      ctx.globalAlpha = 0.85 * e; ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // a little ripple on the pocket lip as the ball goes in
+      if (k > 0.55){
+        const rk = (k - 0.55) / 0.45;
+        ctx.save(); ctx.globalAlpha = 0.5 * (1 - rk); ctx.lineWidth = 2; ctx.strokeStyle = '#e8d9a8';
+        ctx.beginPath(); ctx.arc(PAD + f.px, PAD + f.py, f.pr - 3 + rk * 5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      }
     });
     if (control){
       if (G.ballInHand){
@@ -805,9 +1541,82 @@ function computeGuide(s, dx, dy) {
         ctx.beginPath(); ctx.arc(PAD + cb.x, PAD + cb.y, R + 7, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
       }
       drawGuide(ctx);
-      drawCue(ctx);
+      drawCue(ctx, power);
+    } else if (aiAnim && G.phase === 'aim'){
+      drawCue(ctx, aiAnim.pw);
     }
   }
+
+
+  // ================= cue picker =================
+  const pickers = [];
+  function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+  function makePicker(host, slot, fallbackIdx){
+    host.className = 'cue-picker';
+    host.innerHTML = '<div class="cue-head"><button type="button" class="cue-nav" aria-label="Previous cue">&#9664;</button><div class="cue-cur"></div><button type="button" class="cue-nav" aria-label="Next cue">&#9654;</button></div><div class="cue-scroll"></div>';
+    const scroller = host.querySelector('.cue-scroll'), cur = host.querySelector('.cue-cur');
+    const navs = host.querySelectorAll('.cue-nav');
+    const saved = lsGet('pool8_cue_' + slot);
+    let idx = Math.max(0, CUES.findIndex(c => c.id === saved));
+    if (!saved) idx = fallbackIdx || 0;
+    const cards = CUES.map((cu, i) => {
+      const card = document.createElement('div');
+      card.className = 'cue-card';
+      card.innerHTML = '<canvas width="576" height="88"></canvas><div class="cue-name">' + escapeHtml(cu.name) + '</div>';
+      card.addEventListener('click', () => select(i, true));
+      scroller.appendChild(card);
+      return card;
+    });
+    function draw(){
+      if (!host.offsetParent) return;
+      const t = performance.now();
+      cards.forEach((card, i) => {
+        const cv = card.firstChild, c = cv.getContext('2d');
+        c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+        c.setTransform(2, 0, 0, 2, 0, 0); c.translate(8, 22); c.scale(0.84, 1.05);
+        drawCueShape(c, CUES[i], 290, t);
+      });
+    }
+    function select(i, scroll){
+      idx = (i + CUES.length) % CUES.length;
+      cards.forEach((cd, k) => cd.classList.toggle('sel', k === idx));
+      cur.textContent = CUES[idx].name + '  (' + (idx + 1) + '/' + CUES.length + ')';
+      lsSet('pool8_cue_' + slot, CUES[idx].id);
+      if (scroll) cards[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+    navs[0].addEventListener('click', () => select(idx - 1, true));
+    navs[1].addEventListener('click', () => select(idx + 1, true));
+    let st = null;
+    scroller.addEventListener('scroll', () => {
+      clearTimeout(st);
+      st = setTimeout(() => {
+        const mid = scroller.scrollLeft + scroller.clientWidth / 2;
+        let best = idx, bd = Infinity;
+        cards.forEach((cd, k) => { const d = Math.abs(cd.offsetLeft + cd.offsetWidth / 2 - mid); if (d < bd){ bd = d; best = k; } });
+        if (best !== idx) select(best, false);
+      }, 130);
+    });
+    select(idx, false);
+    const api = {
+      get value(){ return CUES[idx].id; },
+      refresh(){
+        if (!host.offsetParent) return;
+        const cd = cards[idx];
+        scroller.scrollLeft = cd.offsetLeft + cd.offsetWidth / 2 - scroller.clientWidth / 2;
+        draw();
+      },
+      draw: draw
+    };
+    pickers.push(api);
+    return api;
+  }
+  const pickerL1 = makePicker($('pickerL1'), 'p1', 0);
+  const pickerL2 = makePicker($('pickerL2'), 'p2', 2);
+  const pickerH = makePicker($('pickerH'), 'host', 0);
+  const pickerJ = makePicker($('pickerJ'), 'join', 2);
+  const pickerA = makePicker($('pickerA'), 'ai', 0);
+  setInterval(() => { pickers.forEach(p => p.draw()); }, 110);
 
   // ================= HUD =================
   function miniBall(n){
@@ -829,7 +1638,7 @@ function computeGuide(s, dx, dy) {
       }
       const chip = document.createElement('div');
       chip.className = 'pl-chip' + (G.phase !== 'over' && idx === G.turnIdx ? ' turn' : '');
-      chip.innerHTML = '<div class="pl-name">' + escapeHtml(p.name) + (mode !== 'local' && p.id === myId ? ' (you)' : '') + '</div><div class="pl-tag">' + tag + '</div><div class="pl-balls">' + balls + '</div>';
+      chip.innerHTML = '<div class="pl-name">' + escapeHtml(p.name) + (mode !== 'local' && mode !== 'ai' && p.id === myId ? ' (you)' : '') + '</div><div class="pl-tag">' + tag + '</div><div class="pl-balls">' + balls + '</div>';
       bar.appendChild(chip);
     });
 
@@ -841,9 +1650,10 @@ function computeGuide(s, dx, dy) {
     else {
       const mine = isMyTurn();
       const base = G.message ? escapeHtml(G.message) + ' ' : '';
-      if (G.breakShot && !G.message) text = escapeHtml(cur.name) + (mode !== 'local' && mine ? ' (you)' : '') + ' to break. ';
+      if (G.breakShot && !G.message) text = escapeHtml(cur.name) + (mode !== 'local' && mode !== 'ai' && mine ? ' (you)' : '') + ' to break. ';
       else text = base;
       if (mine) text += '<span class="hint">' + (G.ballInHand ? 'Drag the cue ball to place it' + (G.headOnly ? ' behind the line' : ' anywhere') + ', then drag on the table to aim.' : 'Drag on the table to aim, set the power, and shoot.') + '</span>';
+      else if (mode === 'ai') text += '<span class="hint">' + escapeHtml(cur.name) + ' is lining up a shot...</span>';
       else text += '<span class="hint">Waiting for ' + escapeHtml(cur.name) + ' to shoot...</span>';
     }
     $('statusLine').innerHTML = text;
@@ -861,6 +1671,7 @@ function computeGuide(s, dx, dy) {
       over.innerHTML = html; over.classList.remove('hidden');
       const rb = $('rematchBtn'); if (rb) rb.addEventListener('click', startRematch);
     } else over.classList.add('hidden');
+    scheduleAi();
   }
 
   // ================= aim =================
@@ -986,11 +1797,12 @@ function computeGuide(s, dx, dy) {
         if (b.p && !prevPocketed[b.n]){
           prevPocketed[b.n] = true;
           const pk = nearestPocket(b.x, b.y);
-          dropFx.push({ n: b.n, x: b.x, y: b.y, px: pk.x, py: pk.y, t0: performance.now() });
+          dropFx.push({ n: b.n, x: b.x, y: b.y, px: pk.x, py: pk.y, pr: pk.r, t0: performance.now() });
         }
       });
       if (finished){ acc = 0; finishShot(); }
     }
+    aiAnimStep(now);
     if (needLayout) layout();
     draw();
     requestAnimationFrame(tick);
@@ -1001,6 +1813,8 @@ function computeGuide(s, dx, dy) {
   function beginGame(players){
     G = newGameState(players, starterIdx);
     awaitingHost = false; localSimDone = false; connLost = false; ffOn = false; dropFx = [];
+    aiBusy = false; aiAnim = null; aiToken++;
+    Object.keys(ballRS).forEach(k => { delete ballRS[k]; });
     snapshotPocketed();
     resetAim();
     G.balls[0].x = HEAD_X; G.balls[0].y = H / 2;
@@ -1011,7 +1825,75 @@ function computeGuide(s, dx, dy) {
   function startRematch(){
     if (mode === 'guest') return;
     starterIdx = (starterIdx + 1) % 2;
-    beginGame(G.players.map(p => ({ id: p.id, name: p.name })));
+    beginGame(G.players.map(p => ({ id: p.id, name: p.name, cue: p.cue })));
+  }
+
+
+  // ================= vs computer =================
+  const LEVEL_TEXT = {
+    easy: 'Misses a lot and does not plan ahead. A good way to learn the table.',
+    medium: 'Pots most of the easy shots and thinks a little about where the cue ball ends up.',
+    hard: 'Pool Shark. Tries dozens of shots in its head, plans the next shot, and rarely misses.'
+  };
+  function setLevel(l){
+    aiLevel = l;
+    Array.prototype.forEach.call($('aiLevelSeg').children, b => b.classList.toggle('on', b.dataset.level === l));
+    $('aiLevelDesc').textContent = LEVEL_TEXT[l];
+  }
+  Array.prototype.forEach.call($('aiLevelSeg').children, b => b.addEventListener('click', () => setLevel(b.dataset.level)));
+  setLevel(lsGet('pool8_level') && AI_LEVELS[lsGet('pool8_level')] ? lsGet('pool8_level') : 'medium');
+  $('pickAI').addEventListener('click', () => showScreen('ai'));
+  $('aiBack').addEventListener('click', () => showScreen('lobby'));
+  $('aiStart').addEventListener('click', () => {
+    mode = 'ai'; myId = 'me';
+    lsSet('pool8_level', aiLevel);
+    const name = $('aiName').value.trim() || 'You';
+    const lv = AI_LEVELS[aiLevel];
+    const cpuName = aiLevel === 'hard' ? 'Pool Shark' : 'Computer (' + lv.label + ')';
+    const mine = pickerA.value;
+    let others = CUES.filter(c => c.id !== mine);
+    const cpuCue = others[Math.floor(Math.random() * others.length)].id;
+    starterIdx = 0;
+    beginGame([{ id: 'me', name: name, cue: mine }, { id: 'cpu', name: cpuName, cue: cpuCue }]);
+  });
+  function aiIsTurn(){ return mode === 'ai' && !!G && G.phase === 'aim' && G.players[G.turnIdx].id === 'cpu'; }
+  function scheduleAi(){
+    if (!aiIsTurn() || aiBusy) return;
+    aiBusy = true;
+    const tok = ++aiToken;
+    setTimeout(() => {
+      if (tok !== aiToken || !aiIsTurn()){ aiBusy = false; return; }
+      aiPlan(G, aiLevel, Math.random, shot => {
+        if (tok !== aiToken || !aiIsTurn()){ aiBusy = false; return; }
+        aiPerform(shot, tok);
+      }, false);
+    }, 650);
+  }
+  function aiPerform(shot, tok){
+    if (shot.cue){ G.balls[0].x = shot.cue.x; G.balls[0].y = shot.cue.y; }
+    const from = Math.atan2(aim.y, aim.x), to = Math.atan2(shot.dy, shot.dx);
+    let diff = to - from;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+    aiAnim = { t0: performance.now(), from: from, diff: diff, shot: shot, pw: 0, tok: tok };
+  }
+  const AI_AIM_MS = 750, AI_PULL_MS = 500;
+  function aiAnimStep(now){
+    if (!aiAnim) return;
+    if (aiAnim.tok !== aiToken || !aiIsTurn()){ aiAnim = null; aiBusy = false; return; }
+    const el = now - aiAnim.t0;
+    const k = Math.min(1, el / AI_AIM_MS), e = k * k * (3 - 2 * k);
+    const a = aiAnim.from + aiAnim.diff * e;
+    aim = { x: Math.cos(a), y: Math.sin(a) };
+    if (el > AI_AIM_MS) aiAnim.pw = aiAnim.shot.power * Math.min(1, (el - AI_AIM_MS) / AI_PULL_MS);
+    if (el >= AI_AIM_MS + AI_PULL_MS + 120){
+      const sh = aiAnim.shot;
+      aiAnim = null; aiBusy = false;
+      aim = { x: sh.dx, y: sh.dy };
+      const r = beginShot(G, sh.dx, sh.dy, sh.power, sh.cue);
+      if (r.ok) onShotBegan();
+      else { aiBusy = false; scheduleAi(); }
+    }
   }
 
   // ================= local =================
@@ -1021,7 +1903,7 @@ function computeGuide(s, dx, dy) {
     mode = 'local';
     const n1 = $('localName1').value.trim() || 'Player 1', n2 = $('localName2').value.trim() || 'Player 2';
     starterIdx = 0;
-    beginGame([{ id: 'l1', name: n1 }, { id: 'l2', name: n2 }]);
+    beginGame([{ id: 'l1', name: n1, cue: pickerL1.value }, { id: 'l2', name: n2, cue: pickerL2.value }]);
   });
 
   // ================= host =================
@@ -1042,7 +1924,7 @@ function computeGuide(s, dx, dy) {
     const name = $('hostName').value.trim() || 'Host';
     myId = uid(); myName = name;
     const roomCode = randomRoomCode();
-    hostPlayers = [{ id: myId, name: myName, conn: null }];
+    hostPlayers = [{ id: myId, name: myName, conn: null, cue: pickerH.value }];
     guestConn = null;
     $('hostRoomCode').textContent = roomCode;
     $('hostConfigPanel').classList.add('hidden');
@@ -1081,13 +1963,13 @@ function computeGuide(s, dx, dy) {
     if (hostPlayers.length < 2) return;
     mode = 'host'; starterIdx = 0;
     if (guestConn) guestConn.send({ type: 'gameStart' });
-    beginGame(hostPlayers.map(p => ({ id: p.id, name: p.name })));
+    beginGame(hostPlayers.map(p => ({ id: p.id, name: p.name, cue: p.cue })));
   });
   function handleHostMessage(conn, msg){
     if (msg.type === 'joinName'){
       if (hostPlayers.length >= 2) return;
       const id = uid();
-      hostPlayers.push({ id: id, name: String(msg.name || 'Player').slice(0, 16), conn: conn });
+      hostPlayers.push({ id: id, name: String(msg.name || 'Player').slice(0, 16), conn: conn, cue: cueById(String(msg.cue || '')).id });
       conn.__playerId = id;
       conn.send({ type: 'joined', yourId: id });
       renderHostPlayerList();
@@ -1123,7 +2005,7 @@ function computeGuide(s, dx, dy) {
       joinConn.on('open', () => { settled = true; clearTimeout(joinTimeout); errEl.textContent = ''; btn.disabled = false; });
       joinConn.on('data', msg => {
         if (msg.type === 'awaitingName'){
-          joinConn.send({ type: 'joinName', name: name });
+          joinConn.send({ type: 'joinName', name: name, cue: pickerJ.value });
         } else if (msg.type === 'full'){
           fail('That room already has two players.');
         } else if (msg.type === 'joined'){
