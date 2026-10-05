@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>8-Ball Pool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 90px; }
+  body.in-game .subtitle { display:none; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,5vw,34px); letter-spacing:0.02em; margin:0;
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:1px solid var(--panel-line); border-radius:14px; padding:20px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--brass); }
+  .mode-card h3 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:18px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  input.text-input { width:100%; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; color:var(--paper); font-family:'Inter',sans-serif; font-size:16px; }
+  button.primary-btn { margin-top:18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; padding:12px 20px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { margin-top:18px; margin-left:10px; font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--brass); }
+  .room-code-display { font-family:'JetBrains Mono',monospace; font-size:30px; letter-spacing:0.12em; color:var(--brass-bright); margin:6px 0; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,12,16,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-overlay.hidden { display:none; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:600px; width:100%; max-height:82vh; overflow-y:auto; padding:24px; box-shadow:0 20px 50px var(--shadow); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .modal-header h3 { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); }
+  .modal-close { background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:0 4px; }
+  .modal-close:hover { color:var(--paper); }
+  .modal-body { color:var(--paper); font-size:14px; line-height:1.7; }
+  .modal-body ul { padding-left:20px; margin:6px 0 12px; }
+  .modal-body li { margin-bottom:6px; }
+
+  #gameScreen { display:none; }
+  #gameScreen.active { display:block; }
+
+  .players-bar { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .pl-chip { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:9px 12px; min-width:0; }
+  .pl-chip.turn { border-color:var(--brass); background:rgba(201,162,75,0.10); box-shadow:0 0 0 1px var(--brass) inset; }
+  .pl-chip .pl-name { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-chip .pl-tag { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin:2px 0 6px; }
+  .pl-chip .pl-balls { display:flex; gap:3px; flex-wrap:wrap; }
+  .mini { width:15px; height:15px; border-radius:50%; border:1px solid rgba(0,0,0,0.5); display:inline-block; box-shadow:inset -1px -1px 2px rgba(0,0,0,0.3); }
+  .mini.stripe { background-image:linear-gradient(180deg, #f4f1e6 0 28%, transparent 28% 72%, #f4f1e6 72% 100%); }
+  .status-line { min-height:40px; color:var(--paper); font-size:14px; line-height:1.45; margin-bottom:10px; padding:8px 12px; background:rgba(0,0,0,0.22); border-radius:10px; border:1px solid rgba(255,255,255,0.06); }
+  .status-line .hint { color:var(--muted); }
+
+  .table-wrap { width:100%; display:flex; justify-content:center; }
+  canvas#tableCanvas { display:block; touch-action:none; border-radius:16px; box-shadow:0 14px 40px rgba(0,0,0,0.55); cursor:crosshair; user-select:none; -webkit-user-select:none; }
+
+  .controls { position:sticky; bottom:8px; z-index:20; box-shadow:0 -6px 24px rgba(0,0,0,0.5); margin-top:12px; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:12px 14px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .power-box { flex:1 1 220px; min-width:200px; }
+  .power-box .lbl { display:flex; justify-content:space-between; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .power-box .lbl b { font-family:'JetBrains Mono',monospace; color:var(--brass-bright); letter-spacing:0; }
+  input[type=range]#powerSlider { width:100%; height:30px; accent-color:#e8c572; touch-action:pan-y; }
+  .btn-row { display:flex; gap:8px; align-items:center; }
+  .fine-btn { width:46px; height:46px; border-radius:10px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-size:20px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+  .fine-btn:active { border-color:var(--brass); color:var(--brass-bright); }
+  .fine-lbl { font-size:11px; color:var(--muted); text-align:center; line-height:1.2; width:46px; }
+  button.shoot-btn { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; padding:0 26px; height:46px; border-radius:10px; border:1px solid var(--brass);
+    background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#1c1305; cursor:pointer; touch-action:manipulation; }
+  button.ff-btn { margin-top:10px; font-family:'Inter',sans-serif; font-size:13px; padding:9px 16px; border-radius:10px; border:1px solid var(--panel-line); background:var(--panel); color:var(--paper); cursor:pointer; touch-action:manipulation; }
+  button.ff-btn.on { border-color:var(--brass); color:var(--brass-bright); }
+  .over-panel { margin-top:14px; text-align:center; padding:22px 18px; }
+  .over-panel h2 { font-family:'Space Grotesk',sans-serif; color:var(--brass-bright); margin:0 0 6px; }
+  .over-panel p { color:var(--muted); margin:0 0 4px; }
+  .lost-conn { color:var(--rose); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <div class="title-row">
+    <h1>8-Ball Pool</h1>
+    <button id="rulesBtn" style="background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;">Rules</button>
+  </div>
+  <p class="subtitle">Top-down 8-ball for two. Aim, set the power, and sink your group before your opponent does.</p>
+
+  <div class="modal-overlay hidden" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>How to play</h3>
+        <button class="modal-close" id="rulesClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li><b>Aim:</b> press and drag on the table (or click) and the cue points that way. The &#9664; &#9654; buttons nudge the angle in tiny steps. The short lines show where the cue ball will touch, where the object ball goes, and where the cue ball deflects.</li>
+          <li><b>Power:</b> set it with the slider, then press Shoot (or hit Space / Enter).</li>
+          <li>The first player breaks with the cue ball placed behind the head line. The table stays open until someone legally pockets a ball; that player takes that group (solids 1-7 or stripes 9-15).</li>
+          <li>Keep shooting while you pocket one of your own balls. Otherwise the turn passes.</li>
+          <li>You must hit one of your own balls first, and then either pocket a ball or send any ball to a rail. Once your group is cleared, the 8-ball is your target.</li>
+          <li><b>Fouls</b> (scratching the cue ball, hitting nothing, hitting the wrong ball first, or no ball reaching a rail) give your opponent the cue ball in hand: they can place it anywhere. Drag the cue ball to place it.</li>
+          <li>Pocket the 8-ball after clearing your group to win. Pocketing it early, or fouling while you pocket it, loses the game. If the 8-ball drops on the break it is re-spotted. Any pocket counts, no calling shots.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobbyScreen">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">How do you want to play?</h3>
+      <div class="mode-grid">
+        <button class="mode-card" id="pickLocal"><h3>Pass &amp; Play</h3><p>Two players share one device and take turns at the table.</p></button>
+        <button class="mode-card" id="pickHost"><h3>Host online</h3><p>Open a room and share the code with a friend.</p></button>
+        <button class="mode-card" id="pickJoin"><h3>Join online</h3><p>Got a room code? Jump into someone else's game.</p></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupLocal" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Play locally</h3>
+      <label class="field-label">Player 1 (breaks first)</label>
+      <input class="text-input" id="localName1" placeholder="Player 1" maxlength="16">
+      <label class="field-label">Player 2</label>
+      <input class="text-input" id="localName2" placeholder="Player 2" maxlength="16">
+      <div>
+        <button class="primary-btn" id="localStart">Start &rarr;</button>
+        <button class="secondary-btn" id="localBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setupHost" class="hidden">
+    <div class="panel" id="hostConfigPanel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Host a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="hostName" placeholder="Your name" maxlength="16">
+      <button class="primary-btn" id="hostOpenRoom">Open room &rarr;</button>
+      <button class="secondary-btn" id="hostBack">Back</button>
+    </div>
+    <div class="panel hidden" id="hostWaitPanel" style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Room code</div>
+      <div class="room-code-display" id="hostRoomCode">&mdash;</div>
+      <p id="hostWaitText" style="color:var(--muted);font-size:13px;">Waiting for your opponent to join&hellip;</p>
+      <div id="hostPlayerList" style="margin:10px 0;color:var(--paper);font-size:14px;"></div>
+      <button class="primary-btn hidden" id="hostStartGame">Start &rarr;</button>
+      <button class="secondary-btn" id="hostCancelRoom">Cancel</button>
+    </div>
+  </div>
+
+  <div id="setupJoin" class="hidden">
+    <div class="panel">
+      <h3 style="margin-top:0;font-family:'Space Grotesk',sans-serif;">Join a game</h3>
+      <label class="field-label">Your name</label>
+      <input class="text-input" id="joinName" placeholder="Your name" maxlength="16">
+      <label class="field-label">Room code</label>
+      <input class="text-input" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;">
+      <button class="primary-btn" id="joinConnect">Connect &rarr;</button>
+      <button class="secondary-btn" id="joinBack">Back</button>
+      <p id="joinError" style="color:var(--rose);font-size:13px;margin-top:12px;"></p>
+      <p id="joinWaitText" style="color:var(--muted);font-size:13px;margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+    <div class="players-bar" id="playersBar"></div>
+    <div class="status-line" id="statusLine"></div>
+    <div class="table-wrap" id="tableWrap"><canvas id="tableCanvas"></canvas></div>
+    <div class="controls hidden" id="controls">
+      <div class="power-box">
+        <div class="lbl"><span>Power</span><b id="powerVal">55</b></div>
+        <input type="range" id="powerSlider" min="1" max="100" value="55">
+      </div>
+      <div class="btn-row">
+        <div><button class="fine-btn" id="fineLeft" aria-label="Rotate aim left">&#9664;</button><div class="fine-lbl">fine aim</div></div>
+        <div><button class="fine-btn" id="fineRight" aria-label="Rotate aim right">&#9654;</button><div class="fine-lbl">&nbsp;</div></div>
+        <button class="shoot-btn" id="shootBtn">Shoot</button>
+      </div>
+    </div>
+    <div style="text-align:center;"><button class="ff-btn hidden" id="ffBtn">Fast forward</button></div>
+    <div class="panel over-panel hidden" id="overPanel"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+// ==POOL-CORE-START==
+// Pure physics + rules. No DOM access. Deterministic: the simulation only uses
+// + - * / and Math.sqrt (all exactly specified by IEEE 754), so every client
+// that starts from the same snapshot reaches the same result.
+const W = 1000, H = 500, R = 12;          // playfield size and ball radius
+const HEAD_X = 250, FOOT_X = 700;         // head string and foot spot
+const STEP = 1 / 480;                     // fixed physics step (seconds)
+const MAX_SPEED = 2800, MIN_SPEED = 90;   // shot speed range (units / second)
+const FRICTION_A = 100;                   // constant rolling deceleration (units / s^2)
+const DAMP = 0.45;                        // extra proportional damping per second
+const WALL_E = 0.8, BALL_E = 0.96;       // restitution
+const STOP_V = 8;                         // below this speed a ball stops
+const MAX_STEPS = 480 * 40;               // hard stop for any single shot
+const POCKETS = [
+  { x: 0, y: 0, r: 29 }, { x: W, y: 0, r: 29 },
+  { x: 0, y: H, r: 29 }, { x: W, y: H, r: 29 },
+  { x: W / 2, y: -4, r: 30 }, { x: W / 2, y: H + 4, r: 30 }
+];
+
+function groupOf(n) { return n === 0 ? 'cue' : (n === 8 ? 'eight' : (n < 8 ? 'solid' : 'stripe')); }
+
+function shuffleWith(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function makeBalls(rng) {
+  const dxRow = Math.sqrt(3) * R + 0.3;
+  const gap = 2 * R + 0.3;
+  const slots = [];
+  for (let r = 0; r < 5; r++) for (let i = 0; i <= r; i++) slots.push({ x: FOOT_X + r * dxRow, y: H / 2 + (i - r / 2) * gap });
+  const solids = shuffleWith([1, 2, 3, 4, 5, 6, 7], rng);
+  const stripes = shuffleWith([9, 10, 11, 12, 13, 14, 15], rng);
+  const assign = new Array(15);
+  assign[4] = 8;                       // 8-ball in the middle of the third row
+  assign[10] = solids.pop();           // back corners: one solid, one stripe
+  assign[14] = stripes.pop();
+  const rest = shuffleWith(solids.concat(stripes), rng);
+  let k = 0;
+  for (let i = 0; i < 15; i++) if (assign[i] === undefined) assign[i] = rest[k++];
+  const balls = [{ n: 0, x: HEAD_X, y: H / 2, vx: 0, vy: 0, p: false }];
+  slots.forEach((sl, i) => balls.push({ n: assign[i], x: sl.x, y: sl.y, vx: 0, vy: 0, p: false }));
+  return balls;
+}
+
+function newGameState(players, starterIdx, rng) {
+  rng = rng || Math.random;
+  const groups = {};
+  players.forEach(p => { groups[p.id] = null; });
+  return {
+    balls: makeBalls(rng),
+    players: players.map(p => ({ id: p.id, name: p.name })),
+    turnIdx: starterIdx || 0,
+    groups: groups,
+    phase: 'aim',            // 'aim' | 'moving' | 'over'
+    ballInHand: true,        // the break starts with the cue ball in hand
+    headOnly: true,          // ...behind the head string
+    breakShot: true,
+    shot: null,
+    stepCount: 0,
+    message: '',
+    winnerId: null,
+    reason: '',
+    seq: 0
+  };
+}
+
+function nameOf(s, id) { const p = s.players.find(q => q.id === id); return p ? p.name : '?'; }
+function otherIdx(s) { return (s.turnIdx + 1) % s.players.length; }
+
+function remainingCounts(s) {
+  const c = { solid: 0, stripe: 0 };
+  s.balls.forEach(b => { if (!b.p && b.n > 0 && b.n !== 8) c[groupOf(b.n)]++; });
+  return c;
+}
+
+function validCuePos(s, x, y) {
+  if (!(x >= R && x <= W - R && y >= R && y <= H - R)) return false;
+  if (s.headOnly && x > HEAD_X) return false;
+  for (let i = 1; i < s.balls.length; i++) {
+    const b = s.balls[i];
+    if (b.p) continue;
+    const dx = b.x - x, dy = b.y - y;
+    if (dx * dx + dy * dy < 4 * R * R) return false;
+  }
+  return true;
+}
+
+function findFreeSpot(s, x0, y0, ignoreN) {
+  function free(x, y) {
+    if (x < R || x > W - R || y < R || y > H - R) return false;
+    for (let i = 0; i < s.balls.length; i++) {
+      const b = s.balls[i];
+      if (b.p || b.n === ignoreN) continue;
+      const dx = b.x - x, dy = b.y - y;
+      if (dx * dx + dy * dy < 4 * R * R) return false;
+    }
+    return true;
+  }
+  if (free(x0, y0)) return { x: x0, y: y0 };
+  for (let rr = 4; rr < 600; rr += 4) {
+    for (let a = 0; a < 24; a++) {
+      const ang = a * (Math.PI * 2 / 24);
+      const x = x0 + Math.cos(ang) * rr, y = y0 + Math.sin(ang) * rr;
+      if (free(x, y)) return { x: x, y: y };
+    }
+  }
+  return { x: x0, y: y0 };
+}
+
+// Start a shot. dx,dy is the aim direction (any length), power is 1..100.
+// If the cue ball is in hand, cuePos {x,y} is where the shooter placed it.
+function beginShot(s, dx, dy, power, cuePos) {
+  if (s.phase !== 'aim') return { ok: false, error: 'not aiming' };
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (!(len > 1e-9) || !isFinite(len)) return { ok: false, error: 'bad direction' };
+  if (!isFinite(power)) return { ok: false, error: 'bad power' };
+  power = Math.max(1, Math.min(100, power));
+  const cue = s.balls[0];
+  if (s.ballInHand) {
+    if (cuePos && isFinite(cuePos.x) && isFinite(cuePos.y)) {
+      if (!validCuePos(s, cuePos.x, cuePos.y)) return { ok: false, error: 'bad cue position' };
+      cue.x = cuePos.x; cue.y = cuePos.y;
+    } else if (!validCuePos(s, cue.x, cue.y)) {
+      return { ok: false, error: 'bad cue position' };
+    }
+  }
+  cue.p = false;
+  const speed = MIN_SPEED + (power / 100) * (MAX_SPEED - MIN_SPEED);
+  cue.vx = (dx / len) * speed;
+  cue.vy = (dy / len) * speed;
+  s.shot = { first: null, rail: false, pocketed: [], cue: false, remBefore: remainingCounts(s), wasBreak: s.breakShot };
+  s.phase = 'moving';
+  s.ballInHand = false;
+  s.stepCount = 0;
+  return { ok: true };
+}
+
+// Advance the simulation by one fixed step. Returns true while anything is
+// still moving.
+function stepSim(s) {
+  const dt = STEP, balls = s.balls, shot = s.shot;
+  s.stepCount++;
+  const ox = [], oy = [], ovx = [], ovy = [];
+  for (let i = 0; i < balls.length; i++) {
+    const b = balls[i];
+    ox.push(b.x); oy.push(b.y); ovx.push(b.vx); ovy.push(b.vy);
+    if (b.p) continue;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+  }
+  // ball vs ball
+  for (let i = 0; i < balls.length; i++) {
+    const a = balls[i];
+    if (a.p) continue;
+    for (let j = i + 1; j < balls.length; j++) {
+      const b = balls[j];
+      if (b.p) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= 4 * R * R || d2 === 0) continue;
+      const d = Math.sqrt(d2);
+      // Collision normal from where the centres were at the moment of first
+      // contact (not from the slightly overlapping end-of-step positions), so
+      // the outgoing directions match the aim guide.
+      let nx = dx / d, ny = dy / d;
+      {
+        const rx = ox[j] - ox[i], ry = oy[j] - oy[i];
+        const rvx = ovx[j] - ovx[i], rvy = ovy[j] - ovy[i];
+        const qa = rvx * rvx + rvy * rvy;
+        if (qa > 1e-9) {
+          const qb = 2 * (rx * rvx + ry * rvy), qc = rx * rx + ry * ry - 4 * R * R;
+          const disc = qb * qb - 4 * qa * qc;
+          if (disc >= 0) {
+            let t = (-qb - Math.sqrt(disc)) / (2 * qa);
+            if (t < 0) t = 0;
+            if (t > dt) t = dt;
+            const cx = rx + rvx * t, cy = ry + rvy * t;
+            const cl = Math.sqrt(cx * cx + cy * cy);
+            if (cl > 1e-9) { nx = cx / cl; ny = cy / cl; }
+          }
+        }
+      }
+      const corr = (2 * R - d) / 2;
+      const sx = dx / d, sy = dy / d;
+      a.x -= sx * corr; a.y -= sy * corr;
+      b.x += sx * corr; b.y += sy * corr;
+      const vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+      if (vn > 0) {
+        const jn = (1 + BALL_E) / 2 * vn;
+        a.vx -= jn * nx; a.vy -= jn * ny;
+        b.vx += jn * nx; b.vy += jn * ny;
+        if (shot && shot.first === null && (a.n === 0 || b.n === 0)) shot.first = (a.n === 0 ? b.n : a.n);
+      }
+    }
+  }
+  // pockets, cushions, friction
+  let moving = false;
+  for (let i = 0; i < balls.length; i++) {
+    const b = balls[i];
+    if (b.p) continue;
+    let captured = false;
+    for (let k = 0; k < POCKETS.length; k++) {
+      const pk = POCKETS[k];
+      const dx = b.x - pk.x, dy = b.y - pk.y;
+      if (dx * dx + dy * dy < pk.r * pk.r) { captured = true; break; }
+    }
+    if (captured) {
+      b.p = true; b.vx = 0; b.vy = 0;
+      if (shot) { if (b.n === 0) shot.cue = true; else shot.pocketed.push(b.n); }
+      continue;
+    }
+    let hitRail = false;
+    if (b.x < R) { b.x = R; if (b.vx < 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
+    else if (b.x > W - R) { b.x = W - R; if (b.vx > 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
+    if (b.y < R) { b.y = R; if (b.vy < 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+    else if (b.y > H - R) { b.y = H - R; if (b.vy > 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+    if (hitRail && shot && shot.first !== null) shot.rail = true;
+    let sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (sp > MAX_SPEED) { b.vx *= MAX_SPEED / sp; b.vy *= MAX_SPEED / sp; sp = MAX_SPEED; }
+    if (sp < STOP_V) { b.vx = 0; b.vy = 0; }
+    else {
+      const ns = sp - (FRICTION_A + DAMP * sp) * dt;
+      if (ns < STOP_V) { b.vx = 0; b.vy = 0; }
+      else { const f = ns / sp; b.vx *= f; b.vy *= f; moving = true; }
+    }
+  }
+  if (moving && s.stepCount >= MAX_STEPS) {
+    balls.forEach(b => { b.vx = 0; b.vy = 0; });
+    moving = false;
+  }
+  return moving;
+}
+
+function runToCompletion(s) {
+  let guard = 0;
+  while (stepSim(s) && guard++ < MAX_STEPS + 10) { /* keep stepping */ }
+}
+
+function groupBallsLeft(s, group) {
+  let c = 0;
+  s.balls.forEach(b => { if (!b.p && b.n > 0 && b.n !== 8 && groupOf(b.n) === group) c++; });
+  return c;
+}
+
+// Apply the rules once all balls have stopped. Updates turn, groups, ball in
+// hand, and sets phase to 'aim' or 'over'.
+function resolveShot(s) {
+  const shot = s.shot;
+  const shooter = s.players[s.turnIdx], opp = s.players[otherIdx(s)];
+  const wasBreak = s.breakShot;
+  const group = s.groups[shooter.id];
+  const reasons = [];
+  let foul = false;
+
+  if (shot.cue) { foul = true; reasons.push('scratched'); }
+  if (shot.first === null) { foul = true; reasons.push('hit no ball'); }
+  else {
+    let legal;
+    if (group) legal = (shot.remBefore[group] > 0) ? (groupOf(shot.first) === group) : (shot.first === 8);
+    else legal = shot.first !== 8;
+    if (!legal) { foul = true; reasons.push('hit the wrong ball first'); }
+  }
+  const objPocketed = shot.pocketed;
+  if (!foul && objPocketed.length === 0 && !shot.rail) { foul = true; reasons.push('no ball reached a rail'); }
+
+  s.breakShot = false;
+  s.headOnly = false;
+  s.shot = null;
+
+  // ---- the 8-ball ----
+  if (objPocketed.indexOf(8) >= 0) {
+    if (wasBreak) {
+      const eight = s.balls.find(b => b.n === 8);
+      const spot = findFreeSpot(s, FOOT_X, H / 2, 8);
+      eight.p = false; eight.x = spot.x; eight.y = spot.y; eight.vx = 0; eight.vy = 0;
+    } else {
+      const cleared = group && shot.remBefore[group] === 0;
+      if (cleared && !foul) {
+        s.phase = 'over'; s.winnerId = shooter.id; s.reason = 'pocketed the 8-ball';
+        s.message = shooter.name + ' pockets the 8-ball and wins!';
+      } else {
+        s.phase = 'over'; s.winnerId = opp.id;
+        s.reason = foul && cleared ? ('pocketed the 8-ball but ' + reasons.join(' and ')) : 'pocketed the 8-ball too early';
+        s.message = shooter.name + ' ' + (foul && cleared ? 'fouled (' + reasons.join(', ') + ') while pocketing the 8-ball' : 'pocketed the 8-ball too early') + '. ' + opp.name + ' wins!';
+      }
+      if (s.phase === 'over') {
+        if (shot.cue) { const c = s.balls[0]; c.p = false; const sp = findFreeSpot(s, HEAD_X, H / 2, 0); c.x = sp.x; c.y = sp.y; c.vx = 0; c.vy = 0; }
+        return;
+      }
+    }
+  }
+
+  // ---- groups ----
+  let assignedNow = false;
+  if (!foul && !s.groups[shooter.id]) {
+    const firstObj = objPocketed.find(n => n !== 8);
+    if (firstObj !== undefined && !wasBreak) {
+      const g = groupOf(firstObj);
+      s.groups[shooter.id] = g;
+      s.groups[opp.id] = (g === 'solid') ? 'stripe' : 'solid';
+      assignedNow = true;
+    }
+  }
+
+  // ---- cue ball back on the table ----
+  if (shot.cue) {
+    const c = s.balls[0];
+    const sp = findFreeSpot(s, HEAD_X, H / 2, 0);
+    c.p = false; c.x = sp.x; c.y = sp.y; c.vx = 0; c.vy = 0;
+  }
+
+  // ---- who shoots next ----
+  const myGroup = s.groups[shooter.id];
+  const potted = objPocketed.filter(n => n !== 8);
+  let keepTurn = false;
+  if (!foul && potted.length > 0) {
+    keepTurn = myGroup ? potted.some(n => groupOf(n) === myGroup) : true; // open table (break): any pot keeps the turn
+  }
+  if (!foul && wasBreak && objPocketed.indexOf(8) >= 0) keepTurn = true;   // 8 re-spotted on the break: shooter continues
+  let msg;
+  if (foul) {
+    s.turnIdx = otherIdx(s);
+    s.ballInHand = true;
+    msg = 'Foul: ' + shooter.name + ' ' + reasons.join(' and ') + '. ' + opp.name + ' has the cue ball in hand.';
+  } else if (keepTurn) {
+    msg = shooter.name + ' pocketed ' + (potted.length === 1 ? 'a ball' : potted.length + ' balls') + (assignedNow ? ' and is ' + (myGroup === 'solid' ? 'solids' : 'stripes') : '') + ' and shoots again.';
+  } else {
+    s.turnIdx = otherIdx(s);
+    msg = shooter.name + ' did not pocket one of their balls. ' + opp.name + "'s turn.";
+    if (potted.length > 0) msg = shooter.name + ' pocketed the wrong ball. ' + opp.name + "'s turn.";
+  }
+  s.message = msg;
+  s.phase = 'aim';
+  s.seq++;
+}
+
+// Where will the cue ball go? Used for the short aim guides.
+// Returns { type:'ball', ghost:{x,y}, objN, objDir:{x,y}, cueDir:{x,y}|null }
+//      or { type:'wall', hit:{x,y}, bounceDir:{x,y} } or { type:'none' }.
+function computeGuide(s, dx, dy) {
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (!(len > 1e-9)) return { type: 'none' };
+  const ux = dx / len, uy = dy / len;
+  const c = s.balls[0];
+  let bestT = Infinity, bestBall = null;
+  for (let i = 1; i < s.balls.length; i++) {
+    const b = s.balls[i];
+    if (b.p) continue;
+    const fx = b.x - c.x, fy = b.y - c.y;
+    const proj = fx * ux + fy * uy;
+    if (proj <= 0) continue;
+    const perp2 = fx * fx + fy * fy - proj * proj;
+    if (perp2 >= 4 * R * R) continue;
+    let t = proj - Math.sqrt(4 * R * R - perp2);
+    if (t < 0) t = 0;
+    if (t < bestT) { bestT = t; bestBall = b; }
+  }
+  let wallT = Infinity, wallAxis = null;
+  if (ux > 1e-9) { const t = (W - R - c.x) / ux; if (t >= 0 && t < wallT) { wallT = t; wallAxis = 'x'; } }
+  else if (ux < -1e-9) { const t = (R - c.x) / ux; if (t >= 0 && t < wallT) { wallT = t; wallAxis = 'x'; } }
+  if (uy > 1e-9) { const t = (H - R - c.y) / uy; if (t >= 0 && t < wallT) { wallT = t; wallAxis = 'y'; } }
+  else if (uy < -1e-9) { const t = (R - c.y) / uy; if (t >= 0 && t < wallT) { wallT = t; wallAxis = 'y'; } }
+  if (bestBall && bestT <= wallT) {
+    const gx = c.x + ux * bestT, gy = c.y + uy * bestT;
+    let nx = bestBall.x - gx, ny = bestBall.y - gy;
+    const nl = Math.sqrt(nx * nx + ny * ny) || 1;
+    nx /= nl; ny /= nl;
+    const dot = ux * nx + uy * ny;
+    let tx = ux - dot * nx, ty = uy - dot * ny;
+    const tl = Math.sqrt(tx * tx + ty * ty);
+    const cueDir = tl > 0.02 ? { x: tx / tl, y: ty / tl } : null;
+    return { type: 'ball', ghost: { x: gx, y: gy }, objN: bestBall.n, objDir: { x: nx, y: ny }, cueDir: cueDir, cutFrac: tl };
+  }
+  if (wallAxis) {
+    const hx = c.x + ux * wallT, hy = c.y + uy * wallT;
+    return { type: 'wall', hit: { x: hx, y: hy }, bounceDir: wallAxis === 'x' ? { x: -ux, y: uy } : { x: ux, y: -uy } };
+  }
+  return { type: 'none' };
+}
+// ==POOL-CORE-END==
+
+
+  // ================= helpers =================
+  const $ = id => document.getElementById(id);
+  function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+  function randomRoomCode(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+    for (let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  const PAD = 40, VIEW_L = W + PAD * 2, VIEW_S = H + PAD * 2;   // 1080 x 580 drawing space
+  const BALL_COLORS = { 1:'#f2c230', 2:'#2352b8', 3:'#d63a2f', 4:'#6a2c91', 5:'#ec7a1c', 6:'#1d8a4a', 7:'#7a1f2b', 8:'#16161a' };
+  function ballColor(n){ return BALL_COLORS[n > 8 ? n - 8 : n]; }
+
+  // ================= app state =================
+  let mode = null;            // 'local' | 'host' | 'guest'
+  let G = null;               // authoritative game state (host / local) or last state from host (guest)
+  let myId = null, myName = 'Player';
+  let peer = null, joinConn = null, guestConn = null;
+  let hostPlayers = [];       // host only: [{id,name,conn}]
+  let starterIdx = 0;
+  let aim = { x: 1, y: 0 };
+  let power = 55;
+  let awaitingHost = false;   // guest sent a shot, waiting for the host to start it
+  let localSimDone = false;   // guest finished simulating, waiting for the host's result
+  let connLost = false;
+  let ffOn = false;
+  let dropFx = [];
+  let prevPocketed = {};
+
+  const screens = { lobby:$('lobbyScreen'), local:$('setupLocal'), host:$('setupHost'), join:$('setupJoin'), game:$('gameScreen') };
+  function showScreen(name){
+    Object.keys(screens).forEach(k => { if (k === 'game') screens[k].classList.toggle('active', k === name); else screens[k].classList.toggle('hidden', k !== name); });
+    document.body.classList.toggle('in-game', name === 'game');
+    if (name === 'game') needLayout = true;
+  }
+
+  $('rulesBtn').addEventListener('click', () => $('rulesModal').classList.remove('hidden'));
+  $('rulesClose').addEventListener('click', () => $('rulesModal').classList.add('hidden'));
+  $('rulesModal').addEventListener('click', e => { if (e.target === $('rulesModal')) $('rulesModal').classList.add('hidden'); });
+
+  function isMyTurn(){
+    if (!G) return false;
+    if (mode === 'local') return true;
+    return G.players[G.turnIdx].id === myId;
+  }
+  function canControl(){
+    return !!G && G.phase === 'aim' && isMyTurn() && !awaitingHost && !connLost;
+  }
+
+  // ================= canvas / layout =================
+  const canvas = $('tableCanvas'), ctx = canvas.getContext('2d');
+  let rot = false, needLayout = true, scaleF = 1, curVW = VIEW_L, curVH = VIEW_S;
+  function layout(){
+    needLayout = false;
+    const wrapW = $('tableWrap').clientWidth || 600;
+    rot = wrapW < 640 && window.innerHeight > window.innerWidth * 0.9;
+    curVW = rot ? VIEW_S : VIEW_L; curVH = rot ? VIEW_L : VIEW_S;
+    let w = Math.min(wrapW, 1040);
+    w = Math.min(w, window.innerHeight * 0.95 * curVW / curVH);
+    const h = w * curVH / curVW;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (canvas.width !== pw || canvas.height !== ph){ canvas.width = pw; canvas.height = ph; }
+    scaleF = pw / curVW;
+  }
+  window.addEventListener('resize', () => { needLayout = true; });
+  window.addEventListener('orientationchange', () => { needLayout = true; });
+
+  // client pixel -> table coordinates (0..W, 0..H)
+  function toTable(clientX, clientY){
+    const r = canvas.getBoundingClientRect();
+    const cx = (clientX - r.left) / r.width * curVW;
+    const cy = (clientY - r.top) / r.height * curVH;
+    if (!rot) return { x: cx - PAD, y: cy - PAD };
+    return { x: cy - PAD, y: curVW - cx - PAD };
+  }
+
+  // ================= drawing =================
+  function roundRectPath(c, x, y, w, h, r){
+    c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
+  }
+  function drawTable(c){
+    // wooden frame
+    const wood = c.createLinearGradient(0, 0, 0, VIEW_S);
+    wood.addColorStop(0, '#6b4226'); wood.addColorStop(0.5, '#4f2f19'); wood.addColorStop(1, '#6b4226');
+    roundRectPath(c, 0, 0, VIEW_L, VIEW_S, 26); c.fillStyle = wood; c.fill();
+    c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.stroke();
+    // cushions
+    roundRectPath(c, PAD - 17, PAD - 17, W + 34, H + 34, 10); c.fillStyle = '#10463a'; c.fill();
+    // felt
+    const felt = c.createRadialGradient(PAD + W / 2, PAD + H / 2, 60, PAD + W / 2, PAD + H / 2, W * 0.62);
+    felt.addColorStop(0, '#1f8362'); felt.addColorStop(1, '#14624a');
+    c.fillStyle = felt; c.fillRect(PAD, PAD, W, H);
+    c.lineWidth = 2; c.strokeStyle = 'rgba(0,0,0,0.35)'; c.strokeRect(PAD, PAD, W, H);
+    // diamonds
+    c.fillStyle = '#d9c9a0';
+    function diamond(x, y){ c.beginPath(); c.moveTo(x, y - 5); c.lineTo(x + 3.5, y); c.lineTo(x, y + 5); c.lineTo(x - 3.5, y); c.closePath(); c.fill(); }
+    for (let k = 1; k < 8; k++){ if (k === 4) continue; diamond(PAD + W * k / 8, PAD - 29); diamond(PAD + W * k / 8, PAD + H + 29); }
+    for (let k = 1; k < 4; k++){ diamond(PAD - 29, PAD + H * k / 4); diamond(PAD + W + 29, PAD + H * k / 4); }
+    // spots
+    c.fillStyle = 'rgba(255,255,255,0.28)';
+    c.beginPath(); c.arc(PAD + FOOT_X, PAD + H / 2, 3, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(PAD + HEAD_X, PAD + H / 2, 3, 0, Math.PI * 2); c.fill();
+    // pockets
+    const pk = [[PAD - 7, PAD - 7, 31], [PAD + W + 7, PAD - 7, 31], [PAD - 7, PAD + H + 7, 31], [PAD + W + 7, PAD + H + 7, 31], [PAD + W / 2, PAD - 12, 26], [PAD + W / 2, PAD + H + 12, 26]];
+    pk.forEach(p => {
+      c.beginPath(); c.arc(p[0], p[1], p[2], 0, Math.PI * 2); c.fillStyle = '#07090b'; c.fill();
+      c.lineWidth = 3; c.strokeStyle = '#8a6a2c'; c.stroke();
+    });
+  }
+  function drawBall(c, b, scale, alpha){
+    const col = b.n === 0 ? '#f4f1e6' : ballColor(b.n);
+    c.save();
+    c.globalAlpha = alpha === undefined ? 1 : alpha;
+    c.translate(PAD + b.x, PAD + b.y);
+    if (scale && scale !== 1) c.scale(scale, scale);
+    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.arc(1.5, 2.5, R, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.closePath();
+    if (b.n > 8){
+      c.fillStyle = '#f4f1e6'; c.fill();
+      c.save(); c.clip(); c.fillStyle = col; c.fillRect(-R, -R * 0.58, 2 * R, R * 1.16); c.restore();
+    } else { c.fillStyle = col; c.fill(); }
+    if (b.n > 0){
+      c.beginPath(); c.arc(0, 0, R * 0.5, 0, Math.PI * 2); c.fillStyle = '#f7f4ea'; c.fill();
+      c.fillStyle = '#111'; c.font = 'bold ' + Math.round(R * 0.62) + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(String(b.n), 0, 0.5);
+    }
+    const g = c.createRadialGradient(-R * 0.35, -R * 0.4, 1, 0, 0, R * 1.05);
+    g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(0.35, 'rgba(255,255,255,0.08)'); g.addColorStop(1, 'rgba(0,0,0,0.28)');
+    c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.fillStyle = g; c.fill();
+    c.restore();
+  }
+  function drawGuide(c){
+    const cb = G.balls[0];
+    const g = computeGuide(G, aim.x, aim.y);
+    const sx = PAD + cb.x, sy = PAD + cb.y;
+    c.save();
+    c.lineCap = 'round';
+    if (g.type === 'ball'){
+      const gx = PAD + g.ghost.x, gy = PAD + g.ghost.y;
+      c.setLineDash([7, 6]); c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.8)';
+      c.beginPath(); c.moveTo(sx + aim.x * R, sy + aim.y * R); c.lineTo(gx, gy); c.stroke();
+      c.setLineDash([]);
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.9)';
+      c.beginPath(); c.arc(gx, gy, R, 0, Math.PI * 2); c.stroke();
+      const ob = G.balls.find(b => b.n === g.objN);
+      const ox = PAD + ob.x, oy = PAD + ob.y;
+      c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.95)';
+      c.beginPath(); c.moveTo(ox + g.objDir.x * (R + 3), oy + g.objDir.y * (R + 3)); c.lineTo(ox + g.objDir.x * (R + 3 + 62), oy + g.objDir.y * (R + 3 + 62)); c.stroke();
+      if (g.cueDir){
+        const len = 14 + 42 * g.cutFrac;
+        c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
+        c.beginPath(); c.moveTo(gx + g.cueDir.x * (R + 3), gy + g.cueDir.y * (R + 3)); c.lineTo(gx + g.cueDir.x * (R + 3 + len), gy + g.cueDir.y * (R + 3 + len)); c.stroke();
+      }
+    } else if (g.type === 'wall'){
+      const hx = PAD + g.hit.x, hy = PAD + g.hit.y;
+      c.setLineDash([7, 6]); c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.8)';
+      c.beginPath(); c.moveTo(sx + aim.x * R, sy + aim.y * R); c.lineTo(hx, hy); c.stroke();
+      c.setLineDash([]);
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.9)';
+      c.beginPath(); c.arc(hx, hy, R, 0, Math.PI * 2); c.stroke();
+      c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
+      c.beginPath(); c.moveTo(hx + g.bounceDir.x * (R + 3), hy + g.bounceDir.y * (R + 3)); c.lineTo(hx + g.bounceDir.x * (R + 3 + 55), hy + g.bounceDir.y * (R + 3 + 55)); c.stroke();
+    }
+    c.restore();
+  }
+  function drawCue(c){
+    const cb = G.balls[0];
+    const pull = 6 + (power / 100) * 46;
+    const sx = PAD + cb.x - aim.x * (R + 4 + pull), sy = PAD + cb.y - aim.y * (R + 4 + pull);
+    const ex = sx - aim.x * 330, ey = sy - aim.y * 330;
+    const px = -aim.y, py = aim.x;
+    const grad = c.createLinearGradient(sx, sy, ex, ey);
+    grad.addColorStop(0, '#e9d9b0'); grad.addColorStop(0.1, '#d8b26a'); grad.addColorStop(0.7, '#8b5a2b'); grad.addColorStop(1, '#3a2412');
+    c.save();
+    c.beginPath(); c.moveTo(sx + px * 2.2, sy + py * 2.2); c.lineTo(ex + px * 5.4, ey + py * 5.4); c.lineTo(ex - px * 5.4, ey - py * 5.4); c.lineTo(sx - px * 2.2, sy - py * 2.2); c.closePath();
+    c.fillStyle = grad; c.fill();
+    c.lineCap = 'round'; c.lineWidth = 4.4; c.strokeStyle = '#6fb3d9';
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + aim.x * 0.01, sy + aim.y * 0.01); c.stroke();
+    c.restore();
+  }
+  function nearestPocket(x, y){
+    let best = POCKETS[0], bd = Infinity;
+    POCKETS.forEach(p => { const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); if (d < bd){ bd = d; best = p; } });
+    return best;
+  }
+  function draw(){
+    if (!G) return;
+    ctx.setTransform(scaleF, 0, 0, scaleF, 0, 0);
+    ctx.clearRect(0, 0, curVW, curVH);
+    if (rot){ ctx.translate(VIEW_S, 0); ctx.rotate(Math.PI / 2); }
+    drawTable(ctx);
+
+    const control = canControl();
+    if (control && G.ballInHand && G.headOnly){
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(PAD, PAD, HEAD_X, H);
+      ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath(); ctx.moveTo(PAD + HEAD_X, PAD); ctx.lineTo(PAD + HEAD_X, PAD + H); ctx.stroke();
+      ctx.restore();
+    }
+    G.balls.forEach(b => { if (!b.p) drawBall(ctx, b); });
+    // pocket drop animations
+    const now = performance.now();
+    dropFx = dropFx.filter(f => now - f.t0 < 260);
+    dropFx.forEach(f => {
+      const k = (now - f.t0) / 260;
+      const ball = { n: f.n, x: f.x + (f.px - f.x) * k, y: f.y + (f.py - f.y) * k };
+      drawBall(ctx, ball, 1 - 0.55 * k, 1 - k);
+    });
+    if (control){
+      if (G.ballInHand){
+        const cb = G.balls[0];
+        ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(232,197,114,0.95)';
+        ctx.beginPath(); ctx.arc(PAD + cb.x, PAD + cb.y, R + 7, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      }
+      drawGuide(ctx);
+      drawCue(ctx);
+    }
+  }
+
+  // ================= HUD =================
+  function miniBall(n){
+    const stripe = n > 8;
+    return '<span class="mini' + (stripe ? ' stripe' : '') + '" style="background-color:' + ballColor(n) + ';"></span>';
+  }
+  function updateHud(){
+    if (!G) return;
+    const bar = $('playersBar'); bar.innerHTML = '';
+    G.players.forEach((p, idx) => {
+      const grp = G.groups[p.id];
+      let tag = grp === 'solid' ? 'Solids (1-7)' : (grp === 'stripe' ? 'Stripes (9-15)' : 'Open table');
+      let balls = '';
+      if (grp){
+        const list = grp === 'solid' ? [1,2,3,4,5,6,7] : [9,10,11,12,13,14,15];
+        let left = 0;
+        list.forEach(n => { const b = G.balls.find(x => x.n === n); if (b && !b.p){ balls += miniBall(n); left++; } });
+        if (left === 0) balls += miniBall(8);
+      }
+      const chip = document.createElement('div');
+      chip.className = 'pl-chip' + (G.phase !== 'over' && idx === G.turnIdx ? ' turn' : '');
+      chip.innerHTML = '<div class="pl-name">' + escapeHtml(p.name) + (mode !== 'local' && p.id === myId ? ' (you)' : '') + '</div><div class="pl-tag">' + tag + '</div><div class="pl-balls">' + balls + '</div>';
+      bar.appendChild(chip);
+    });
+
+    const cur = G.players[G.turnIdx];
+    let text;
+    if (connLost) text = '<span class="lost-conn">Connection lost. The other player has left the game.</span>';
+    else if (G.phase === 'over') text = escapeHtml(G.message);
+    else if (G.phase === 'moving') text = (G.message ? escapeHtml(G.message) + ' ' : '') + '<span class="hint">Balls are rolling...</span>';
+    else {
+      const mine = isMyTurn();
+      const base = G.message ? escapeHtml(G.message) + ' ' : '';
+      if (G.breakShot && !G.message) text = escapeHtml(cur.name) + (mode !== 'local' && mine ? ' (you)' : '') + ' to break. ';
+      else text = base;
+      if (mine) text += '<span class="hint">' + (G.ballInHand ? 'Drag the cue ball to place it' + (G.headOnly ? ' behind the line' : ' anywhere') + ', then drag on the table to aim.' : 'Drag on the table to aim, set the power, and shoot.') + '</span>';
+      else text += '<span class="hint">Waiting for ' + escapeHtml(cur.name) + ' to shoot...</span>';
+    }
+    $('statusLine').innerHTML = text;
+
+    $('controls').classList.toggle('hidden', !canControl());
+    $('ffBtn').classList.toggle('hidden', G.phase !== 'moving');
+    $('ffBtn').classList.toggle('on', ffOn);
+
+    const over = $('overPanel');
+    if (G.phase === 'over'){
+      const winner = G.players.find(p => p.id === G.winnerId);
+      let html = '<h2>' + escapeHtml(winner ? winner.name : '?') + ' wins!</h2><p>' + escapeHtml(G.message) + '</p>';
+      if (mode === 'guest') html += '<p style="margin-top:10px;">Waiting for the host to start a rematch...</p>';
+      else html += '<button class="primary-btn" id="rematchBtn">Rematch</button>';
+      over.innerHTML = html; over.classList.remove('hidden');
+      const rb = $('rematchBtn'); if (rb) rb.addEventListener('click', startRematch);
+    } else over.classList.add('hidden');
+  }
+
+  // ================= aim =================
+  function resetAim(){
+    if (!G) return;
+    const c = G.balls[0]; let best = null, bd = Infinity;
+    G.balls.forEach(b => { if (b.n > 0 && !b.p){ const d = (b.x - c.x) * (b.x - c.x) + (b.y - c.y) * (b.y - c.y); if (d < bd){ bd = d; best = b; } } });
+    if (best){ const l = Math.sqrt(bd) || 1; aim = { x: (best.x - c.x) / l, y: (best.y - c.y) / l }; }
+  }
+  function setAimFrom(p){
+    const c = G.balls[0];
+    const dx = p.x - c.x, dy = p.y - c.y, l = Math.sqrt(dx * dx + dy * dy);
+    if (l > 6) aim = { x: dx / l, y: dy / l };
+  }
+  function rotateAim(rad){
+    const cs = Math.cos(rad), sn = Math.sin(rad);
+    aim = { x: aim.x * cs - aim.y * sn, y: aim.x * sn + aim.y * cs };
+  }
+  function moveCue(p){
+    const cb = G.balls[0];
+    let x = Math.max(R, Math.min(W - R, p.x)), y = Math.max(R, Math.min(H - R, p.y));
+    if (G.headOnly) x = Math.min(x, HEAD_X);
+    if (validCuePos(G, x, y)){ cb.x = x; cb.y = y; }
+    else if (validCuePos(G, x, cb.y)) cb.x = x;
+    else if (validCuePos(G, cb.x, y)) cb.y = y;
+  }
+
+  let pointerDown = false, dragMode = null;
+  canvas.addEventListener('pointerdown', e => {
+    if (!canControl()) return;
+    e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    const p = toTable(e.clientX, e.clientY);
+    pointerDown = true;
+    const cb = G.balls[0];
+    const d = Math.sqrt((p.x - cb.x) * (p.x - cb.x) + (p.y - cb.y) * (p.y - cb.y));
+    if (G.ballInHand && d < 28) dragMode = 'cue';
+    else { dragMode = 'aim'; setAimFrom(p); }
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!pointerDown || !canControl()) return;
+    const p = toTable(e.clientX, e.clientY);
+    if (dragMode === 'cue') moveCue(p); else setAimFrom(p);
+  });
+  function endPointer(){ pointerDown = false; dragMode = null; }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+
+  $('powerSlider').addEventListener('input', e => { power = parseInt(e.target.value, 10) || 1; $('powerVal').textContent = power; });
+  function holdButton(id, dir){
+    const el = $(id); let timer = null;
+    function stop(){ if (timer){ clearInterval(timer); timer = null; } }
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (!canControl()) return;
+      rotateAim(dir * 0.0025);
+      stop(); const t0 = performance.now();
+      timer = setInterval(() => { if (performance.now() - t0 > 350) rotateAim(dir * 0.0025); }, 40);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, stop));
+  }
+  holdButton('fineLeft', -1); holdButton('fineRight', 1);
+  $('ffBtn').addEventListener('click', () => {
+    ffOn = !ffOn;
+    if (mode === 'host' && guestConn && guestConn.open) guestConn.send({ type: 'ff', on: ffOn });
+    updateHud();
+  });
+  document.addEventListener('keydown', e => {
+    if (!G || !$('gameScreen').classList.contains('active')) return;
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' && e.target.id !== 'powerSlider') return;
+    if (!canControl()) return;
+    if (e.code === 'Space' || e.code === 'Enter'){ e.preventDefault(); doShoot(); }
+    else if (e.code === 'ArrowLeft'){ e.preventDefault(); rotateAim(-0.004); }
+    else if (e.code === 'ArrowRight'){ e.preventDefault(); rotateAim(0.004); }
+    else if (e.code === 'ArrowUp' && tag !== 'INPUT'){ e.preventDefault(); power = Math.min(100, power + 2); $('powerSlider').value = power; $('powerVal').textContent = power; }
+    else if (e.code === 'ArrowDown' && tag !== 'INPUT'){ e.preventDefault(); power = Math.max(1, power - 2); $('powerSlider').value = power; $('powerVal').textContent = power; }
+  });
+
+  // ================= shooting =================
+  function snapshotPocketed(){ prevPocketed = {}; G.balls.forEach(b => { prevPocketed[b.n] = b.p; }); }
+  function onShotBegan(){
+    localSimDone = false; ffOn = false; acc = 0;
+    snapshotPocketed();
+    if (mode === 'host') broadcastState();
+    updateHud();
+  }
+  $('shootBtn').addEventListener('click', doShoot);
+  function doShoot(){
+    if (!canControl()) return;
+    const cuePos = G.ballInHand ? { x: G.balls[0].x, y: G.balls[0].y } : undefined;
+    if (mode === 'guest'){
+      if (!joinConn || !joinConn.open) return;
+      awaitingHost = true;
+      joinConn.send({ type: 'shot', dx: aim.x, dy: aim.y, power: power, cue: cuePos });
+      updateHud();
+      return;
+    }
+    const r = beginShot(G, aim.x, aim.y, power, cuePos);
+    if (!r.ok){ $('statusLine').textContent = 'Cannot shoot: ' + r.error; return; }
+    onShotBegan();
+  }
+
+  let lastT = 0, acc = 0;
+  function finishShot(){
+    if (mode === 'guest'){ localSimDone = true; return; }
+    resolveShot(G);
+    ffOn = false;
+    if (G.phase === 'aim') resetAim();
+    if (mode === 'host') broadcastState();
+    updateHud();
+  }
+  function tick(now){
+    const dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
+    if (G && G.phase === 'moving' && !localSimDone){
+      acc += dt * (ffOn ? 3 : 1);
+      let steps = 0, finished = false;
+      while (acc >= STEP && steps < 6000){
+        acc -= STEP; steps++;
+        if (!stepSim(G)){ finished = true; break; }
+      }
+      G.balls.forEach(b => {
+        if (b.p && !prevPocketed[b.n]){
+          prevPocketed[b.n] = true;
+          const pk = nearestPocket(b.x, b.y);
+          dropFx.push({ n: b.n, x: b.x, y: b.y, px: pk.x, py: pk.y, t0: performance.now() });
+        }
+      });
+      if (finished){ acc = 0; finishShot(); }
+    }
+    if (needLayout) layout();
+    draw();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(t => { lastT = t; tick(t); });
+
+  // ================= game start / rematch =================
+  function beginGame(players){
+    G = newGameState(players, starterIdx);
+    awaitingHost = false; localSimDone = false; connLost = false; ffOn = false; dropFx = [];
+    snapshotPocketed();
+    resetAim();
+    G.balls[0].x = HEAD_X; G.balls[0].y = H / 2;
+    showScreen('game');
+    if (mode === 'host') broadcastState();
+    updateHud();
+  }
+  function startRematch(){
+    if (mode === 'guest') return;
+    starterIdx = (starterIdx + 1) % 2;
+    beginGame(G.players.map(p => ({ id: p.id, name: p.name })));
+  }
+
+  // ================= local =================
+  $('pickLocal').addEventListener('click', () => showScreen('local'));
+  $('localBack').addEventListener('click', () => showScreen('lobby'));
+  $('localStart').addEventListener('click', () => {
+    mode = 'local';
+    const n1 = $('localName1').value.trim() || 'Player 1', n2 = $('localName2').value.trim() || 'Player 2';
+    starterIdx = 0;
+    beginGame([{ id: 'l1', name: n1 }, { id: 'l2', name: n2 }]);
+  });
+
+  // ================= host =================
+  $('pickHost').addEventListener('click', () => showScreen('host'));
+  $('hostBack').addEventListener('click', () => showScreen('lobby'));
+  $('pickJoin').addEventListener('click', () => showScreen('join'));
+  $('joinBack').addEventListener('click', () => showScreen('lobby'));
+
+  function broadcastState(){
+    if (guestConn && guestConn.open) guestConn.send({ type: 'state', game: G });
+  }
+  function renderHostPlayerList(){
+    $('hostPlayerList').textContent = hostPlayers.map(p => p.name).join(' vs ');
+    $('hostStartGame').classList.toggle('hidden', hostPlayers.length < 2);
+    $('hostWaitText').textContent = hostPlayers.length < 2 ? 'Waiting for your opponent to join...' : 'Opponent connected. Ready when you are.';
+  }
+  $('hostOpenRoom').addEventListener('click', () => {
+    const name = $('hostName').value.trim() || 'Host';
+    myId = uid(); myName = name;
+    const roomCode = randomRoomCode();
+    hostPlayers = [{ id: myId, name: myName, conn: null }];
+    guestConn = null;
+    $('hostRoomCode').textContent = roomCode;
+    $('hostConfigPanel').classList.add('hidden');
+    $('hostWaitPanel').classList.remove('hidden');
+    renderHostPlayerList();
+
+    peer = new Peer('pool8-' + roomCode, { debug: 0 });
+    let openTimeout = setTimeout(() => { $('hostWaitText').textContent = 'Having trouble opening the room. Check your connection and try again.'; }, 10000);
+    peer.on('open', () => { mode = 'host'; clearTimeout(openTimeout); });
+    peer.on('connection', c => {
+      if (guestConn && guestConn.open){
+        c.on('open', () => { c.send({ type: 'full' }); setTimeout(() => { try { c.close(); } catch (e) {} }, 300); });
+        return;
+      }
+      guestConn = c;
+      c.on('data', msg => handleHostMessage(c, msg));
+      c.on('open', () => c.send({ type: 'awaitingName' }));
+      c.on('close', () => {
+        if (guestConn === c){
+          guestConn = null;
+          hostPlayers = hostPlayers.filter(p => p.conn !== c);
+          renderHostPlayerList();
+          if (G && G.phase !== 'over' && $('gameScreen').classList.contains('active')){ connLost = true; updateHud(); }
+        }
+      });
+    });
+    peer.on('error', () => { clearTimeout(openTimeout); alert("Couldn't open a room. Try again."); });
+  });
+  $('hostCancelRoom').addEventListener('click', () => {
+    if (peer){ try { peer.destroy(); } catch (e) {} }
+    $('hostConfigPanel').classList.remove('hidden');
+    $('hostWaitPanel').classList.add('hidden');
+    showScreen('lobby');
+  });
+  $('hostStartGame').addEventListener('click', () => {
+    if (hostPlayers.length < 2) return;
+    mode = 'host'; starterIdx = 0;
+    if (guestConn) guestConn.send({ type: 'gameStart' });
+    beginGame(hostPlayers.map(p => ({ id: p.id, name: p.name })));
+  });
+  function handleHostMessage(conn, msg){
+    if (msg.type === 'joinName'){
+      if (hostPlayers.length >= 2) return;
+      const id = uid();
+      hostPlayers.push({ id: id, name: String(msg.name || 'Player').slice(0, 16), conn: conn });
+      conn.__playerId = id;
+      conn.send({ type: 'joined', yourId: id });
+      renderHostPlayerList();
+      return;
+    }
+    if (msg.type === 'shot'){
+      if (!G || G.phase !== 'aim') { broadcastState(); return; }
+      if (G.players[G.turnIdx].id !== conn.__playerId) { broadcastState(); return; }
+      const r = beginShot(G, Number(msg.dx), Number(msg.dy), Number(msg.power), msg.cue);
+      if (!r.ok){ broadcastState(); return; }
+      onShotBegan();
+    }
+  }
+
+  // ================= join (guest) =================
+  $('joinConnect').addEventListener('click', () => {
+    const name = $('joinName').value.trim() || 'Player';
+    const code = $('joinCode').value.trim().toUpperCase();
+    const errEl = $('joinError'); errEl.textContent = '';
+    const waitEl = $('joinWaitText'); waitEl.textContent = 'Connecting...';
+    if (!code){ errEl.textContent = 'Enter a room code.'; waitEl.textContent = ''; return; }
+    const btn = $('joinConnect'); btn.disabled = true;
+    let settled = false;
+    const joinTimeout = setTimeout(() => { if (!settled) fail("Couldn't find that room. Check the code and try again."); }, 9000);
+    function fail(msg){
+      settled = true; clearTimeout(joinTimeout);
+      errEl.textContent = msg; waitEl.textContent = ''; btn.disabled = false;
+      if (peer){ try { peer.destroy(); } catch (e) {} }
+    }
+    peer = new Peer({ debug: 0 });
+    peer.on('open', () => {
+      joinConn = peer.connect('pool8-' + code, { reliable: true });
+      joinConn.on('open', () => { settled = true; clearTimeout(joinTimeout); errEl.textContent = ''; btn.disabled = false; });
+      joinConn.on('data', msg => {
+        if (msg.type === 'awaitingName'){
+          joinConn.send({ type: 'joinName', name: name });
+        } else if (msg.type === 'full'){
+          fail('That room already has two players.');
+        } else if (msg.type === 'joined'){
+          myId = msg.yourId; mode = 'guest';
+          waitEl.textContent = "You're in! Waiting for the host to start...";
+        } else if (msg.type === 'ff'){
+          ffOn = !!msg.on; updateHud();
+        } else if (msg.type === 'gameStart'){
+          showScreen('game');
+        } else if (msg.type === 'state'){
+          const wasMoving = G && G.phase === 'moving';
+          G = msg.game;
+          awaitingHost = false;
+          if (G.phase === 'moving'){ if (!wasMoving || localSimDone) { localSimDone = false; acc = 0; ffOn = false; snapshotPocketed(); } }
+          else { localSimDone = false; ffOn = false; resetAim(); }
+          if (!$('gameScreen').classList.contains('active')) showScreen('game');
+          updateHud();
+        }
+      });
+      joinConn.on('error', () => { if (!settled) fail("Couldn't connect. Check the code and try again."); });
+      joinConn.on('close', () => {
+        if (!settled) fail('Connection closed before the game could start.');
+        else if (G && G.phase !== 'over'){ connLost = true; updateHud(); }
+      });
+    });
+    peer.on('error', () => { if (!settled) fail("Couldn't connect. Check the code and try again."); });
+  });
+})();
+</script>
+</body>
+</html>
