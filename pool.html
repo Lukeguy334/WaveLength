@@ -125,8 +125,10 @@
           <li>The first player breaks with the cue ball placed behind the head line. The table stays open until someone legally pockets a ball; that player takes that group (solids 1-7 or stripes 9-15).</li>
           <li>Keep shooting while you pocket one of your own balls. Otherwise the turn passes.</li>
           <li>You must hit one of your own balls first, and then either pocket a ball or send any ball to a rail. Once your group is cleared, the 8-ball is your target.</li>
-          <li><b>Fouls</b> (scratching the cue ball, hitting nothing, hitting the wrong ball first, or no ball reaching a rail) give your opponent the cue ball in hand: they can place it anywhere. Drag the cue ball to place it.</li>
-          <li>Pocket the 8-ball after clearing your group to win. Pocketing it early, or fouling while you pocket it, loses the game. If the 8-ball drops on the break it is re-spotted. Any pocket counts, no calling shots.</li>
+          <li><b>Fouls</b> give your opponent the cue ball in hand: they can place it anywhere. Drag the cue ball to place it. A foul is any of these: the cue ball goes in a pocket (a <b>scratch</b>), the cue ball hits nothing, the first ball it hits is not one of yours, or after the hit no ball is pocketed and none touches a rail.</li>
+          <li><b>Scratch:</b> if the white ball drops in a pocket it comes back onto the table, but it is a foul and your opponent gets ball in hand. A scratch on the break works the same way. If you scratch while sinking the 8-ball, you lose.</li>
+          <li><b>The 8-ball:</b> once your group is cleared you have to <b>call a pocket</b> before each shot at the 8: tap one of the dotted rings around the table. The 8-ball has to drop in that pocket to win. Pocketing it in a different pocket, pocketing it early, or fouling while you pocket it, loses the game. For every other ball, any pocket counts. If the 8-ball drops on the break it is re-spotted.</li>
+          <li>The X marks on the aim guide show where the cue ball touches the object ball and where the object ball will end up if it rolls straight (green X means it is headed into a pocket).</li>
         </ul>
       </div>
     </div>
@@ -255,12 +257,17 @@ const DAMP = 0.45;                        // extra proportional damping per seco
 const WALL_E = 0.8, BALL_E = 0.96;       // restitution
 const COLLISION_ITERS = 4;                // solver passes per step (lets impulses spread through a tight rack)
 const CONTACT_TOL = 0.06;                 // balls this close count as touching
+const JIT_V = 600, JIT_A = 0.4;           // hard-hit wobble: speed threshold and size (radians)
 const STOP_V = 8;                         // below this speed a ball stops
 const MAX_STEPS = 480 * 40;               // hard stop for any single shot
+// Pocket centres sit out in the wall. r is how close a ball centre has to get to drop;
+// vr is the drawn size of the hole. Fast balls only drop if they are heading into the mouth,
+// so a hard shot sliding past a pocket keeps going.
+const POCKET_SLOW = 600;                  // below this speed a ball over the mouth always drops
 const POCKETS = [
-  { x: 0, y: 0, r: 27 }, { x: W, y: 0, r: 27 },
-  { x: 0, y: H, r: 27 }, { x: W, y: H, r: 27 },
-  { x: W / 2, y: -4, r: 26 }, { x: W / 2, y: H + 4, r: 26 }
+  { x: -9, y: -9, r: 38, vr: 25 }, { x: W + 9, y: -9, r: 38, vr: 25 },
+  { x: -9, y: H + 9, r: 38, vr: 25 }, { x: W + 9, y: H + 9, r: 38, vr: 25 },
+  { x: W / 2, y: -13, r: 32, vr: 25 }, { x: W / 2, y: H + 13, r: 32, vr: 25 }
 ];
 
 function groupOf(n) { return n === 0 ? 'cue' : (n === 8 ? 'eight' : (n < 8 ? 'solid' : 'stripe')); }
@@ -360,7 +367,15 @@ function findFreeSpot(s, x0, y0, ignoreN) {
 
 // Start a shot. dx,dy is the aim direction (any length), power is 1..100.
 // If the cue ball is in hand, cuePos {x,y} is where the shooter placed it.
-function beginShot(s, dx, dy, power, cuePos) {
+// Is the shooter on the 8-ball (their group is cleared)? Then they have to call a pocket.
+function mustCallPocket(s) {
+  const g = s.groups[s.players[s.turnIdx].id];
+  if (!g || s.breakShot) return false;
+  if (remainingCounts(s)[g] > 0) return false;
+  return s.balls.some(b => b.n === 8 && !b.p);
+}
+
+function beginShot(s, dx, dy, power, cuePos, call) {
   if (s.phase !== 'aim') return { ok: false, error: 'not aiming' };
   const len = Math.sqrt(dx * dx + dy * dy);
   if (!(len > 1e-9) || !isFinite(len)) return { ok: false, error: 'bad direction' };
@@ -375,11 +390,16 @@ function beginShot(s, dx, dy, power, cuePos) {
       return { ok: false, error: 'bad cue position' };
     }
   }
+  let called = null;
+  if (mustCallPocket(s)) {
+    if (!(call === 0 || call === 1 || call === 2 || call === 3 || call === 4 || call === 5)) return { ok: false, error: 'call a pocket for the 8-ball' };
+    called = call;
+  }
   cue.p = false;
   const speed = MIN_SPEED + (power / 100) * (MAX_SPEED - MIN_SPEED);
   cue.vx = (dx / len) * speed;
   cue.vy = (dy / len) * speed;
-  s.shot = { first: null, rail: false, pocketed: [], cue: false, remBefore: remainingCounts(s), wasBreak: s.breakShot };
+  s.shot = { first: null, rail: false, pocketed: [], cue: false, remBefore: remainingCounts(s), wasBreak: s.breakShot, call: called, eightPocket: null };
   s.phase = 'moving';
   s.ballInHand = false;
   s.stepCount = 0;
@@ -436,7 +456,18 @@ function stepSim(s) {
       const sx = dx / d, sy = dy / d;
       a.x -= sx * corr; a.y -= sy * corr;
       b.x += sx * corr; b.y += sy * corr;
-      const vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+      let vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+      if (vn > JIT_V && shot && shot.wasBreak) {
+        // Real racks are never perfectly tight and balls are never perfectly round, so a hard hit
+        // sends the balls off a hair to the side. This is a fixed pseudo-random wobble, so every
+        // client still computes exactly the same result.
+        let h = Math.imul(s.stepCount * 31 + i * 17 + j, 0x9E3779B1);
+        h ^= h >>> 15; h = Math.imul(h, 0x85EBCA6B); h ^= h >>> 13;
+        const ang = ((h >>> 0) / 4294967296 - 0.5) * JIT_A;
+        const cx = nx - ny * ang, cy = ny + nx * ang, cl = Math.sqrt(cx * cx + cy * cy);
+        nx = cx / cl; ny = cy / cl;
+        vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+      }
       if (vn > 0) {
         const jn = (1 + BALL_E) / 2 * vn;
         a.vx -= jn * nx; a.vy -= jn * ny;
@@ -450,15 +481,22 @@ function stepSim(s) {
   for (let i = 0; i < balls.length; i++) {
     const b = balls[i];
     if (b.p) continue;
-    let captured = false;
+    let captured = false, capK = -1;
     for (let k = 0; k < POCKETS.length; k++) {
       const pk = POCKETS[k];
       const dx = b.x - pk.x, dy = b.y - pk.y;
-      if (dx * dx + dy * dy < pk.r * pk.r) { captured = true; break; }
+      const dd = dx * dx + dy * dy;
+      if (dd < pk.r * pk.r) {
+        const v2 = b.vx * b.vx + b.vy * b.vy;
+        if (v2 < POCKET_SLOW * POCKET_SLOW) { captured = true; capK = k; break; }
+        // fast ball: must be heading towards the middle of the hole
+        const toward = -(b.vx * dx + b.vy * dy);
+        if (toward > 0.78 * Math.sqrt(v2) * Math.sqrt(dd)) { captured = true; capK = k; break; }
+      }
     }
     if (captured) {
       b.p = true; b.vx = 0; b.vy = 0;
-      if (shot) { if (b.n === 0) shot.cue = true; else shot.pocketed.push(b.n); }
+      if (shot) { if (b.n === 0) shot.cue = true; else { shot.pocketed.push(b.n); if (b.n === 8) shot.eightPocket = capK; } }
       continue;
     }
     let hitRail = false;
@@ -527,13 +565,19 @@ function resolveShot(s) {
       eight.p = false; eight.x = spot.x; eight.y = spot.y; eight.vx = 0; eight.vy = 0;
     } else {
       const cleared = group && shot.remBefore[group] === 0;
-      if (cleared && !foul) {
+      const wrongPocket = cleared && !foul && shot.call !== shot.eightPocket;
+      if (cleared && !foul && !wrongPocket) {
         s.phase = 'over'; s.winnerId = shooter.id; s.reason = 'pocketed the 8-ball';
         s.message = shooter.name + ' pockets the 8-ball and wins!';
       } else {
         s.phase = 'over'; s.winnerId = opp.id;
-        s.reason = foul && cleared ? ('pocketed the 8-ball but ' + reasons.join(' and ')) : 'pocketed the 8-ball too early';
-        s.message = shooter.name + ' ' + (foul && cleared ? 'fouled (' + reasons.join(', ') + ') while pocketing the 8-ball' : 'pocketed the 8-ball too early') + '. ' + opp.name + ' wins!';
+        if (wrongPocket) {
+          s.reason = 'pocketed the 8-ball in the wrong pocket';
+          s.message = shooter.name + ' pocketed the 8-ball, but not in the pocket they called. ' + opp.name + ' wins!';
+        } else {
+          s.reason = foul && cleared ? ('pocketed the 8-ball but ' + reasons.join(' and ')) : 'pocketed the 8-ball too early';
+          s.message = shooter.name + ' ' + (foul && cleared ? 'fouled (' + reasons.join(', ') + ') while pocketing the 8-ball' : 'pocketed the 8-ball too early') + '. ' + opp.name + ' wins!';
+        }
       }
       if (s.phase === 'over') {
         if (shot.cue) { const c = s.balls[0]; c.p = false; const sp = findFreeSpot(s, HEAD_X, H / 2, 0); c.x = sp.x; c.y = sp.y; c.vx = 0; c.vy = 0; }
@@ -637,9 +681,9 @@ function computeGuide(s, dx, dy) {
 // changes how many shots it tries, how it values leaving a good next shot, and
 // how much random error it adds to the aim and power when it finally shoots.
 const AI_LEVELS = {
-  easy:   { label: 'Easy',       sims: 0,  angSigma: 0.050,  powSigma: 0.22, position: 0,   robust: 0 },
-  medium: { label: 'Medium',     sims: 10, angSigma: 0.0220, powSigma: 0.12, position: 0.25, robust: 0 },
-  hard:   { label: 'Pool Shark', sims: 44, angSigma: 0.0012, powSigma: 0.012, position: 1, robust: 5 }
+  easy:   { label: 'Easy',       sims: 0,  pickFrom: 3, banks: 0,  angSigma: 0.011,  powSigma: 0.10,  position: 0,   robust: 0 },
+  medium: { label: 'Medium',     sims: 28, pickFrom: 1, banks: 0,  angSigma: 0.0018, powSigma: 0.025, position: 0.7, robust: 0 },
+  hard:   { label: 'Pool Shark', sims: 70, pickFrom: 1, banks: 10, angSigma: 0.0002, powSigma: 0.002, position: 1.2, robust: 6 }
 };
 
 function aiGauss(rng) {
@@ -689,11 +733,20 @@ function aiPotIdeas(s, idx, cx, cy) {
   const out = [];
   const targets = aiTargets(s, idx);
   for (const T of targets) {
-    for (const P of POCKETS) {
+    for (let pk = 0; pk < POCKETS.length; pk++) {
+      const P = POCKETS[pk];
       let ux = P.x - T.x, uy = P.y - T.y;
       const d2 = Math.sqrt(ux * ux + uy * uy);
       if (d2 < 1) continue;
       ux /= d2; uy /= d2;
+      // the ball has to reach the mouth of the pocket before it touches the cushion
+      {
+        const tx = ux < -1e-9 ? (R - T.x) / ux : (ux > 1e-9 ? (W - R - T.x) / ux : Infinity);
+        const ty = uy < -1e-9 ? (R - T.y) / uy : (uy > 1e-9 ? (H - R - T.y) / uy : Infinity);
+        const tt = Math.min(tx, ty);
+        const ex = T.x + ux * tt - P.x, ey = T.y + uy * tt - P.y;
+        if (ex * ex + ey * ey > (P.r - 4) * (P.r - 4)) continue;
+      }
       const gx = T.x - ux * 2 * R, gy = T.y - uy * 2 * R;
       if (gx < R - 1 || gx > W - R + 1 || gy < R - 1 || gy > H - R + 1) continue;
       let dx = gx - cx, dy = gy - cy;
@@ -706,7 +759,7 @@ function aiPotIdeas(s, idx, cx, cy) {
       const pend = Math.max(0, d2 - 22);
       if (!aiClear(s, T.x, T.y, T.x + ux * pend, T.y + uy * pend, T.n, 0, 2 * R - 1.5)) continue;
       const ease = cs * cs / (1 + (d1 + d2) / 520);
-      out.push({ T: T, P: P, dx: dx, dy: dy, ease: ease, d1: d1, d2: d2, cs: cs });
+      out.push({ T: T, P: P, pk: pk, dx: dx, dy: dy, ease: ease, d1: d1, d2: d2, cs: cs });
     }
   }
   out.sort((a, b) => b.ease - a.ease);
@@ -724,9 +777,15 @@ function aiIdeaPower(idea, mult) {
   return aiPowerForSpeed(v0 * (mult || 1));
 }
 
+function aiNearestPocketIdx(x, y) {
+  let best = 0, bd = Infinity;
+  POCKETS.forEach((p, k) => { const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); if (d < bd) { bd = d; best = k; } });
+  return best;
+}
+
 function aiSimulate(s, shot) {
   const c = JSON.parse(JSON.stringify(s));
-  const r = beginShot(c, shot.dx, shot.dy, shot.power, shot.cue);
+  const r = beginShot(c, shot.dx, shot.dy, shot.power, shot.cue, shot.call);
   if (!r.ok) return null;
   runToCompletion(c);
   resolveShot(c);
@@ -792,47 +851,84 @@ function aiPickCuePos(s, levelKey, rng) {
   return best;
 }
 
+// Bank shot ideas: send the object ball off one rail and into a pocket (aim at the pocket's mirror image).
+function aiBankIdeas(s, idx, cx, cy) {
+  const out = [];
+  const targets = aiTargets(s, idx);
+  const rails = [
+    { f: (x, y) => ({ x: 2 * R - x, y: y }) },
+    { f: (x, y) => ({ x: 2 * (W - R) - x, y: y }) },
+    { f: (x, y) => ({ x: x, y: 2 * R - y }) },
+    { f: (x, y) => ({ x: x, y: 2 * (H - R) - y }) }
+  ];
+  for (const T of targets) {
+    for (let pk = 0; pk < POCKETS.length; pk++) {
+      const P = POCKETS[pk];
+      for (const rl of rails) {
+        const m = rl.f(P.x, P.y);
+        let ux = m.x - T.x, uy = m.y - T.y;
+        const dist = Math.sqrt(ux * ux + uy * uy);
+        if (dist < 40) continue;
+        ux /= dist; uy /= dist;
+        const gx = T.x - ux * 2 * R, gy = T.y - uy * 2 * R;
+        if (gx < R || gx > W - R || gy < R || gy > H - R) continue;
+        let dx = gx - cx, dy = gy - cy;
+        const d1 = Math.sqrt(dx * dx + dy * dy);
+        if (d1 < 1) continue;
+        dx /= d1; dy /= d1;
+        const cs = dx * ux + dy * uy;
+        if (cs < 0.4) continue;
+        if (!aiClear(s, cx, cy, gx, gy, 0, T.n, 2 * R - 1.5)) continue;
+        out.push({ T: T, P: P, pk: pk, dx: dx, dy: dy, ease: 0.5 * cs * cs / (1 + (d1 + dist) / 520), d1: d1, d2: dist * 1.1, cs: cs, bank: true });
+      }
+    }
+  }
+  out.sort((a, b) => b.ease - a.ease);
+  return out;
+}
+
 // Generator: yields while it searches (so the page stays responsive) and
-// returns { dx, dy, power, cue }.
+// returns { dx, dy, power, cue, call }.
 function* aiPlanIter(state, levelKey, rng) {
   rng = rng || Math.random;
   const lv = AI_LEVELS[levelKey];
   const s = JSON.parse(JSON.stringify(state));
   const me = s.turnIdx;
   if (s.breakShot) return aiBreakShot(s, levelKey, rng);
+  const needCall = mustCallPocket(s);
 
   let cue;
   if (s.ballInHand) { cue = aiPickCuePos(s, levelKey, rng); s.balls[0].x = cue.x; s.balls[0].y = cue.y; }
   const cb = s.balls[0];
+  const callFor = (T, pk) => needCall ? (pk !== undefined ? pk : aiNearestPocketIdx(T.x, T.y)) : undefined;
 
   const ideas = aiPotIdeas(s, me, cb.x, cb.y);
   let cands = [];
 
   if (levelKey === 'easy') {
-    // no search: take one of the better looking pots, or just hit a legal ball
     if (ideas.length) {
-      const pick = ideas[Math.min(ideas.length - 1, Math.floor(rng() * Math.min(3, ideas.length)))];
-      cands.push({ dx: pick.dx, dy: pick.dy, power: aiIdeaPower(pick, 1 + (rng() - 0.5) * 0.5), cue: cue });
-    } else {
-      const ts = aiTargets(s, me);
-      const T = ts[Math.floor(rng() * ts.length)];
-      let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
-      cands.push({ dx: dx / l, dy: dy / l, power: 30 + rng() * 40, cue: cue });
+      const pick = ideas[Math.min(ideas.length - 1, Math.floor(rng() * Math.min(lv.pickFrom, ideas.length)))];
+      return { dx: pick.dx, dy: pick.dy, power: aiIdeaPower(pick, 1 + (rng() - 0.5) * 0.3), cue: cue, call: callFor(pick.T, pick.pk) };
     }
-    return Object.assign(cands[0], { noisy: true });
+    const ts = aiTargets(s, me);
+    const T = ts[Math.floor(rng() * ts.length)];
+    let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { dx: dx / l, dy: dy / l, power: 30 + rng() * 40, cue: cue, call: callFor(T) };
   }
 
-  // pot ideas at a few power levels
   const mults = levelKey === 'hard' ? [0.8, 0.9, 1, 1.12, 1.3] : [0.95, 1.1];
   ideas.slice(0, lv.sims).forEach(id => {
-    mults.forEach(m => cands.push({ dx: id.dx, dy: id.dy, power: aiIdeaPower(id, m), cue: cue, ease: id.ease }));
+    mults.forEach(m => cands.push({ dx: id.dx, dy: id.dy, power: aiIdeaPower(id, m), cue: cue, call: callFor(id.T, id.pk) }));
   });
-  // hitting a legal ball directly at a few speeds (safeties / fallbacks)
+  if (lv.banks) {
+    aiBankIdeas(s, me, cb.x, cb.y).slice(0, lv.banks).forEach(id => {
+      [0.95, 1.1, 1.3].forEach(m => cands.push({ dx: id.dx, dy: id.dy, power: aiIdeaPower(id, m), cue: cue, call: callFor(id.T, id.pk) }));
+    });
+  }
   aiTargets(s, me).forEach(T => {
     let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
-    [32, 55, 80].forEach(pw => cands.push({ dx: dx / l, dy: dy / l, power: pw, cue: cue, ease: 0 }));
+    [32, 55, 80].forEach(pw => cands.push({ dx: dx / l, dy: dy / l, power: pw, cue: cue, call: callFor(T) }));
   });
-  if (cands.length > lv.sims * 3) cands = cands.slice(0, lv.sims * 3);
 
   const scored = [];
   for (let i = 0; i < cands.length; i++) {
@@ -844,7 +940,7 @@ function* aiPlanIter(state, levelKey, rng) {
   if (!scored.length) {
     const T = aiTargets(s, me)[0] || s.balls[1];
     let dx = T.x - cb.x, dy = T.y - cb.y; const l = Math.sqrt(dx * dx + dy * dy) || 1;
-    return { dx: dx / l, dy: dy / l, power: 50, cue: cue, noisy: true };
+    return { dx: dx / l, dy: dy / l, power: 50, cue: cue, call: callFor(T) };
   }
   scored.sort((a, b) => b.sc - a.sc);
   let best = scored[0];
@@ -858,7 +954,7 @@ function* aiPlanIter(state, levelKey, rng) {
       let sum = 0; const N = 4;
       for (let k = 0; k < N; k++) {
         const ang = aiGauss(rng) * lv.angSigma, cs = Math.cos(ang), sn = Math.sin(ang);
-        const shot = { dx: t.c.dx * cs - t.c.dy * sn, dy: t.c.dx * sn + t.c.dy * cs, power: Math.max(1, Math.min(100, t.c.power * (1 + aiGauss(rng) * lv.powSigma))), cue: cue };
+        const shot = { dx: t.c.dx * cs - t.c.dy * sn, dy: t.c.dx * sn + t.c.dy * cs, power: Math.max(1, Math.min(100, t.c.power * (1 + aiGauss(rng) * lv.powSigma))), cue: cue, call: t.c.call };
         const res = aiSimulate(s, shot);
         sum += res ? aiScore(s, res, me, lv) : -500;
         yield null;
@@ -867,7 +963,7 @@ function* aiPlanIter(state, levelKey, rng) {
       if (avg > bestAvg) { bestAvg = avg; best = t; }
     }
   }
-  return { dx: best.c.dx, dy: best.c.dy, power: best.c.power, cue: cue, noisy: true };
+  return { dx: best.c.dx, dy: best.c.dy, power: best.c.power, cue: cue, call: best.c.call };
 }
 
 // add the human-like wobble for this level
@@ -878,7 +974,8 @@ function aiApplyNoise(shot, levelKey, rng) {
     dx: shot.dx * cs - shot.dy * sn,
     dy: shot.dx * sn + shot.dy * cs,
     power: Math.max(1, Math.min(100, shot.power * (1 + aiGauss(rng) * lv.powSigma))),
-    cue: shot.cue
+    cue: shot.cue,
+    call: shot.call
   };
 }
 
@@ -938,6 +1035,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   let dropFx = [];
   let prevPocketed = {};
   let aiLevel = 'medium', aiBusy = false, aiAnim = null, aiToken = 0;
+  let called = null;          // pocket (index into POCKETS) called for the 8-ball
 
   const screens = { lobby:$('lobbyScreen'), local:$('setupLocal'), ai:$('setupAI'), host:$('setupHost'), join:$('setupJoin'), game:$('gameScreen') };
   function showScreen(name){
@@ -1052,7 +1150,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     c.restore();
 
     // cushions (they stop short of the pockets)
-    const cg = 36, sg = 31;
+    const cg = 34, sg = 33;
     cushionSeg(c, PAD + cg, PAD, PAD + W / 2 - sg, PAD, 0, -1);
     cushionSeg(c, PAD + W / 2 + sg, PAD, PAD + W - cg, PAD, 0, -1);
     cushionSeg(c, PAD + cg, PAD + H, PAD + W / 2 - sg, PAD + H, 0, 1);
@@ -1074,7 +1172,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
 
     // pockets: smaller dark holes with a thin metal lip
     POCKETS.forEach(p => {
-      const cx = PAD + p.x, cy = PAD + p.y, rv = p.r - 2;
+      const cx = PAD + p.x, cy = PAD + p.y, rv = p.vr;
       // darken the felt around the mouth so the corner blends into the cushions
       c.save(); c.beginPath(); c.rect(PAD, PAD, W, H); c.clip();
       const sh = c.createRadialGradient(cx, cy, rv, cx, cy, rv + 34);
@@ -1444,6 +1542,32 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     if (cu.extra) cu.extra(c, L, t);
     c.restore();
   }
+  function drawX(c, x, y, s, col){
+    c.save(); c.lineCap = 'round';
+    c.lineWidth = 4.2; c.strokeStyle = 'rgba(0,0,0,0.45)';
+    c.beginPath(); c.moveTo(x - s, y - s); c.lineTo(x + s, y + s); c.moveTo(x + s, y - s); c.lineTo(x - s, y + s); c.stroke();
+    c.lineWidth = 2.4; c.strokeStyle = col;
+    c.beginPath(); c.moveTo(x - s, y - s); c.lineTo(x + s, y + s); c.moveTo(x + s, y - s); c.lineTo(x - s, y + s); c.stroke();
+    c.restore();
+  }
+  // Where would the object ball end up if it just rolled straight? (rail, another ball, or a pocket)
+  function objectPath(ob, d){
+    let x = ob.x, y = ob.y;
+    const others = G.balls.filter(b => !b.p && b.n !== 0 && b.n !== ob.n);
+    for (let i = 0; i < 700; i++){
+      x += d.x * 3; y += d.y * 3;
+      for (let k = 0; k < POCKETS.length; k++){
+        const p = POCKETS[k], dx = x - p.x, dy = y - p.y;
+        if (dx * dx + dy * dy < p.r * p.r) return { x: x, y: y, end: 'pocket', pk: k };
+      }
+      for (let j = 0; j < others.length; j++){
+        const o = others[j], dx = x - o.x, dy = y - o.y;
+        if (dx * dx + dy * dy < 4 * R * R) return { x: x, y: y, end: 'ball' };
+      }
+      if (x < R || x > W - R || y < R || y > H - R) return { x: Math.max(R, Math.min(W - R, x)), y: Math.max(R, Math.min(H - R, y)), end: 'rail' };
+    }
+    return { x: x, y: y, end: 'rail' };
+  }
   function drawGuide(c){
     const cb = G.balls[0];
     const g = computeGuide(G, aim.x, aim.y);
@@ -1459,8 +1583,21 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       c.beginPath(); c.arc(gx, gy, R, 0, Math.PI * 2); c.stroke();
       const ob = G.balls.find(b => b.n === g.objN);
       const ox = PAD + ob.x, oy = PAD + ob.y;
+      // path the object ball will take
+      const end = objectPath(ob, g.objDir);
+      const ex = PAD + end.x, ey = PAD + end.y;
       c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.95)';
       c.beginPath(); c.moveTo(ox + g.objDir.x * (R + 3), oy + g.objDir.y * (R + 3)); c.lineTo(ox + g.objDir.x * (R + 3 + 62), oy + g.objDir.y * (R + 3 + 62)); c.stroke();
+      const total = Math.sqrt((end.x - ob.x) * (end.x - ob.x) + (end.y - ob.y) * (end.y - ob.y));
+      if (total > R + 3 + 70){
+        c.setLineDash([2, 7]); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.7)';
+        c.beginPath(); c.moveTo(ox + g.objDir.x * (R + 3 + 66), oy + g.objDir.y * (R + 3 + 66)); c.lineTo(ex, ey); c.stroke();
+        c.setLineDash([]);
+      }
+      // X where the cue ball touches the object ball, and X where the object ball ends up
+      drawX(c, ox - g.objDir.x * R, oy - g.objDir.y * R, 4.5, 'rgba(255,255,255,0.95)');
+      if (end.end === 'pocket') drawX(c, PAD + POCKETS[end.pk].x, PAD + POCKETS[end.pk].y, 7, '#7dffa0');
+      else drawX(c, ex, ey, 6, end.end === 'ball' ? '#ffd27a' : 'rgba(255,255,255,0.95)');
       if (g.cueDir){
         const len = 14 + 42 * g.cutFrac;
         c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
@@ -1475,6 +1612,10 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       c.beginPath(); c.arc(hx, hy, R, 0, Math.PI * 2); c.stroke();
       c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
       c.beginPath(); c.moveTo(hx + g.bounceDir.x * (R + 3), hy + g.bounceDir.y * (R + 3)); c.lineTo(hx + g.bounceDir.x * (R + 3 + 55), hy + g.bounceDir.y * (R + 3 + 55)); c.stroke();
+      let wx = g.hit.x, wy = g.hit.y;
+      if (wx <= R + 0.6) wx = 0; else if (wx >= W - R - 0.6) wx = W;
+      if (wy <= R + 0.6) wy = 0; else if (wy >= H - R - 0.6) wy = H;
+      drawX(c, PAD + wx, PAD + wy, 5, 'rgba(255,255,255,0.95)');
     }
     c.restore();
   }
@@ -1531,9 +1672,26 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       if (k > 0.55){
         const rk = (k - 0.55) / 0.45;
         ctx.save(); ctx.globalAlpha = 0.5 * (1 - rk); ctx.lineWidth = 2; ctx.strokeStyle = '#e8d9a8';
-        ctx.beginPath(); ctx.arc(PAD + f.px, PAD + f.py, f.pr - 3 + rk * 5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        ctx.beginPath(); ctx.arc(PAD + f.px, PAD + f.py, f.pr + 3 + rk * 5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
       }
     });
+    if (control && mustCallPocket(G)){
+      const pulse = 0.5 + 0.5 * Math.sin(now / 260);
+      POCKETS.forEach((p, k) => {
+        const cx = PAD + p.x, cy = PAD + p.y;
+        ctx.save();
+        if (called === k){
+          ctx.lineWidth = 4; ctx.strokeStyle = '#ffe28a'; ctx.shadowColor = '#ffd45a'; ctx.shadowBlur = 14;
+          ctx.beginPath(); ctx.arc(cx, cy, p.vr + 6, 0, Math.PI * 2); ctx.stroke();
+          ctx.shadowBlur = 0; ctx.fillStyle = '#ffe28a'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('8', cx, cy);
+        } else {
+          ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,226,138,' + (0.25 + 0.4 * pulse) + ')'; ctx.setLineDash([6, 5]);
+          ctx.beginPath(); ctx.arc(cx, cy, p.vr + 6, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.restore();
+      });
+    }
     if (control){
       if (G.ballInHand){
         const cb = G.balls[0];
@@ -1652,7 +1810,8 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       const base = G.message ? escapeHtml(G.message) + ' ' : '';
       if (G.breakShot && !G.message) text = escapeHtml(cur.name) + (mode !== 'local' && mode !== 'ai' && mine ? ' (you)' : '') + ' to break. ';
       else text = base;
-      if (mine) text += '<span class="hint">' + (G.ballInHand ? 'Drag the cue ball to place it' + (G.headOnly ? ' behind the line' : ' anywhere') + ', then drag on the table to aim.' : 'Drag on the table to aim, set the power, and shoot.') + '</span>';
+      if (mine && mustCallPocket(G)) text += '<span class="hint">Only the 8-ball is left. Tap the pocket you are calling' + (called === null ? ' (dotted rings), ' : ' (chosen, tap another to change), ') + 'aim, and shoot. It has to go in that pocket.</span>';
+      else if (mine) text += '<span class="hint">' + (G.ballInHand ? 'Drag the cue ball to place it' + (G.headOnly ? ' behind the line' : ' anywhere') + ', then drag on the table to aim.' : 'Drag on the table to aim, set the power, and shoot.') + '</span>';
       else if (mode === 'ai') text += '<span class="hint">' + escapeHtml(cur.name) + ' is lining up a shot...</span>';
       else text += '<span class="hint">Waiting for ' + escapeHtml(cur.name) + ' to shoot...</span>';
     }
@@ -1708,6 +1867,11 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     pointerDown = true;
     const cb = G.balls[0];
     const d = Math.sqrt((p.x - cb.x) * (p.x - cb.x) + (p.y - cb.y) * (p.y - cb.y));
+    if (mustCallPocket(G)){
+      let bk = -1, bd = 52 * 52;
+      POCKETS.forEach((pk, k) => { const dd = (p.x - pk.x) * (p.x - pk.x) + (p.y - pk.y) * (p.y - pk.y); if (dd < bd){ bd = dd; bk = k; } });
+      if (bk >= 0){ called = bk; pointerDown = false; updateHud(); return; }
+    }
     if (G.ballInHand && d < 28) dragMode = 'cue';
     else { dragMode = 'aim'; setAimFrom(p); }
   });
@@ -1754,7 +1918,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   // ================= shooting =================
   function snapshotPocketed(){ prevPocketed = {}; G.balls.forEach(b => { prevPocketed[b.n] = b.p; }); }
   function onShotBegan(){
-    localSimDone = false; ffOn = false; acc = 0;
+    localSimDone = false; ffOn = false; acc = 0; called = null;
     snapshotPocketed();
     if (mode === 'host') broadcastState();
     updateHud();
@@ -1763,14 +1927,18 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   function doShoot(){
     if (!canControl()) return;
     const cuePos = G.ballInHand ? { x: G.balls[0].x, y: G.balls[0].y } : undefined;
+    if (mustCallPocket(G) && called === null){
+      $('statusLine').innerHTML = '<span style="color:#ffe28a;">Last ball: tap the pocket you are calling for the 8-ball (the dotted rings), then shoot.</span>';
+      return;
+    }
     if (mode === 'guest'){
       if (!joinConn || !joinConn.open) return;
       awaitingHost = true;
-      joinConn.send({ type: 'shot', dx: aim.x, dy: aim.y, power: power, cue: cuePos });
+      joinConn.send({ type: 'shot', dx: aim.x, dy: aim.y, power: power, cue: cuePos, call: called });
       updateHud();
       return;
     }
-    const r = beginShot(G, aim.x, aim.y, power, cuePos);
+    const r = beginShot(G, aim.x, aim.y, power, cuePos, called === null ? undefined : called);
     if (!r.ok){ $('statusLine').textContent = 'Cannot shoot: ' + r.error; return; }
     onShotBegan();
   }
@@ -1797,7 +1965,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
         if (b.p && !prevPocketed[b.n]){
           prevPocketed[b.n] = true;
           const pk = nearestPocket(b.x, b.y);
-          dropFx.push({ n: b.n, x: b.x, y: b.y, px: pk.x, py: pk.y, pr: pk.r, t0: performance.now() });
+          dropFx.push({ n: b.n, x: b.x, y: b.y, px: pk.x, py: pk.y, pr: pk.vr, t0: performance.now() });
         }
       });
       if (finished){ acc = 0; finishShot(); }
@@ -1813,7 +1981,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   function beginGame(players){
     G = newGameState(players, starterIdx);
     awaitingHost = false; localSimDone = false; connLost = false; ffOn = false; dropFx = [];
-    aiBusy = false; aiAnim = null; aiToken++;
+    aiBusy = false; aiAnim = null; aiToken++; called = null;
     Object.keys(ballRS).forEach(k => { delete ballRS[k]; });
     snapshotPocketed();
     resetAim();
@@ -1890,7 +2058,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       const sh = aiAnim.shot;
       aiAnim = null; aiBusy = false;
       aim = { x: sh.dx, y: sh.dy };
-      const r = beginShot(G, sh.dx, sh.dy, sh.power, sh.cue);
+      const r = beginShot(G, sh.dx, sh.dy, sh.power, sh.cue, sh.call);
       if (r.ok) onShotBegan();
       else { aiBusy = false; scheduleAi(); }
     }
@@ -1978,7 +2146,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     if (msg.type === 'shot'){
       if (!G || G.phase !== 'aim') { broadcastState(); return; }
       if (G.players[G.turnIdx].id !== conn.__playerId) { broadcastState(); return; }
-      const r = beginShot(G, Number(msg.dx), Number(msg.dy), Number(msg.power), msg.cue);
+      const r = beginShot(G, Number(msg.dx), Number(msg.dy), Number(msg.power), msg.cue, msg.call === null || msg.call === undefined ? undefined : Number(msg.call));
       if (!r.ok){ broadcastState(); return; }
       onShotBegan();
     }
@@ -2020,7 +2188,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
           G = msg.game;
           awaitingHost = false;
           if (G.phase === 'moving'){ if (!wasMoving || localSimDone) { localSimDone = false; acc = 0; ffOn = false; snapshotPocketed(); } }
-          else { localSimDone = false; ffOn = false; resetAim(); }
+          else { localSimDone = false; ffOn = false; called = null; resetAim(); }
           if (!$('gameScreen').classList.contains('active')) showScreen('game');
           updateHud();
         }
