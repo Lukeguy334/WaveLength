@@ -74,6 +74,12 @@
   input[type=range]#powerSlider { width:100%; height:30px; accent-color:#e8c572; touch-action:pan-y; }
   .btn-row { display:flex; gap:8px; align-items:center; }
   .fine-btn { width:46px; height:46px; border-radius:10px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-size:20px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+  .spin-btn { width:46px; height:46px; border-radius:50%; border:2px solid var(--panel-line); background:var(--ink-2); padding:0; cursor:pointer; touch-action:manipulation; display:block; }
+  .spin-btn:active, .spin-btn.on { border-color:var(--brass); }
+  #spinPad { width:220px; height:220px; max-width:100%; display:block; margin:6px auto 10px; touch-action:none; cursor:crosshair; border-radius:50%; }
+  .spin-actions { display:flex; gap:8px; justify-content:center; }
+  .spin-actions button { background:var(--ink-2); border:1px solid var(--panel-line); color:var(--paper); border-radius:8px; padding:9px 16px; font-size:14px; cursor:pointer; }
+  .spin-actions button.primary { border-color:var(--brass); color:var(--brass-bright); }
   .fine-btn:active { border-color:var(--brass); color:var(--brass-bright); }
   .fine-lbl { font-size:11px; color:var(--muted); text-align:center; line-height:1.2; width:46px; }
   button.shoot-btn { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; padding:0 26px; height:46px; border-radius:10px; border:1px solid var(--brass);
@@ -112,6 +118,20 @@
   </div>
   <p class="subtitle">Top-down 8-ball for two. Aim, set the power, and sink your group before your opponent does.</p>
 
+  <div class="modal-overlay hidden" id="spinModal">
+    <div class="modal-box" style="max-width:340px;">
+      <div class="modal-header">
+        <h3>Where to hit the ball</h3>
+        <button class="modal-close" id="spinClose">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <p style="margin:0 0 4px; color:var(--muted); font-size:13px;">Tap or drag the red dot. Top = follow (ball rolls on), bottom = backspin (ball comes back), sides = english (changes the bounce off rails).</p>
+        <canvas id="spinPad" width="440" height="440"></canvas>
+        <div class="spin-actions"><button id="spinCenter">Centre</button><button id="spinDone" class="primary">Done</button></div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay hidden" id="rulesModal">
     <div class="modal-box">
       <div class="modal-header">
@@ -121,6 +141,7 @@
       <div class="modal-body">
         <ul>
           <li><b>Aim:</b> press and drag on the table (or click) and the cue points that way. The &#9664; &#9654; buttons nudge the angle in tiny steps. The short lines show where the cue ball will touch, where the object ball goes, and where the cue ball deflects.</li>
+          <li><b>Spin:</b> by default the cue hits the middle of the white ball. Press the little white ball button next to Shoot to move a red dot on it: above centre for follow (the white ball keeps rolling after a hit), below for backspin (it pulls back), left or right for side spin (it kicks off the rails). The dot returns to the centre after every shot.</li>
           <li><b>Power:</b> set it with the slider, then press Shoot (or hit Space / Enter).</li>
           <li>The first player breaks with the cue ball placed behind the head line. The table stays open until someone legally pockets a ball; that player takes that group (solids 1-7 or stripes 9-15).</li>
           <li>Keep shooting while you pocket one of your own balls. Otherwise the turn passes.</li>
@@ -233,6 +254,7 @@
       <div class="btn-row">
         <div><button class="fine-btn" id="fineLeft" aria-label="Rotate aim left">&#9664;</button><div class="fine-lbl">fine aim</div></div>
         <div><button class="fine-btn" id="fineRight" aria-label="Rotate aim right">&#9654;</button><div class="fine-lbl">&nbsp;</div></div>
+        <div><button class="spin-btn" id="spinBtn" aria-label="Set where the cue hits the ball"><canvas id="spinIcon" width="92" height="92" style="width:42px;height:42px;display:block;margin:0 auto;"></canvas></button><div class="fine-lbl">spin</div></div>
         <button class="shoot-btn" id="shootBtn">Shoot</button>
       </div>
     </div>
@@ -260,13 +282,15 @@ const CONTACT_TOL = 0.06;                 // balls this close count as touching
 const JIT_V = 600, JIT_A = 0.4;           // hard-hit wobble: speed threshold and size (radians)
 const STOP_V = 8;                         // below this speed a ball stops
 const MAX_STEPS = 480 * 40;               // hard stop for any single shot
-// Pocket centres sit out in the wall. Inside the mouth circle (radius r) there is no cushion, so a
-// ball can roll through the opening. It only drops if its centre gets over the hole itself (radius
-// HOLE_R, a bit smaller the faster the ball is going), so a ball has to arrive at a decent angle and
-// speed. A ball that just grazes the edge of the mouth bounces off the cushion and carries on.
-const HOLE_R = 24, HOLE_FAST = 6;         // hole radius, and how much it shrinks at full speed
-const HOLE_FAST_V = 2000;                 // speed at which it has shrunk completely
-const ROLL_IN_V = 400;                    // a slow ball that is past the cushion line in the mouth rolls in
+// Pocket centres sit out in the wall. A ball drops when it crosses the cushion line inside the
+// mouth of a pocket (the circle of radius r) AND either it is rolling slowly (it just tips over
+// the edge), or it is heading into the hole (within about 53 degrees of the middle) and is not going
+// crazy fast. A ball that only grazes the mouth, or comes in way too hard, hits the jaw and bounces off.
+const ROLL_IN_V = 450;                    // below this a ball crossing the line in the mouth always drops
+const FLY_V = 2500;                       // above this even a straight shot rattles out
+const HEAD_IN = 0.6;                      // cosine of the widest entry angle that still drops
+const KF = 0.5, KS = 0.35;                // follow / draw strength, side spin kick off a cushion
+const SPIN_MAX = 0.85, SPIN_DECAY = 0.7;  // furthest the strike point can be from the middle, spin lost per cushion
 const POCKETS = [
   { x: -9, y: -9, r: 38, vr: 25 }, { x: W + 9, y: -9, r: 38, vr: 25 },
   { x: -9, y: H + 9, r: 38, vr: 25 }, { x: W + 9, y: H + 9, r: 38, vr: 25 },
@@ -378,7 +402,7 @@ function mustCallPocket(s) {
   return s.balls.some(b => b.n === 8 && !b.p);
 }
 
-function beginShot(s, dx, dy, power, cuePos, call) {
+function beginShot(s, dx, dy, power, cuePos, call, spin) {
   if (s.phase !== 'aim') return { ok: false, error: 'not aiming' };
   const len = Math.sqrt(dx * dx + dy * dy);
   if (!(len > 1e-9) || !isFinite(len)) return { ok: false, error: 'bad direction' };
@@ -398,6 +422,14 @@ function beginShot(s, dx, dy, power, cuePos, call) {
     if (!(call === 0 || call === 1 || call === 2 || call === 3 || call === 4 || call === 5)) return { ok: false, error: 'call a pocket for the 8-ball' };
     called = call;
   }
+  // where the cue tip meets the ball: x = right of centre, y = above centre (follow), below (draw)
+  let spx = 0, spy = 0;
+  if (spin && isFinite(spin.x) && isFinite(spin.y)) {
+    spx = Number(spin.x); spy = Number(spin.y);
+    const m = Math.sqrt(spx * spx + spy * spy);
+    if (m > SPIN_MAX) { spx *= SPIN_MAX / m; spy *= SPIN_MAX / m; }
+  }
+  cue.sx = spx; cue.sy = spy;
   cue.p = false;
   const speed = MIN_SPEED + (power / 100) * (MAX_SPEED - MIN_SPEED);
   cue.vx = (dx / len) * speed;
@@ -473,8 +505,16 @@ function stepSim(s) {
       }
       if (vn > 0) {
         const jn = (1 + BALL_E) / 2 * vn;
+        const cb = a.n === 0 ? a : (b.n === 0 ? b : null);
+        const cvx = cb ? cb.vx : 0, cvy = cb ? cb.vy : 0;
         a.vx -= jn * nx; a.vy -= jn * ny;
         b.vx += jn * nx; b.vy += jn * ny;
+        if (cb && cb.sy) {
+          // follow (top) keeps the cue ball rolling forward after the hit, draw (bottom) pulls it back
+          const cs = Math.sqrt(cvx * cvx + cvy * cvy);
+          if (cs > 1e-6) { const kk = cb.sy * KF * vn / cs; cb.vx += cvx * kk; cb.vy += cvy * kk; }
+          cb.sy = 0;
+        }
         if (shot && shot.first === null && (a.n === 0 || b.n === 0)) shot.first = (a.n === 0 ? b.n : a.n);
       }
     }
@@ -484,21 +524,16 @@ function stepSim(s) {
   for (let i = 0; i < balls.length; i++) {
     const b = balls[i];
     if (b.p) continue;
-    let captured = false, capK = -1, inMouth = false;
-    {
-      const v2 = b.vx * b.vx + b.vy * b.vy;
-      const v = Math.sqrt(v2);
-      const dh = HOLE_R - HOLE_FAST * Math.min(1, v / HOLE_FAST_V);
+    let captured = false, capK = -1;
+    if (b.x < R || b.x > W - R || b.y < R || b.y > H - R) {   // reached the cushion line: is it in a pocket mouth?
+      const v2 = b.vx * b.vx + b.vy * b.vy, v = Math.sqrt(v2);
       for (let k = 0; k < POCKETS.length; k++) {
         const pk = POCKETS[k];
         const dx = b.x - pk.x, dy = b.y - pk.y;
         const dd = dx * dx + dy * dy;
-        if (dd < pk.r * pk.r) {
-          inMouth = true;
-          if (dd < dh * dh) { captured = true; capK = k; break; }
-          const past = b.x < R - 4 || b.x > W - R + 4 || b.y < R - 4 || b.y > H - R + 4;
-          if (past && v < ROLL_IN_V) { captured = true; capK = k; break; }
-        }
+        if (dd >= pk.r * pk.r) continue;
+        if (v < ROLL_IN_V) { captured = true; capK = k; break; }
+        if (v < FLY_V && -(b.vx * dx + b.vy * dy) > HEAD_IN * v * Math.sqrt(dd)) { captured = true; capK = k; break; }
       }
     }
     if (captured) {
@@ -507,11 +542,11 @@ function stepSim(s) {
       continue;
     }
     let hitRail = false;
-    if (!inMouth) {   // no cushion across a pocket opening
-      if (b.x < R) { b.x = R; if (b.vx < 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
-      else if (b.x > W - R) { b.x = W - R; if (b.vx > 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
-      if (b.y < R) { b.y = R; if (b.vy < 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
-      else if (b.y > H - R) { b.y = H - R; if (b.vy > 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+    {
+      if (b.x < R) { const vN = -b.vx; b.x = R; if (b.vx < 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; if (b.n === 0 && b.sx) { b.vy -= KS * b.sx * vN; b.sx *= SPIN_DECAY; } } }
+      else if (b.x > W - R) { const vN = b.vx; b.x = W - R; if (b.vx > 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; if (b.n === 0 && b.sx) { b.vy += KS * b.sx * vN; b.sx *= SPIN_DECAY; } } }
+      if (b.y < R) { const vN = -b.vy; b.y = R; if (b.vy < 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; if (b.n === 0 && b.sx) { b.vx += KS * b.sx * vN; b.sx *= SPIN_DECAY; } } }
+      else if (b.y > H - R) { const vN = b.vy; b.y = H - R; if (b.vy > 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; if (b.n === 0 && b.sx) { b.vx -= KS * b.sx * vN; b.sx *= SPIN_DECAY; } } }
     }
     if (hitRail && shot && shot.first !== null) shot.rail = true;
     let sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
@@ -642,7 +677,7 @@ function resolveShot(s) {
 // Where will the cue ball go? Used for the short aim guides.
 // Returns { type:'ball', ghost:{x,y}, objN, objDir:{x,y}, cueDir:{x,y}|null }
 //      or { type:'wall', hit:{x,y}, bounceDir:{x,y} } or { type:'none' }.
-function computeGuide(s, dx, dy) {
+function computeGuide(s, dx, dy, follow) {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (!(len > 1e-9)) return { type: 'none' };
   const ux = dx / len, uy = dy / len;
@@ -672,9 +707,12 @@ function computeGuide(s, dx, dy) {
     nx /= nl; ny /= nl;
     const dot = ux * nx + uy * ny;
     let tx = ux - dot * nx, ty = uy - dot * ny;
-    const tl = Math.sqrt(tx * tx + ty * ty);
-    const cueDir = tl > 0.02 ? { x: tx / tl, y: ty / tl } : null;
-    return { type: 'ball', ghost: { x: gx, y: gy }, objN: bestBall.n, objDir: { x: nx, y: ny }, cueDir: cueDir, cutFrac: tl };
+    // where the cue ball heads after the hit: the sideways part, plus follow (forward) or draw (back)
+    const f = (follow || 0) * KF * dot;
+    const rx = tx + ux * f, ry = ty + uy * f;
+    const tl = Math.sqrt(rx * rx + ry * ry);
+    const cueDir = tl > 0.02 ? { x: rx / tl, y: ry / tl } : null;
+    return { type: 'ball', ghost: { x: gx, y: gy }, objN: bestBall.n, objDir: { x: nx, y: ny }, cueDir: cueDir, cutFrac: Math.min(1, tl) };
   }
   if (wallAxis) {
     const hx = c.x + ux * wallT, hy = c.y + uy * wallT;
@@ -1561,7 +1599,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   }
   function drawGuide(c){
     const cb = G.balls[0];
-    const g = computeGuide(G, aim.x, aim.y);
+    const g = computeGuide(G, aim.x, aim.y, spin.y);
     const sx = PAD + cb.x, sy = PAD + cb.y;
     c.save();
     c.lineCap = 'round';
@@ -1604,7 +1642,8 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     const cb = G.balls[0];
     const cu = cueById(G.players[G.turnIdx].cue);
     const pull = 6 + (pw / 100) * 46;
-    const sx = PAD + cb.x - aim.x * (R + 4 + pull), sy = PAD + cb.y - aim.y * (R + 4 + pull);
+    const off = (G.phase === 'aim' ? spin.x : 0) * R * 0.7;
+    const sx = PAD + cb.x - aim.x * (R + 4 + pull) - aim.y * off, sy = PAD + cb.y - aim.y * (R + 4 + pull) + aim.x * off;
     c.save();
     c.translate(sx, sy);
     c.rotate(Math.atan2(-aim.y, -aim.x));
@@ -1815,6 +1854,48 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   }
 
   // ================= aim =================
+  let spin = { x: 0, y: 0 };
+  function spinClamp(px, py){
+    let l = Math.sqrt(px * px + py * py); const m = 0.85;
+    if (l > m){ px = px / l * m; py = py / l * m; }
+    return { x: Math.round(px * 100) / 100, y: Math.round(py * 100) / 100 };
+  }
+  function drawSpinFace(cv, big){
+    const c = cv.getContext('2d'), S = cv.width, r = S / 2 - 3;
+    c.clearRect(0, 0, S, S);
+    const g = c.createRadialGradient(S * 0.4, S * 0.35, r * 0.1, S / 2, S / 2, r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#cfcab8');
+    c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, r, 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = big ? 3 : 2; c.stroke();
+    if (big){
+      c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(S / 2, 8); c.lineTo(S / 2, S - 8); c.moveTo(8, S / 2); c.lineTo(S - 8, S / 2); c.stroke();
+      c.beginPath(); c.arc(S / 2, S / 2, r * 0.85, 0, 6.2832); c.setLineDash([6, 6]); c.stroke(); c.setLineDash([]);
+    }
+    const px = S / 2 + spin.x * r, py = S / 2 + spin.y * r * -1;
+    c.fillStyle = '#d3202a'; c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = big ? 2 : 1.5;
+    c.beginPath(); c.arc(px, py, big ? 15 : 9, 0, 6.2832); c.fill(); c.stroke();
+  }
+  function refreshSpinUi(){
+    drawSpinFace($('spinIcon'), false);
+    $('spinBtn').classList.toggle('on', spin.x !== 0 || spin.y !== 0);
+    if (!$('spinModal').classList.contains('hidden')) drawSpinFace($('spinPad'), true);
+  }
+  function setSpinFromEvent(e){
+    const cv = $('spinPad'), rc = cv.getBoundingClientRect();
+    const nx = ((e.clientX - rc.left) / rc.width - 0.5) * 2, ny = -((e.clientY - rc.top) / rc.height - 0.5) * 2;
+    spin = spinClamp(nx, ny); refreshSpinUi();
+  }
+  let spinDrag = false;
+  $('spinPad').addEventListener('pointerdown', e => { spinDrag = true; try { e.target.setPointerCapture(e.pointerId); } catch (x) {} setSpinFromEvent(e); e.preventDefault(); });
+  $('spinPad').addEventListener('pointermove', e => { if (spinDrag) setSpinFromEvent(e); });
+  $('spinPad').addEventListener('pointerup', () => { spinDrag = false; });
+  $('spinPad').addEventListener('pointercancel', () => { spinDrag = false; });
+  $('spinBtn').addEventListener('click', () => { if (!canControl()) return; $('spinModal').classList.remove('hidden'); refreshSpinUi(); });
+  $('spinClose').addEventListener('click', () => $('spinModal').classList.add('hidden'));
+  $('spinDone').addEventListener('click', () => $('spinModal').classList.add('hidden'));
+  $('spinCenter').addEventListener('click', () => { spin = { x: 0, y: 0 }; refreshSpinUi(); });
+  function resetSpin(){ spin = { x: 0, y: 0 }; refreshSpinUi(); }
   function resetAim(){
     if (!G) return;
     const c = G.balls[0]; let best = null, bd = Infinity;
@@ -1900,6 +1981,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
   function snapshotPocketed(){ prevPocketed = {}; G.balls.forEach(b => { prevPocketed[b.n] = b.p; }); }
   function onShotBegan(){
     localSimDone = false; ffOn = false; acc = 0; called = null;
+    resetSpin(); $('spinModal').classList.add('hidden');
     snapshotPocketed();
     if (mode === 'host') broadcastState();
     updateHud();
@@ -1915,11 +1997,12 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     if (mode === 'guest'){
       if (!joinConn || !joinConn.open) return;
       awaitingHost = true;
-      joinConn.send({ type: 'shot', dx: aim.x, dy: aim.y, power: power, cue: cuePos, call: called });
+      joinConn.send({ type: 'shot', dx: aim.x, dy: aim.y, power: power, cue: cuePos, call: called, spin: { x: spin.x, y: spin.y } });
+      resetSpin();
       updateHud();
       return;
     }
-    const r = beginShot(G, aim.x, aim.y, power, cuePos, called === null ? undefined : called);
+    const r = beginShot(G, aim.x, aim.y, power, cuePos, called === null ? undefined : called, { x: spin.x, y: spin.y });
     if (!r.ok){ $('statusLine').textContent = 'Cannot shoot: ' + r.error; return; }
     onShotBegan();
   }
@@ -2127,7 +2210,7 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     if (msg.type === 'shot'){
       if (!G || G.phase !== 'aim') { broadcastState(); return; }
       if (G.players[G.turnIdx].id !== conn.__playerId) { broadcastState(); return; }
-      const r = beginShot(G, Number(msg.dx), Number(msg.dy), Number(msg.power), msg.cue, msg.call === null || msg.call === undefined ? undefined : Number(msg.call));
+      const r = beginShot(G, Number(msg.dx), Number(msg.dy), Number(msg.power), msg.cue, msg.call === null || msg.call === undefined ? undefined : Number(msg.call), msg.spin && typeof msg.spin === 'object' ? { x: Number(msg.spin.x), y: Number(msg.spin.y) } : undefined);
       if (!r.ok){ broadcastState(); return; }
       onShotBegan();
     }
