@@ -128,7 +128,7 @@
           <li><b>Fouls</b> give your opponent the cue ball in hand: they can place it anywhere. Drag the cue ball to place it. A foul is any of these: the cue ball goes in a pocket (a <b>scratch</b>), the cue ball hits nothing, the first ball it hits is not one of yours, or after the hit no ball is pocketed and none touches a rail.</li>
           <li><b>Scratch:</b> if the white ball drops in a pocket it comes back onto the table, but it is a foul and your opponent gets ball in hand. A scratch on the break works the same way. If you scratch while sinking the 8-ball, you lose.</li>
           <li><b>The 8-ball:</b> once your group is cleared you have to <b>call a pocket</b> before each shot at the 8: tap one of the dotted rings around the table. The 8-ball has to drop in that pocket to win. Pocketing it in a different pocket, pocketing it early, or fouling while you pocket it, loses the game. For every other ball, any pocket counts. If the 8-ball drops on the break it is re-spotted.</li>
-          <li>The X marks on the aim guide show where the cue ball touches the object ball and where the object ball will end up if it rolls straight (green X means it is headed into a pocket).</li>
+          <li>If you aim at a ball that is not one of yours, a red X appears on it and the guide shows no path. Hitting it first is a foul.</li>
         </ul>
       </div>
     </div>
@@ -260,10 +260,13 @@ const CONTACT_TOL = 0.06;                 // balls this close count as touching
 const JIT_V = 600, JIT_A = 0.4;           // hard-hit wobble: speed threshold and size (radians)
 const STOP_V = 8;                         // below this speed a ball stops
 const MAX_STEPS = 480 * 40;               // hard stop for any single shot
-// Pocket centres sit out in the wall. r is how close a ball centre has to get to drop;
-// vr is the drawn size of the hole. Fast balls only drop if they are heading into the mouth,
-// so a hard shot sliding past a pocket keeps going.
-const POCKET_SLOW = 600;                  // below this speed a ball over the mouth always drops
+// Pocket centres sit out in the wall. Inside the mouth circle (radius r) there is no cushion, so a
+// ball can roll through the opening. It only drops if its centre gets over the hole itself (radius
+// HOLE_R, a bit smaller the faster the ball is going), so a ball has to arrive at a decent angle and
+// speed. A ball that just grazes the edge of the mouth bounces off the cushion and carries on.
+const HOLE_R = 24, HOLE_FAST = 6;         // hole radius, and how much it shrinks at full speed
+const HOLE_FAST_V = 2000;                 // speed at which it has shrunk completely
+const ROLL_IN_V = 400;                    // a slow ball that is past the cushion line in the mouth rolls in
 const POCKETS = [
   { x: -9, y: -9, r: 38, vr: 25 }, { x: W + 9, y: -9, r: 38, vr: 25 },
   { x: -9, y: H + 9, r: 38, vr: 25 }, { x: W + 9, y: H + 9, r: 38, vr: 25 },
@@ -481,17 +484,21 @@ function stepSim(s) {
   for (let i = 0; i < balls.length; i++) {
     const b = balls[i];
     if (b.p) continue;
-    let captured = false, capK = -1;
-    for (let k = 0; k < POCKETS.length; k++) {
-      const pk = POCKETS[k];
-      const dx = b.x - pk.x, dy = b.y - pk.y;
-      const dd = dx * dx + dy * dy;
-      if (dd < pk.r * pk.r) {
-        const v2 = b.vx * b.vx + b.vy * b.vy;
-        if (v2 < POCKET_SLOW * POCKET_SLOW) { captured = true; capK = k; break; }
-        // fast ball: must be heading towards the middle of the hole
-        const toward = -(b.vx * dx + b.vy * dy);
-        if (toward > 0.78 * Math.sqrt(v2) * Math.sqrt(dd)) { captured = true; capK = k; break; }
+    let captured = false, capK = -1, inMouth = false;
+    {
+      const v2 = b.vx * b.vx + b.vy * b.vy;
+      const v = Math.sqrt(v2);
+      const dh = HOLE_R - HOLE_FAST * Math.min(1, v / HOLE_FAST_V);
+      for (let k = 0; k < POCKETS.length; k++) {
+        const pk = POCKETS[k];
+        const dx = b.x - pk.x, dy = b.y - pk.y;
+        const dd = dx * dx + dy * dy;
+        if (dd < pk.r * pk.r) {
+          inMouth = true;
+          if (dd < dh * dh) { captured = true; capK = k; break; }
+          const past = b.x < R - 4 || b.x > W - R + 4 || b.y < R - 4 || b.y > H - R + 4;
+          if (past && v < ROLL_IN_V) { captured = true; capK = k; break; }
+        }
       }
     }
     if (captured) {
@@ -500,10 +507,12 @@ function stepSim(s) {
       continue;
     }
     let hitRail = false;
-    if (b.x < R) { b.x = R; if (b.vx < 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
-    else if (b.x > W - R) { b.x = W - R; if (b.vx > 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
-    if (b.y < R) { b.y = R; if (b.vy < 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
-    else if (b.y > H - R) { b.y = H - R; if (b.vy > 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+    if (!inMouth) {   // no cushion across a pocket opening
+      if (b.x < R) { b.x = R; if (b.vx < 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
+      else if (b.x > W - R) { b.x = W - R; if (b.vx > 0) { b.vx = -b.vx * WALL_E; b.vy *= 0.985; hitRail = true; } }
+      if (b.y < R) { b.y = R; if (b.vy < 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+      else if (b.y > H - R) { b.y = H - R; if (b.vy > 0) { b.vy = -b.vy * WALL_E; b.vx *= 0.985; hitRail = true; } }
+    }
     if (hitRail && shot && shot.first !== null) shot.rail = true;
     let sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
     if (sp > MAX_SPEED) { b.vx *= MAX_SPEED / sp; b.vy *= MAX_SPEED / sp; sp = MAX_SPEED; }
@@ -682,7 +691,7 @@ function computeGuide(s, dx, dy) {
 // how much random error it adds to the aim and power when it finally shoots.
 const AI_LEVELS = {
   easy:   { label: 'Easy',       sims: 0,  pickFrom: 3, banks: 0,  angSigma: 0.011,  powSigma: 0.10,  position: 0,   robust: 0 },
-  medium: { label: 'Medium',     sims: 28, pickFrom: 1, banks: 0,  angSigma: 0.0018, powSigma: 0.025, position: 0.7, robust: 0 },
+  medium: { label: 'Medium',     sims: 34, pickFrom: 1, banks: 0,  angSigma: 0.0016, powSigma: 0.03,  position: 0.8, robust: 4 },
   hard:   { label: 'Pool Shark', sims: 70, pickFrom: 1, banks: 10, angSigma: 0.0002, powSigma: 0.002, position: 1.2, robust: 6 }
 };
 
@@ -1550,24 +1559,6 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     c.beginPath(); c.moveTo(x - s, y - s); c.lineTo(x + s, y + s); c.moveTo(x + s, y - s); c.lineTo(x - s, y + s); c.stroke();
     c.restore();
   }
-  // Where would the object ball end up if it just rolled straight? (rail, another ball, or a pocket)
-  function objectPath(ob, d){
-    let x = ob.x, y = ob.y;
-    const others = G.balls.filter(b => !b.p && b.n !== 0 && b.n !== ob.n);
-    for (let i = 0; i < 700; i++){
-      x += d.x * 3; y += d.y * 3;
-      for (let k = 0; k < POCKETS.length; k++){
-        const p = POCKETS[k], dx = x - p.x, dy = y - p.y;
-        if (dx * dx + dy * dy < p.r * p.r) return { x: x, y: y, end: 'pocket', pk: k };
-      }
-      for (let j = 0; j < others.length; j++){
-        const o = others[j], dx = x - o.x, dy = y - o.y;
-        if (dx * dx + dy * dy < 4 * R * R) return { x: x, y: y, end: 'ball' };
-      }
-      if (x < R || x > W - R || y < R || y > H - R) return { x: Math.max(R, Math.min(W - R, x)), y: Math.max(R, Math.min(H - R, y)), end: 'rail' };
-    }
-    return { x: x, y: y, end: 'rail' };
-  }
   function drawGuide(c){
     const cb = G.balls[0];
     const g = computeGuide(G, aim.x, aim.y);
@@ -1576,28 +1567,22 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
     c.lineCap = 'round';
     if (g.type === 'ball'){
       const gx = PAD + g.ghost.x, gy = PAD + g.ghost.y;
-      c.setLineDash([7, 6]); c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.8)';
-      c.beginPath(); c.moveTo(sx + aim.x * R, sy + aim.y * R); c.lineTo(gx, gy); c.stroke();
-      c.setLineDash([]);
-      c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.9)';
-      c.beginPath(); c.arc(gx, gy, R, 0, Math.PI * 2); c.stroke();
       const ob = G.balls.find(b => b.n === g.objN);
       const ox = PAD + ob.x, oy = PAD + ob.y;
-      // path the object ball will take
-      const end = objectPath(ob, g.objDir);
-      const ex = PAD + end.x, ey = PAD + end.y;
+      const legal = aiTargets(G, G.turnIdx).some(q => q.n === ob.n);
+      c.setLineDash([7, 6]); c.lineWidth = 1.6; c.strokeStyle = legal ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.5)';
+      c.beginPath(); c.moveTo(sx + aim.x * R, sy + aim.y * R); c.lineTo(gx, gy); c.stroke();
+      c.setLineDash([]);
+      if (!legal){
+        // wrong ball: a red X on it, and no path lines
+        drawX(c, ox, oy, R * 0.75, '#ff5a5a');
+        c.restore();
+        return;
+      }
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(255,255,255,0.9)';
+      c.beginPath(); c.arc(gx, gy, R, 0, Math.PI * 2); c.stroke();
       c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.95)';
       c.beginPath(); c.moveTo(ox + g.objDir.x * (R + 3), oy + g.objDir.y * (R + 3)); c.lineTo(ox + g.objDir.x * (R + 3 + 62), oy + g.objDir.y * (R + 3 + 62)); c.stroke();
-      const total = Math.sqrt((end.x - ob.x) * (end.x - ob.x) + (end.y - ob.y) * (end.y - ob.y));
-      if (total > R + 3 + 70){
-        c.setLineDash([2, 7]); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.7)';
-        c.beginPath(); c.moveTo(ox + g.objDir.x * (R + 3 + 66), oy + g.objDir.y * (R + 3 + 66)); c.lineTo(ex, ey); c.stroke();
-        c.setLineDash([]);
-      }
-      // X where the cue ball touches the object ball, and X where the object ball ends up
-      drawX(c, ox - g.objDir.x * R, oy - g.objDir.y * R, 4.5, 'rgba(255,255,255,0.95)');
-      if (end.end === 'pocket') drawX(c, PAD + POCKETS[end.pk].x, PAD + POCKETS[end.pk].y, 7, '#7dffa0');
-      else drawX(c, ex, ey, 6, end.end === 'ball' ? '#ffd27a' : 'rgba(255,255,255,0.95)');
       if (g.cueDir){
         const len = 14 + 42 * g.cutFrac;
         c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
@@ -1612,10 +1597,6 @@ function aiPlan(state, levelKey, rng, cb, syncMode) {
       c.beginPath(); c.arc(hx, hy, R, 0, Math.PI * 2); c.stroke();
       c.lineWidth = 2.4; c.strokeStyle = 'rgba(79,209,197,0.95)';
       c.beginPath(); c.moveTo(hx + g.bounceDir.x * (R + 3), hy + g.bounceDir.y * (R + 3)); c.lineTo(hx + g.bounceDir.x * (R + 3 + 55), hy + g.bounceDir.y * (R + 3 + 55)); c.stroke();
-      let wx = g.hit.x, wy = g.hit.y;
-      if (wx <= R + 0.6) wx = 0; else if (wx >= W - R - 0.6) wx = W;
-      if (wy <= R + 0.6) wy = 0; else if (wy >= H - R - 0.6) wy = H;
-      drawX(c, PAD + wx, PAD + wy, 5, 'rgba(255,255,255,0.95)');
     }
     c.restore();
   }
