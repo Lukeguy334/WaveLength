@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Ops Zombies Drinking Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151c; --ink-2: #191f29; --panel: #1c232f; --panel-line: #313c4c;
+    --brass: #c9a24b; --brass-bright: #e8c572; --teal: #4fd1c5; --rose: #e2637a;
+    --violet: #a78bd6; --paper: #ede7d9; --muted: #8791a1; --shadow: rgba(0,0,0,0.45);
+    --accent: #a3d65c; --accent-2: #6f9f2e;
+    --l1: #3fb7a8; --l2: #d9a441; --l3: #e07a3c; --l4: #d0453f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background: radial-gradient(ellipse at 50% -10%, #232c3a 0%, var(--ink) 55%); color: var(--paper); font-family:'Inter',sans-serif; }
+  body { padding: 20px 14px 70px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  a.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:13px; margin-bottom:12px; }
+  a.back-link:hover { color: var(--paper); }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(26px,5vw,36px); letter-spacing:0.02em; margin:0 0 6px;
+    background:linear-gradient(180deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:var(--muted); font-size:14px; margin:0 0 16px; line-height:1.5; }
+  .panel { background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; }
+  .hidden { display:none !important; }
+  h3.sec { font-family:'Space Grotesk',sans-serif; margin:0 0 4px; font-size:18px; }
+  label.field-label { display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin:18px 0 8px; }
+
+  .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
+  .mode-card { background:linear-gradient(180deg,#202836,#171d27); border:2px solid var(--panel-line); border-radius:14px; padding:16px 18px; cursor:pointer; text-align:left; color:inherit; font-family:inherit; }
+  .mode-card:hover { border-color:var(--accent-2); }
+  .mode-card.active { border-color:var(--accent); background:linear-gradient(180deg,#25312a,#18211d); }
+  .mode-card h4 { font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:17px; }
+  .mode-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+
+  .stepper { display:inline-flex; align-items:center; gap:10px; }
+  .stepper button { width:40px; height:40px; border-radius:10px; border:1px solid var(--panel-line); background:var(--ink-2); color:var(--paper); font-size:20px; cursor:pointer; }
+  .stepper button:hover { border-color:var(--accent); }
+  .stepper .val { min-width:64px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--accent); }
+  .hint { color:var(--muted); font-size:13px; line-height:1.5; margin:6px 0 0; }
+
+  button.primary-btn { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; padding:13px 24px; border-radius:10px; border:1px solid var(--accent);
+    background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#10170c; cursor:pointer; }
+  button.primary-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  button.secondary-btn { font-family:'Inter',sans-serif; font-size:14px; padding:11px 16px; border-radius:10px; border:1px solid var(--panel-line); background:transparent; color:var(--muted); cursor:pointer; }
+  button.secondary-btn:hover { color:var(--paper); border-color:var(--accent); }
+  .btn-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:20px; }
+
+  .notice { margin-top:18px; font-size:12px; line-height:1.55; color:var(--muted); border-top:1px solid var(--panel-line); padding-top:12px; }
+
+  /* game screen */
+  .turn-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .turn-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(24px,5vw,32px); font-weight:700; line-height:1.1; }
+  .turn-sub { color:var(--muted); font-size:13px; margin-top:3px; }
+  .pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:5px 10px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); }
+  .bar-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .small-btn { background:transparent; border:1px solid var(--panel-line); color:var(--muted); border-radius:8px; padding:7px 12px; font-size:13px; cursor:pointer; }
+  .small-btn:hover { color:var(--paper); border-color:var(--accent); }
+
+  .wheels { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width: 700px) { .wheels { grid-template-columns:1fr; } }
+  .wheel-box { text-align:center; padding:14px 10px 12px; }
+  .wheel-box h4 { margin:0 0 10px; font-family:'Space Grotesk',sans-serif; font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); }
+  .wheel-stage { position:relative; width:min(100%, 330px); margin:0 auto; aspect-ratio:1/1; }
+  .wheel-stage .spinner { position:absolute; inset:0; transition:transform 4.6s cubic-bezier(.1,.7,.12,1); will-change:transform; }
+  .wheel-stage .disk { position:absolute; inset:0; border-radius:50%; overflow:hidden; box-shadow:0 10px 30px var(--shadow); }
+  .wheel-stage canvas { width:100%; height:100%; display:block; }
+  .wheel-stage .pointer { position:absolute; left:50%; top:-6px; width:0; height:0; margin-left:-12px; border-left:12px solid transparent; border-right:12px solid transparent; border-top:24px solid var(--brass-bright); filter:drop-shadow(0 2px 2px rgba(0,0,0,0.6)); z-index:3; }
+  .wheel-stage .hub { position:absolute; left:50%; top:50%; width:15%; height:15%; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle at 35% 30%, #3a4558, #12151c); border:3px solid var(--brass); z-index:2; }
+  .spin-row { text-align:center; margin:16px 0 4px; }
+  .spin-row .primary-btn { font-size:19px; padding:15px 40px; }
+
+  .results { display:grid; gap:14px; margin-top:16px; }
+  .result-card { border-radius:12px; padding:18px 20px; border:1px solid var(--panel-line); background:var(--panel); animation:pop 0.4s ease both; }
+  @keyframes pop { from { transform:translateY(8px) scale(0.98); opacity:0; } to { transform:none; opacity:1; } }
+  .result-card .tag { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .result-card .big { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(20px,4.4vw,27px); line-height:1.3; margin:0 0 12px; }
+  .result-card.challenge { border-left:6px solid var(--lvl, var(--accent)); }
+  .result-card.rule { border-left:6px solid var(--violet); }
+  .penalty { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:6px 12px; border-radius:8px; color:#10141b; background:var(--lvl, var(--accent)); }
+  .meta-line { color:var(--muted); font-size:13px; line-height:1.55; margin:10px 0 0; }
+  .meta-line b { color:var(--paper); font-weight:600; }
+  .card-actions { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
+
+  .next-row { text-align:center; margin-top:20px; }
+  .next-row .tip { color:var(--muted); font-size:13px; margin:10px auto 0; max-width:520px; line-height:1.5; }
+  details.hist { margin-top:22px; }
+  details.hist summary { cursor:pointer; color:var(--muted); font-size:13px; }
+  .hist-item { border-top:1px solid var(--panel-line); padding:10px 0; font-size:13px; line-height:1.5; }
+  .hist-item:first-of-type { margin-top:10px; }
+  .hist-item .h-turn { font-family:'JetBrains Mono',monospace; color:var(--accent); font-size:12px; }
+  .hist-item .h-pen { color:var(--muted); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:100; padding:16px; }
+  .modal-box { background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; max-width:560px; width:100%; max-height:86vh; overflow:auto; padding:22px; position:relative; }
+  .modal-box h3 { margin:0 0 12px; font-family:'Space Grotesk',sans-serif; }
+  .modal-close { position:absolute; top:10px; right:12px; background:transparent; border:none; color:var(--muted); font-size:26px; cursor:pointer; }
+  .modal-box ol { margin:0; padding-left:20px; color:var(--paper); font-size:14px; line-height:1.6; }
+  .modal-box li { margin-bottom:8px; }
+  .modal-box li b { color:var(--accent); font-weight:600; }
+  .lvl-key { display:grid; gap:6px; margin:10px 0 0; font-size:13px; }
+  .lvl-key span.dot { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:8px; vertical-align:-1px; }
+  footer.fine { margin-top:30px; text-align:center; color:var(--muted); font-size:12px; line-height:1.6; }
+  @media (prefers-reduced-motion: reduce) { .wheel-stage .spinner { transition-duration:0.3s !important; } .result-card { animation:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>Black Ops Zombies Drinking Game</h1>
+  <p class="subtitle">Spin two wheels every 3 rounds of Zombies. One gives you a challenge, the other gives you a rule. Works for World at War and Black Ops 1, 2, and 3.</p>
+
+  <div id="setup" class="panel">
+    <h3 class="sec">How are you playing?</h3>
+    <div class="mode-grid" id="modeGrid">
+      <button class="mode-card active" data-mode="coop" type="button">
+        <h4>Cooperative</h4>
+        <p>If anyone completes the challenge, everyone is safe. If nobody does, everybody pays the penalty.</p>
+      </button>
+      <button class="mode-card" data-mode="comp" type="button">
+        <h4>Competitive</h4>
+        <p>Everyone has to complete the challenge themselves. If you don't, only you pay the penalty.</p>
+      </button>
+    </div>
+
+    <label class="field-label">Start on turn</label>
+    <div class="stepper">
+      <button type="button" id="startMinus" aria-label="Lower start turn">&minus;</button>
+      <div class="val" id="startVal">1</div>
+      <button type="button" id="startPlus" aria-label="Raise start turn">+</button>
+    </div>
+    <p class="hint" id="startHint"></p>
+
+    <div class="btn-row">
+      <button class="primary-btn" id="startBtn" type="button">Start game &rarr;</button>
+      <button class="secondary-btn" id="resumeBtn" type="button" style="display:none;"></button>
+      <button class="secondary-btn" id="rulesBtn" type="button">How it works</button>
+    </div>
+    <div class="notice">Play responsibly. This is for people of legal drinking age, and you can play with any drink at all, water and soda included. Never drive after drinking.</div>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="turn-bar">
+      <div>
+        <div class="turn-title" id="turnTitle"></div>
+        <div class="turn-sub" id="turnSub"></div>
+      </div>
+      <div class="bar-right">
+        <span class="pill" id="modePill"></span>
+        <button class="small-btn" id="rulesBtn2" type="button">How it works</button>
+        <button class="small-btn" id="endBtn" type="button">End game</button>
+      </div>
+    </div>
+
+    <div class="wheels">
+      <div class="panel wheel-box">
+        <h4>Challenge wheel</h4>
+        <div class="wheel-stage"><div class="pointer"></div><div class="disk"><div class="spinner" id="chSpin"><canvas id="chCanvas" width="10" height="10"></canvas></div></div><div class="hub"></div></div>
+      </div>
+      <div class="panel wheel-box">
+        <h4>Rule wheel</h4>
+        <div class="wheel-stage"><div class="pointer"></div><div class="disk"><div class="spinner" id="ruSpin"><canvas id="ruCanvas" width="10" height="10"></canvas></div></div><div class="hub"></div></div>
+      </div>
+    </div>
+    <div class="spin-row"><button class="primary-btn" id="spinBtn" type="button">Spin both wheels</button></div>
+
+    <div class="results" id="results" aria-live="polite"></div>
+
+    <div class="next-row hidden" id="nextRow">
+      <button class="primary-btn" id="nextBtn" type="button"></button>
+      <p class="tip">Pause now to pay off any failed challenge. The game can only be paused between turns, never to pay for a rule.</p>
+    </div>
+
+    <details class="hist hidden" id="hist"><summary id="histSummary">Past turns</summary><div id="histList"></div></details>
+  </div>
+
+  <footer class="fine">Unofficial fan-made game. Not affiliated with or endorsed by Activision. Call of Duty and Black Ops are trademarks of their owners.</footer>
+</div>
+
+<div class="modal-overlay hidden" id="rulesModal">
+  <div class="modal-box">
+    <button class="modal-close" id="rulesClose" type="button" aria-label="Close">&times;</button>
+    <h3>How it works</h3>
+    <ol>
+      <li><b>Every turn, spin both wheels.</b> You get one challenge and one rule. One turn is 3 in-game rounds. Rounds 1, 2 and 3 are turn 1. When round 4 starts, turn 2 begins (rounds 4, 5 and 6), then rounds 7 to 9, and so on.</li>
+      <li><b>Both only last for that turn.</b> When the next turn starts, they are over and you spin again.</li>
+      <li><b>Cooperative:</b> if anyone completes the challenge, everyone is safe. <b>Competitive:</b> everyone has to complete it themselves, and whoever doesn't takes the penalty.</li>
+      <li><b>Challenges get harder as the game goes on</b> so they are never way too easy or way too hard. Rules are totally random.</li>
+      <li><b>Harder challenge, bigger penalty.</b> Colors on the challenge wheel show it:
+        <div class="lvl-key">
+          <div><span class="dot" style="background:var(--l1)"></span>Very easy: 8 second chug</div>
+          <div><span class="dot" style="background:var(--l2)"></span>Easy to medium: finish your drink</div>
+          <div><span class="dot" style="background:var(--l3)"></span>Hard: shotgun a drink</div>
+          <div><span class="dot" style="background:var(--l4)"></span>Very hard: take a shot</div>
+        </div>
+      </li>
+      <li><b>Rules are always just sips.</b></li>
+      <li><b>Every challenge means "before the next turn starts."</b> Finish it before the turn changes.</li>
+      <li><b>Never pause the game for a broken rule.</b> Keep playing while you sip. You can pause between turns to pay a failed challenge, and at the start of a turn to spin.</li>
+      <li><b>The same rules apply to every player.</b></li>
+      <li><b>Not possible in your game or map?</b> Press "Can't do this here" and the challenge wheel spins again.</li>
+    </ol>
+  </div>
+</div>
+
+<script src="data/zombies-drinking.js"></script>
+<script>
+(function(){
+  var CFG = {
+    key: 'zombies',
+    data: window.ZM_DRINK,
+    turnName: function(n){ return 'Turn ' + n; },
+    turnSub: function(n){ return 'Rounds ' + (3 * n - 2) + ', ' + (3 * n - 1) + ' and ' + (3 * n); },
+    timing: function(n){ return 'before round ' + (3 * n + 1) + ' starts'; },
+    nextLabel: function(n){ return 'Round ' + (3 * n - 2) + ' started? Start turn ' + n + ' \u2192'; },
+    startHint: function(n){ return 'Turn 1 is rounds 1 to 3, turn 2 is rounds 4 to 6, and so on. Joining a game already in progress? Start on the matching turn.'; },
+    turnWord: 'turn'
+  };
+
+  var SLICES = 8;
+  var DATA = CFG.data || { challenges: [], rules: [], punishments: {} };
+  var PUN = { 1: '8 second chug', 2: 'finish your drink', 3: 'shotgun a drink', 4: 'take a shot' };
+  if (DATA.punishments) { for (var pk in DATA.punishments) { PUN[pk] = DATA.punishments[pk]; } }
+  var LVL_COLOR = { 1: '#3fb7a8', 2: '#d9a441', 3: '#e07a3c', 4: '#d0453f' };
+  var LVL_TEXT = { 1: '#06201c', 2: '#2a1d02', 3: '#2a1203', 4: '#ffffff' };
+  var RULE_COLORS = ['#5b4a8c', '#3f5c8f', '#4f6f91', '#6c4a82'];
+  var STORE_KEY = 'gn-drinking-' + CFG.key;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // challenges and rules from the data file, normalised (plain strings are allowed for rules)
+  var CH = (DATA.challenges || []).map(function(c, i){
+    var lv = Math.max(1, Math.min(4, parseInt(c.level, 10) || 2));
+    return { id: i, from: c.from || 1, to: c.to || 99, level: lv, short: c.short || String(c.text).slice(0, 26), text: c.text, avoid: !!c.avoid, group: !!c.group };
+  });
+  var RU = (DATA.rules || []).map(function(r, i){
+    if (typeof r === 'string') return { id: i, short: r.length > 26 ? r.slice(0, 24) + '..' : r, text: r };
+    return { id: i, short: r.short || String(r.text).slice(0, 26), text: r.text };
+  });
+
+  var S = null;           // saved game state
+  var setupMode = 'coop', setupStart = 1;
+  var rot = { ch: 0, ru: 0 };
+  var spinning = false;
+
+  // ---------- helpers ----------
+  function pickWeighted(items, n, weightFn){
+    var pool = items.slice(), out = [], seen = {};
+    while (out.length < n && pool.length){
+      var tot = 0, i;
+      for (i = 0; i < pool.length; i++) tot += weightFn(pool[i]);
+      var r = Math.random() * tot, k = 0;
+      for (i = 0; i < pool.length; i++){ r -= weightFn(pool[i]); if (r <= 0){ k = i; break; } k = i; }
+      var it = pool.splice(k, 1)[0];
+      if (seen[it.short]) continue;     // never two slices with the same label
+      seen[it.short] = 1; out.push(it);
+    }
+    return out;
+  }
+
+  function challengeSlices(turn){
+    var inWin = CH.filter(function(c){ return turn >= c.from && turn <= c.to; });
+    var fresh = inWin.filter(function(c){ return !S.usedCh[c.id]; });
+    var pool = fresh.length >= SLICES ? fresh : inWin;
+    var out = pickWeighted(pool, SLICES, function(c){ return (c.to - c.from) <= 3 ? 3 : 1; });
+    if (out.length < SLICES){
+      // short on options this turn: fall back to the closest earlier challenges
+      var have = {}; out.forEach(function(c){ have[c.id] = 1; });
+      var stale = CH.filter(function(c){ return c.from <= turn && c.to < turn && !have[c.id]; })
+                    .sort(function(a, b){ return b.to - a.to; });
+      stale.forEach(function(c){ if (out.length < SLICES) { out.push(c); } });
+    }
+    if (!out.length) out = CH.slice(0, SLICES);
+    return out;
+  }
+  function ruleSlices(){
+    var fresh = RU.filter(function(r){ return !S.usedRu[r.id]; });
+    if (fresh.length < SLICES){ S.usedRu = {}; fresh = RU.slice(); }
+    return pickWeighted(fresh, SLICES, function(){ return 1; });
+  }
+  function byId(list, id){ for (var i = 0; i < list.length; i++){ if (list[i].id === id) return list[i]; } return null; }
+
+  // ---------- drawing ----------
+  function wrapLabel(ctx, text, maxW){
+    var words = text.split(' '), lines = [], cur = '';
+    words.forEach(function(w){
+      var t = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function drawWheel(canvas, labels, colors, textColors){
+    var size = 360, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size * dpr; canvas.height = size * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    var cx = size / 2, cy = size / 2, r = size / 2 - 3, n = labels.length, sa = Math.PI * 2 / n;
+    for (var i = 0; i < n; i++){
+      var a0 = -Math.PI / 2 + i * sa;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a0, a0 + sa); ctx.closePath();
+      ctx.fillStyle = colors[i]; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(10,12,16,0.75)'; ctx.stroke();
+    }
+    for (var j = 0; j < n; j++){
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-Math.PI / 2 + (j + 0.5) * sa);
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColors[j];
+      var fs = 14, lines;
+      var maxW = r * 0.60;
+      do {
+        ctx.font = '700 ' + fs + 'px "Space Grotesk", sans-serif';
+        lines = wrapLabel(ctx, labels[j], maxW);
+        fs -= 1;
+      } while ((lines.length > 2 || lines.some(function(l){ return ctx.measureText(l).width > maxW; })) && fs >= 9);
+      if (lines.length > 2){ lines = lines.slice(0, 2); lines[1] = lines[1].replace(/.{0,2}$/, '..'); }
+      var lh = fs + 3, y0 = -(lines.length - 1) * lh / 2;
+      lines.forEach(function(l, k){ ctx.fillText(l, r - 14, y0 + k * lh); });
+      ctx.restore();
+    }
+  }
+  function renderChWheel(){
+    var items = S.cur.chSlices.map(function(id){ return byId(CH, id); });
+    drawWheel($('chCanvas'), items.map(function(c){ return c.short; }),
+      items.map(function(c){ return LVL_COLOR[c.level]; }), items.map(function(c){ return LVL_TEXT[c.level]; }));
+  }
+  function renderRuWheel(){
+    var items = S.cur.ruSlices.map(function(id){ return byId(RU, id); });
+    drawWheel($('ruCanvas'), items.map(function(r){ return r.short; }),
+      items.map(function(r, i){ return RULE_COLORS[i % RULE_COLORS.length]; }), items.map(function(){ return '#ffffff'; }));
+  }
+
+  function setRotation(which, deg, animate){
+    var el = $(which === 'ch' ? 'chSpin' : 'ruSpin');
+    if (!animate){ el.style.transition = 'none'; }
+    el.style.transform = 'rotate(' + deg + 'deg)';
+    if (!animate){ void el.offsetWidth; el.style.transition = ''; }
+    rot[which] = deg;
+  }
+  function spinTo(which, idx, n, extra){
+    var sa = 360 / n;
+    var jitter = (Math.random() - 0.5) * sa * 0.6;
+    var want = -((idx + 0.5) * sa) + jitter;
+    var cur = rot[which];
+    var delta = (((want - cur) % 360) + 360) % 360 + 360 * (5 + (extra || 0));
+    setRotation(which, cur + delta, true);
+  }
+
+  // ---------- save / load ----------
+  function save(){ try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+  function load(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (s && s.v === 1 && s.started) return s;
+    } catch (e) {}
+    return null;
+  }
+  function clearSave(){ try { localStorage.removeItem(STORE_KEY); } catch (e) {} }
+
+  // ---------- turn flow ----------
+  function newCurrent(){
+    return { chSlices: challengeSlices(S.turn).map(function(c){ return c.id; }), ruSlices: [], chIdx: -1, ruIdx: -1, spun: false, skipped: [] };
+  }
+  function beginTurn(){
+    S.cur = newCurrent();
+    S.cur.ruSlices = ruleSlices().map(function(r){ return r.id; });
+    renderTurn(false);
+    save();
+  }
+
+  function renderTurn(restoring){
+    $('turnTitle').textContent = CFG.turnName(S.turn);
+    $('turnSub').textContent = CFG.turnSub(S.turn);
+    $('modePill').textContent = S.mode === 'coop' ? 'Cooperative' : 'Competitive';
+    renderChWheel(); renderRuWheel();
+    if (restoring && S.cur.spun){
+      var sa1 = 360 / S.cur.chSlices.length, sa2 = 360 / S.cur.ruSlices.length;
+      setRotation('ch', -((S.cur.chIdx + 0.5) * sa1), false);
+      setRotation('ru', -((S.cur.ruIdx + 0.5) * sa2), false);
+    } else {
+      setRotation('ch', 0, false); setRotation('ru', 0, false);
+    }
+    $('spinBtn').classList.toggle('hidden', S.cur.spun);
+    $('spinBtn').disabled = false;
+    renderResults();
+    renderHistory();
+  }
+
+  function penaltyFor(c){ return PUN[c.level] || PUN[2]; }
+  function modeLine(c){
+    if (c.group) return '<b>Group challenge:</b> the whole table is judged together. If it is not done in time, everyone takes the penalty.';
+    if (c.avoid) return '<b>Whoever breaks it</b> takes the penalty themselves, in both modes.';
+    if (S.mode === 'coop') return '<b>Cooperative:</b> if anyone completes it, everyone is safe. If nobody does, everyone takes the penalty.';
+    return '<b>Competitive:</b> everyone has to complete it themselves. Anyone who does not takes the penalty.';
+  }
+  function renderResults(){
+    var box = $('results');
+    if (!S.cur.spun){ box.innerHTML = ''; $('nextRow').classList.add('hidden'); return; }
+    var c = byId(CH, S.cur.chSlices[S.cur.chIdx]);
+    var r = byId(RU, S.cur.ruSlices[S.cur.ruIdx]);
+    var col = LVL_COLOR[c.level];
+    box.innerHTML =
+      '<div class="result-card challenge" style="--lvl:' + col + '">' +
+        '<div class="tag">Challenge</div>' +
+        '<p class="big">' + esc(c.text) + '</p>' +
+        '<span class="penalty">Fail: ' + esc(penaltyFor(c)) + '</span>' +
+        '<p class="meta-line">' + (c.avoid ? 'Applies for this whole ' + esc(CFG.turnWord) + '. ' : 'Finish it ' + esc(CFG.timing(S.turn)) + '. ') + modeLine(c) + '</p>' +
+        '<div class="card-actions"><button class="small-btn" id="reSpin" type="button">Can\'t do this here, spin again</button></div>' +
+      '</div>' +
+      '<div class="result-card rule">' +
+        '<div class="tag">Rule (sips only)</div>' +
+        '<p class="big">' + esc(r.text) + '</p>' +
+        '<p class="meta-line">This rule lasts until the next turn starts. Keep playing while you sip.</p>' +
+      '</div>';
+    $('reSpin').addEventListener('click', respinChallenge);
+    $('nextBtn').textContent = CFG.nextLabel(S.turn + 1);
+    $('nextRow').classList.remove('hidden');
+  }
+
+  function renderHistory(){
+    var h = S.history || [];
+    $('hist').classList.toggle('hidden', !h.length);
+    $('histSummary').textContent = 'Past turns (' + h.length + ')';
+    var html = '';
+    for (var i = h.length - 1; i >= 0; i--){
+      var x = h[i];
+      html += '<div class="hist-item"><span class="h-turn">' + esc(CFG.turnName(x.turn)) + '</span><br>' +
+        esc(x.ch) + ' <span class="h-pen">(fail: ' + esc(x.pen) + ')</span><br><span class="h-pen">Rule: ' + esc(x.ru) + '</span></div>';
+    }
+    $('histList').innerHTML = html;
+  }
+
+  function doSpin(){
+    if (spinning || S.cur.spun) return;
+    spinning = true;
+    $('spinBtn').disabled = true;
+    S.cur.chIdx = Math.floor(Math.random() * S.cur.chSlices.length);
+    S.cur.ruIdx = Math.floor(Math.random() * S.cur.ruSlices.length);
+    spinTo('ch', S.cur.chIdx, S.cur.chSlices.length, 0);
+    spinTo('ru', S.cur.ruIdx, S.cur.ruSlices.length, 1);
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(function(){ finishSpin(); }, reduce ? 450 : 5000);
+  }
+  function finishSpin(){
+    S.cur.spun = true; spinning = false;
+    var c = byId(CH, S.cur.chSlices[S.cur.chIdx]);
+    var r = byId(RU, S.cur.ruSlices[S.cur.ruIdx]);
+    S.usedCh[c.id] = 1; S.usedRu[r.id] = 1;
+    $('spinBtn').classList.add('hidden');
+    renderResults();
+    save();
+  }
+
+  function respinChallenge(){
+    if (spinning) return;
+    var old = byId(CH, S.cur.chSlices[S.cur.chIdx]);
+    S.usedCh[old.id] = 1;
+    S.cur.skipped.push(old.id);
+    // new wheel without the skipped ones
+    var skip = {}; S.cur.skipped.forEach(function(id){ skip[id] = 1; });
+    var inWin = CH.filter(function(c){ return S.turn >= c.from && S.turn <= c.to && !skip[c.id]; });
+    var fresh = inWin.filter(function(c){ return !S.usedCh[c.id]; });
+    var pool = fresh.length >= SLICES ? fresh : inWin;
+    var out = pickWeighted(pool, SLICES, function(c){ return (c.to - c.from) <= 3 ? 3 : 1; });
+    if (out.length < 2){
+      CH.filter(function(c){ return c.from <= S.turn && !skip[c.id]; }).forEach(function(c){ if (out.length < SLICES && out.indexOf(c) < 0) out.push(c); });
+    }
+    if (!out.length){ S.cur.skipped = []; out = challengeSlices(S.turn); }
+    S.cur.chSlices = out.map(function(c){ return c.id; });
+    S.cur.chIdx = Math.floor(Math.random() * S.cur.chSlices.length);
+    renderChWheel();
+    setRotation('ch', 0, false);
+    $('results').innerHTML = '';
+    $('nextRow').classList.add('hidden');
+    spinning = true;
+    spinTo('ch', S.cur.chIdx, S.cur.chSlices.length, 0);
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(function(){
+      spinning = false;
+      var c = byId(CH, S.cur.chSlices[S.cur.chIdx]);
+      S.usedCh[c.id] = 1;
+      renderResults(); save();
+    }, reduce ? 450 : 5000);
+  }
+
+  function nextTurn(){
+    if (spinning || !S.cur.spun) return;
+    var c = byId(CH, S.cur.chSlices[S.cur.chIdx]);
+    var r = byId(RU, S.cur.ruSlices[S.cur.ruIdx]);
+    S.history.push({ turn: S.turn, ch: c.text, pen: penaltyFor(c), ru: r.text });
+    S.turn += 1;
+    beginTurn();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- screens ----------
+  function showGame(){ $('setup').classList.add('hidden'); $('game').classList.remove('hidden'); }
+  function showSetup(){
+    $('game').classList.add('hidden'); $('setup').classList.remove('hidden');
+    var saved = load();
+    var rb = $('resumeBtn');
+    if (saved){ rb.style.display = ''; rb.textContent = 'Resume (' + CFG.turnName(saved.turn) + ')'; }
+    else rb.style.display = 'none';
+  }
+  function updateStartUi(){
+    $('startVal').textContent = setupStart;
+    $('startHint').textContent = CFG.startHint(setupStart);
+  }
+
+  $('modeGrid').addEventListener('click', function(e){
+    var b = e.target.closest('.mode-card'); if (!b) return;
+    setupMode = b.getAttribute('data-mode');
+    [].forEach.call(document.querySelectorAll('.mode-card'), function(x){ x.classList.toggle('active', x === b); });
+  });
+  $('startMinus').addEventListener('click', function(){ setupStart = Math.max(1, setupStart - 1); updateStartUi(); });
+  $('startPlus').addEventListener('click', function(){ setupStart = Math.min(60, setupStart + 1); updateStartUi(); });
+  $('startBtn').addEventListener('click', function(){
+    S = { v: 1, started: true, mode: setupMode, turn: setupStart, usedCh: {}, usedRu: {}, history: [], cur: null };
+    showGame(); beginTurn();
+  });
+  $('resumeBtn').addEventListener('click', function(){
+    var s = load(); if (!s) return;
+    S = s; if (!S.usedCh) S.usedCh = {}; if (!S.usedRu) S.usedRu = {}; if (!S.history) S.history = [];
+    showGame(); renderTurn(true);
+  });
+  $('spinBtn').addEventListener('click', doSpin);
+  $('nextBtn').addEventListener('click', nextTurn);
+  $('endBtn').addEventListener('click', function(){
+    if (!confirm('End this game and go back to the start?')) return;
+    clearSave(); S = null; showSetup();
+  });
+  function openRules(){ $('rulesModal').classList.remove('hidden'); }
+  $('rulesBtn').addEventListener('click', openRules);
+  $('rulesBtn2').addEventListener('click', openRules);
+  $('rulesClose').addEventListener('click', function(){ $('rulesModal').classList.add('hidden'); });
+  $('rulesModal').addEventListener('click', function(e){ if (e.target === $('rulesModal')) $('rulesModal').classList.add('hidden'); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') $('rulesModal').classList.add('hidden'); });
+
+  updateStartUi();
+  showSetup();
+  // test hook-free: nothing else exposed
+  window.__drink = { state: function(){ return S; } };
+})();
+</script>
+</body>
+</html>
